@@ -45,12 +45,10 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
 }) => {
   const [colorMode, setColorMode] = useState<'kerugian' | 'kasus' | 'scrapbook'>('kerugian');
   const [hoveredProvince, setHoveredProvince] = useState<ProvincePolygon | null>(null);
-  const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [filterIsland, setFilterIsland] = useState<string>('Semua');
   const [activeLadderTier, setActiveLadderTier] = useState<string | null>(null);
   const [hoveredLadderTier, setHoveredLadderTier] = useState<string | null>(null);
 
@@ -200,26 +198,13 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
         y: e.clientY - dragStart.y
       });
     }
-
-    if (svgRef.current) {
-      const rect = svgRef.current.getBoundingClientRect();
-      setMousePos({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      });
-    }
   };
 
   const handleMouseUp = () => {
     setIsDragging(false);
   };
 
-  const islandsList = ['Semua', 'Sumatera', 'Jawa', 'Bali & Nusa Tenggara', 'Kalimantan', 'Sulawesi', 'Maluku', 'Papua'];
-
-  const filteredProvinces = useMemo(() => {
-    if (filterIsland === 'Semua') return INDONESIA_PROVINCES_GEO;
-    return INDONESIA_PROVINCES_GEO.filter(p => p.island === filterIsland);
-  }, [filterIsland]);
+  const filteredProvinces = INDONESIA_PROVINCES_GEO;
 
   const selectedSummary = selectedProvince
     ? regionMap.get(normalizeName(selectedProvince).toLowerCase())
@@ -297,32 +282,14 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
           </div>
         </div>
 
-        {/* Island Filters & Province Quick Jump */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-[#F1EBD9]">
+        {/* Province Quick Jump */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-3 pt-2 border-t border-[#F1EBD9]">
           
-          {/* Island Filter Chips */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-            <span className="font-bold text-[#78716C] whitespace-nowrap">Kepulauan:</span>
-            {islandsList.map(isl => (
-              <button
-                key={isl}
-                onClick={() => {
-                  sound.playPop();
-                  setFilterIsland(isl);
-                }}
-                className={`px-2.5 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
-                  filterIsland === isl
-                    ? 'bg-[#1E293B] text-white'
-                    : 'bg-[#F4EDE0] text-[#57534E] hover:bg-[#EAE0CD]'
-                }`}
-              >
-                {isl}
-              </button>
-            ))}
-          </div>
-
           {/* Search Dropdown */}
           <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-[#57534E] flex items-center gap-1">
+              <Search className="w-3.5 h-3.5 text-[#DC2626]" /> Cari / Sorot Provinsi:
+            </span>
             <select
               value={selectedProvince || ''}
               onChange={e => {
@@ -341,7 +308,7 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
             {selectedProvince && (
               <button
                 onClick={() => onSelectProvince(null)}
-                className="p-1.5 bg-[#FEE2E2] text-[#991B1B] rounded-xl hover:bg-[#FECACA]"
+                className="p-1.5 bg-[#FEE2E2] text-[#991B1B] rounded-xl hover:bg-[#FECACA] cursor-pointer"
                 title="Hapus pilihan"
               >
                 <X className="w-4 h-4" />
@@ -604,21 +571,28 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
           </svg>
         </div>
 
-        {/* Dynamic Hover Tooltip Card (Scrapbook Paper Card) */}
+        {/* Fixed Top-Right Province Detail Card on Hover */}
         {hoveredProvince && (
           <div
-            className="absolute z-30 pointer-events-none bg-[#FFFDF8] border-2 border-[#D5C9AB] rounded-2xl p-3 shadow-xl max-w-xs transition-opacity duration-150 space-y-1.5"
+            id="fixed-map-hover-card"
+            className="absolute top-4 sm:top-6 right-4 sm:right-6 z-30 pointer-events-none bg-[#FFFDF8]/95 backdrop-blur-md border-2 border-[#D5C9AB] rounded-2xl p-3.5 sm:p-4 shadow-xl w-64 sm:w-72 max-w-[calc(100%-3rem)] transition-all duration-200 animate-in fade-in zoom-in-95 space-y-2 select-none"
             style={{
-              left: Math.min(window.innerWidth > 768 ? mousePos.x + 15 : 20, 800),
-              top: Math.max(10, mousePos.y - 80)
+              boxShadow: '0 8px 24px -4px rgba(60, 40, 15, 0.2), 0 2px 6px rgba(0,0,0,0.06)'
             }}
           >
-            <div className="washi-tape washi-tape-yellow -top-2 left-6"></div>
-            <div className="flex items-center justify-between gap-2 border-b border-[#F0E6D0] pb-1">
-              <span className="font-marker text-base text-[#1E293B]">
-                {hoveredProvince.name}
-              </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-[#FEF3C7] text-[#92400E] rounded-full">
+            <div className="washi-tape washi-tape-yellow -top-2.5 right-6 !h-4 !w-16"></div>
+
+            {/* Header: Province Name & Island Tag */}
+            <div className="flex items-center justify-between gap-2 border-b border-[#F0E6D0] pb-1.5">
+              <div className="min-w-0">
+                <span className="text-[10px] text-[#78716C] font-hand block leading-none mb-0.5">
+                  Sorot Wilayah
+                </span>
+                <h4 className="font-marker text-base sm:text-lg text-[#1E293B] truncate leading-tight">
+                  {hoveredProvince.name}
+                </h4>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 bg-[#FEF3C7] text-[#92400E] rounded-full shrink-0 border border-[#FDE68A]">
                 {hoveredProvince.island}
               </span>
             </div>
@@ -627,26 +601,45 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
               const sum = regionMap.get(normalizeName(hoveredProvince.name).toLowerCase());
               if (!sum || sum.total_kasus === 0) {
                 return (
-                  <p className="text-xs text-gray-500 italic">
-                    Belum ada data perkara korupsi yang terverifikasi di database untuk provinsi ini.
-                  </p>
+                  <div className="py-1">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
+                      🌿 Belum Ada Kasus Terverifikasi
+                    </span>
+                    <p className="text-[11px] text-gray-500 italic mt-1 leading-snug">
+                      Belum ada data perkara korupsi yang terverifikasi di database untuk provinsi ini.
+                    </p>
+                  </div>
                 );
               }
 
+              const tierId = getProvinceTierId(hoveredProvince);
+              const tierBadge = 
+                tierId === 'critical' ? { label: 'Tingkat Kritis (> Rp 1T)', color: 'bg-rose-100 text-rose-800 border-rose-200' } :
+                tierId === 'high' ? { label: 'Tingkat Tinggi', color: 'bg-red-100 text-red-800 border-red-200' } :
+                tierId === 'medium' ? { label: 'Tingkat Sedang', color: 'bg-amber-100 text-amber-800 border-amber-200' } :
+                { label: 'Tingkat Rendah', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' };
+
               return (
-                <div className="space-y-1 text-xs">
+                <div className="space-y-1.5 text-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500">Jumlah Kasus:</span>
-                    <span className="font-bold text-[#1E293B]">{sum.total_kasus} Perkara</span>
+                    <span className="font-bold text-[#1E293B] bg-[#FAF5E8] px-2 py-0.5 rounded-md border border-[#E7DECB]">
+                      {sum.total_kasus} Perkara
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500">Total Kerugian:</span>
-                    <span className="font-marker font-bold text-[#DC2626]">
+                    <span className="font-marker font-bold text-sm text-[#DC2626]">
                       {formatRupiah(sum.total_kerugian)}
                     </span>
                   </div>
-                  <div className="text-[10px] text-blue-600 font-bold pt-1">
-                    👆 Klik untuk membuka daftar perkara di {hoveredProvince.name}
+                  <div className="pt-1 flex items-center justify-between border-t border-[#F0E6D0]">
+                    <span className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded-md border ${tierBadge.color}`}>
+                      {tierBadge.label}
+                    </span>
+                    <span className="text-[10px] text-blue-600 font-bold">
+                      👆 Klik untuk buka berkas
+                    </span>
                   </div>
                 </div>
               );

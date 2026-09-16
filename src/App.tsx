@@ -119,6 +119,7 @@ export default function App() {
             {activeTab === 'klasemen' && (
               <LeaderboardTable
                 items={leaderboard}
+                cases={cases}
                 onSelectCase={(id) => setSelectedCaseId(id)}
                 provinces={provincesList}
               />
@@ -128,6 +129,7 @@ export default function App() {
             {activeTab === 'statistik' && stats && (
               <StatsDashboard
                 stats={stats}
+                cases={cases}
                 onSelectCase={(id) => setSelectedCaseId(id)}
               />
             )}
