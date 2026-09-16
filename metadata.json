@@ -1,0 +1,6 @@
+{
+  "name": "Peta Korupsi Wakil Rakyat Indonesia",
+  "description": "Dashboard transparansi publik pemetaan kasus korupsi legislatif & eksekutif di Indonesia berbasis putusan pengadilan dan pemberitaan terverifikasi bergaya scrapbook.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

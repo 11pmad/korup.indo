@@ -1,0 +1,763 @@
+import React, { useState, useMemo, useRef } from 'react';
+import { RegionSummary, CorruptionCase } from '../types.js';
+import { formatRupiah } from '../utils/formatters.js';
+import { sound } from '../utils/audio.js';
+import { INDONESIA_PROVINCES_GEO, ProvincePolygon } from '../data/provincesGeo.js';
+import { WatercolorLadder } from './WatercolorLadder.js';
+import { 
+  MapPin, 
+  Sparkles, 
+  AlertCircle, 
+  Eye, 
+  ZoomIn, 
+  ZoomOut, 
+  RotateCcw, 
+  Layers, 
+  Search, 
+  ChevronRight,
+  TrendingUp,
+  X
+} from 'lucide-react';
+
+interface IndonesiaMapProps {
+  regions: RegionSummary[];
+  cases: CorruptionCase[];
+  selectedProvince: string | null;
+  onSelectProvince: (province: string | null) => void;
+  onSelectCase: (caseId: string) => void;
+}
+
+function normalizeName(name: string): string {
+  const n = name.trim().toLowerCase();
+  if (n.includes('yogyakarta') || n.includes('jogja')) return 'Daerah Istimewa Yogyakarta';
+  if (n.includes('bangka')) return 'Kepulauan Bangka Belitung';
+  if (n.includes('jakarta')) return 'DKI Jakarta';
+  if (n.includes('aceh')) return 'Aceh';
+  return name.trim();
+}
+
+export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
+  regions,
+  cases,
+  selectedProvince,
+  onSelectProvince,
+  onSelectCase,
+}) => {
+  const [colorMode, setColorMode] = useState<'kerugian' | 'kasus' | 'scrapbook'>('kerugian');
+  const [hoveredProvince, setHoveredProvince] = useState<ProvincePolygon | null>(null);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [filterIsland, setFilterIsland] = useState<string>('Semua');
+  const [activeLadderTier, setActiveLadderTier] = useState<string | null>(null);
+  const [hoveredLadderTier, setHoveredLadderTier] = useState<string | null>(null);
+
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
+  // Map regions lookup by normalized province name
+  const regionMap = useMemo(() => {
+    const map = new Map<string, RegionSummary>();
+    regions.forEach(r => {
+      map.set(normalizeName(r.provinsi).toLowerCase(), r);
+    });
+    return map;
+  }, [regions]);
+
+  // Max kerugian and max cases for choropleth scale calculation
+  const { maxKerugian, maxKasus } = useMemo(() => {
+    let mk = 1;
+    let mc = 1;
+    regions.forEach(r => {
+      if (r.total_kerugian > mk) mk = r.total_kerugian;
+      if (r.total_kasus > mc) mc = r.total_kasus;
+    });
+    return { maxKerugian: mk, maxKasus: mc };
+  }, [regions]);
+
+  // Helper to determine severity tier ID for any province polygon
+  const getProvinceTierId = (prov: ProvincePolygon): string => {
+    const summary = regionMap.get(normalizeName(prov.name).toLowerCase());
+    if (colorMode === 'scrapbook') {
+      return prov.island;
+    }
+    if (!summary || summary.total_kasus === 0) {
+      return 'none';
+    }
+    if (colorMode === 'kerugian') {
+      const ratio = Math.min(1, summary.total_kerugian / (maxKerugian * 0.75));
+      if (ratio > 0.8) return 'critical';
+      if (ratio > 0.5) return 'high';
+      if (ratio > 0.25) return 'medium';
+      return 'low';
+    }
+    if (colorMode === 'kasus') {
+      const ratio = summary.total_kasus / maxKasus;
+      if (ratio > 0.75) return 'critical';
+      if (ratio > 0.45) return 'high';
+      if (ratio > 0.2) return 'medium';
+      return 'low';
+    }
+    return 'none';
+  };
+
+  // Precompute how many provinces belong to each tier
+  const tierCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    INDONESIA_PROVINCES_GEO.forEach(p => {
+      const tier = getProvinceTierId(p);
+      counts[tier] = (counts[tier] || 0) + 1;
+    });
+    return counts;
+  }, [regionMap, colorMode, maxKerugian, maxKasus]);
+
+  // Cases for currently selected province
+  const selectedProvinceCases = useMemo(() => {
+    if (!selectedProvince) return [];
+    const norm = normalizeName(selectedProvince).toLowerCase();
+    return cases.filter(c => normalizeName(c.official?.provinsi || '').toLowerCase() === norm);
+  }, [cases, selectedProvince]);
+
+  // Sort provinces so hovered, selected, and active ladder matches are rendered last (on top in SVG layer stack)
+  const sortedProvinces = useMemo(() => {
+    const effectiveTier = hoveredLadderTier || activeLadderTier;
+    return [...INDONESIA_PROVINCES_GEO].sort((a, b) => {
+      if (a.name === selectedProvince) return 1;
+      if (b.name === selectedProvince) return -1;
+      if (a.name === hoveredProvince?.name) return 1;
+      if (b.name === hoveredProvince?.name) return -1;
+      if (effectiveTier) {
+        const aMatch = getProvinceTierId(a) === effectiveTier;
+        const bMatch = getProvinceTierId(b) === effectiveTier;
+        if (aMatch && !bMatch) return 1;
+        if (!aMatch && bMatch) return -1;
+      }
+      return 0;
+    });
+  }, [selectedProvince, hoveredProvince, hoveredLadderTier, activeLadderTier, colorMode, regionMap, maxKerugian, maxKasus]);
+
+  // Get color for a province polygon
+  const getProvinceFill = (prov: ProvincePolygon, isSelected: boolean, isHovered: boolean) => {
+    if (isSelected) return '#DC2626'; // Bold red for selected
+    if (isHovered) return '#F97316';  // Bright orange on hover
+
+    const summary = regionMap.get(normalizeName(prov.name).toLowerCase());
+
+    if (colorMode === 'scrapbook') {
+      return prov.defaultColor;
+    }
+
+    if (!summary || summary.total_kasus === 0) {
+      return '#FAF5E8'; // Very light cream paper for 0 cases
+    }
+
+    if (colorMode === 'kerugian') {
+      const ratio = Math.min(1, summary.total_kerugian / (maxKerugian * 0.75));
+      if (ratio > 0.8) return '#991B1B'; // Dark ink crimson
+      if (ratio > 0.5) return '#DC2626'; // Vivid crimson
+      if (ratio > 0.25) return '#F97316'; // Vivid orange
+      if (ratio > 0.08) return '#FBBF24'; // Warm amber
+      return '#FEF08A'; // Soft butter yellow
+    }
+
+    if (colorMode === 'kasus') {
+      const ratio = summary.total_kasus / maxKasus;
+      if (ratio > 0.75) return '#1E3A8A'; // Deep navy
+      if (ratio > 0.45) return '#2563EB'; // Royal blue
+      if (ratio > 0.2) return '#38BDF8';  // Bright cyan
+      return '#BAE6FD'; // Light sky blue
+    }
+
+    return prov.defaultColor;
+  };
+
+  const handleZoom = (delta: number) => {
+    sound.playPop();
+    setZoomLevel(prev => Math.min(3.5, Math.max(0.8, prev + delta)));
+  };
+
+  const handleReset = () => {
+    sound.playPop();
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+    onSelectProvince(null);
+    setActiveLadderTier(null);
+    setHoveredLadderTier(null);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 0) {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging) {
+      setPanOffset({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    }
+
+    if (svgRef.current) {
+      const rect = svgRef.current.getBoundingClientRect();
+      setMousePos({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const islandsList = ['Semua', 'Sumatera', 'Jawa', 'Bali & Nusa Tenggara', 'Kalimantan', 'Sulawesi', 'Maluku', 'Papua'];
+
+  const filteredProvinces = useMemo(() => {
+    if (filterIsland === 'Semua') return INDONESIA_PROVINCES_GEO;
+    return INDONESIA_PROVINCES_GEO.filter(p => p.island === filterIsland);
+  }, [filterIsland]);
+
+  const selectedSummary = selectedProvince
+    ? regionMap.get(normalizeName(selectedProvince).toLowerCase())
+    : null;
+
+  return (
+    <div id="peta-nusantara-section" className="space-y-6">
+      
+      {/* Map Control Header Card */}
+      <div className="relative bg-[#FFFDF9] border-2 border-[#E7DECB] rounded-3xl p-5 sm:p-7 shadow-sm space-y-4">
+        <div className="washi-tape washi-tape-yellow -top-3 left-10"></div>
+        <div className="washi-tape washi-tape-blue -top-3 right-10"></div>
+
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="font-marker text-2xl sm:text-3xl text-[#1E293B]">
+                Peta Korupsi 38 Provinsi Nusantara
+              </h2>
+              <span className="px-2.5 py-0.5 bg-[#FEF08A] text-[#854D0E] font-bold text-xs rounded-full border border-[#FACC15]">
+                Poligon Akurat
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-[#64748B] mt-0.5">
+              Setiap batas wilayah provinsi dipetakan dengan poligon berkoordinat geografis presisi tinggi berbalut tekstur kertas scrapbook.
+            </p>
+          </div>
+
+          {/* Choropleth Switcher Buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-bold text-[#57534E] flex items-center gap-1">
+              <Layers className="w-3.5 h-3.5 text-[#EA580C]" /> Mode Pewarnaan:
+            </span>
+            <div className="flex items-center bg-[#FAF5E8] p-1 rounded-2xl border border-[#D5C9AB] gap-1">
+              <button
+                onClick={() => {
+                  sound.playPop();
+                  setColorMode('kerugian');
+                }}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                  colorMode === 'kerugian'
+                    ? 'bg-[#DC2626] text-white shadow-xs'
+                    : 'text-[#57534E] hover:bg-[#F2E8D3]'
+                }`}
+              >
+                💰 Nilai Kerugian
+              </button>
+              <button
+                onClick={() => {
+                  sound.playPop();
+                  setColorMode('kasus');
+                }}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                  colorMode === 'kasus'
+                    ? 'bg-[#0284C7] text-white shadow-xs'
+                    : 'text-[#57534E] hover:bg-[#F2E8D3]'
+                }`}
+              >
+                📊 Jumlah Kasus
+              </button>
+              <button
+                onClick={() => {
+                  sound.playPop();
+                  setColorMode('scrapbook');
+                }}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                  colorMode === 'scrapbook'
+                    ? 'bg-[#16A34A] text-white shadow-xs'
+                    : 'text-[#57534E] hover:bg-[#F2E8D3]'
+                }`}
+              >
+                🎨 Kertas Pulau
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Island Filters & Province Quick Jump */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-[#F1EBD9]">
+          
+          {/* Island Filter Chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+            <span className="font-bold text-[#78716C] whitespace-nowrap">Kepulauan:</span>
+            {islandsList.map(isl => (
+              <button
+                key={isl}
+                onClick={() => {
+                  sound.playPop();
+                  setFilterIsland(isl);
+                }}
+                className={`px-2.5 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
+                  filterIsland === isl
+                    ? 'bg-[#1E293B] text-white'
+                    : 'bg-[#F4EDE0] text-[#57534E] hover:bg-[#EAE0CD]'
+                }`}
+              >
+                {isl}
+              </button>
+            ))}
+          </div>
+
+          {/* Search Dropdown */}
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedProvince || ''}
+              onChange={e => {
+                sound.playPop();
+                onSelectProvince(e.target.value || null);
+              }}
+              className="bg-[#FAF5E8] border border-[#D5C9AB] rounded-xl px-3 py-1.5 text-xs font-bold text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#DC2626]"
+            >
+              <option value="">-- Sorot Provinsi --</option>
+              {INDONESIA_PROVINCES_GEO.map(p => (
+                <option key={p.name} value={p.name}>
+                  {p.name} ({regionMap.get(normalizeName(p.name).toLowerCase())?.total_kasus || 0} kasus)
+                </option>
+              ))}
+            </select>
+            {selectedProvince && (
+              <button
+                onClick={() => onSelectProvince(null)}
+                className="p-1.5 bg-[#FEE2E2] text-[#991B1B] rounded-xl hover:bg-[#FECACA]"
+                title="Hapus pilihan"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* Main Interactive Map Canvas */}
+      <div className="relative bg-[#FFFDF9] border-2 border-[#E7DECB] rounded-3xl p-3 sm:p-6 shadow-md overflow-hidden select-none">
+        
+        {/* Scrapbook corner tapes */}
+        <div className="washi-tape washi-tape-pink -top-3 left-16"></div>
+        <div className="washi-tape washi-tape-green -top-3 right-16"></div>
+
+        {/* Ocean background pattern & coordinate lines */}
+        <div className="absolute inset-0 bg-[#F9F7EE] opacity-60 pointer-events-none"></div>
+
+        {/* Zoom & Pan Toolbar */}
+        <div className="absolute top-6 left-6 z-20 flex flex-col gap-1.5 bg-[#FFFDF8] border border-[#D5C9AB] p-1.5 rounded-2xl shadow-md">
+          <button
+            onClick={() => handleZoom(0.25)}
+            className="p-2 hover:bg-[#FAF5E8] text-[#1E293B] rounded-xl transition-colors"
+            title="Perbesar Peta (+)"
+          >
+            <ZoomIn className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => handleZoom(-0.25)}
+            className="p-2 hover:bg-[#FAF5E8] text-[#1E293B] rounded-xl transition-colors"
+            title="Perkecil Peta (-)"
+          >
+            <ZoomOut className="w-4 h-4" />
+          </button>
+          <button
+            onClick={handleReset}
+            className="p-2 hover:bg-[#FAF5E8] text-[#1E293B] rounded-xl transition-colors border-t border-[#EAE0CD]"
+            title="Reset Posisi (1x)"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Watercolor Ladder Visual Legend Overlay */}
+        <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 z-20">
+          <WatercolorLadder
+            colorMode={colorMode}
+            activeTier={activeLadderTier}
+            hoveredTier={hoveredLadderTier}
+            onSelectTier={(tierId) => {
+              setActiveLadderTier(tierId);
+            }}
+            onHoverTier={(tierId) => {
+              setHoveredLadderTier(tierId);
+            }}
+            tierCounts={tierCounts}
+            zoomLevel={zoomLevel}
+          />
+        </div>
+
+        {/* SVG Viewport */}
+        <div 
+          className={`w-full overflow-hidden cursor-${isDragging ? 'grabbing' : 'grab'}`}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          <svg
+            ref={svgRef}
+            viewBox="0 0 1100 480"
+            className="w-full h-auto min-h-[360px] sm:min-h-[480px] transition-transform duration-75"
+            style={{
+              transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+              transformOrigin: 'center center'
+            }}
+          >
+            <defs>
+              {/* Default Flat Cutout Paper Shadow */}
+              <filter id="paperShadow" x="-25%" y="-25%" width="150%" height="150%">
+                <feDropShadow dx="0.6" dy="1.8" stdDeviation="1.5" floodColor="#3B2F1D" floodOpacity="0.22" />
+              </filter>
+
+              {/* Hover: Paper Lifted Up with deeper, softer paper shadow */}
+              <filter id="hoverLiftedShadow" x="-50%" y="-50%" width="200%" height="200%">
+                <feDropShadow dx="1.5" dy="8" stdDeviation="5.5" floodColor="#261A0C" floodOpacity="0.36" />
+                <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#EA580C" floodOpacity="0.3" />
+              </filter>
+
+              {/* Selected: Strongly Lifted & Tacked with warm crimson glow and deep paper drop shadow */}
+              <filter id="selectedLiftedShadow" x="-60%" y="-60%" width="220%" height="220%">
+                <feDropShadow dx="2" dy="12" stdDeviation="7" floodColor="#1C1208" floodOpacity="0.46" />
+                <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor="#DC2626" floodOpacity="0.5" />
+              </filter>
+
+              {/* Active Ladder Highlight: Warm watercolor aura drop shadow */}
+              <filter id="activeLadderShadow" x="-50%" y="-50%" width="200%" height="200%">
+                <feDropShadow dx="1" dy="6" stdDeviation="4.5" floodColor="#B45309" floodOpacity="0.4" />
+                <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#F59E0B" floodOpacity="0.55" />
+              </filter>
+
+              {/* Dotted pattern for ocean */}
+              <pattern id="scrapDots" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+                <circle cx="2" cy="2" r="0.8" fill="#E4DAC1" />
+              </pattern>
+            </defs>
+
+            {/* Ocean Texture */}
+            <rect x="0" y="0" width="1100" height="480" fill="url(#scrapDots)" />
+
+            {/* Equator & Meridian Guide Lines (Scrapbook Pencil Style) */}
+            <line x1="20" y1="216" x2="1080" y2="216" stroke="#DCD3BA" strokeWidth="1" strokeDasharray="6 6" />
+            <text x="35" y="210" fill="#9E947B" fontSize="9" fontFamily="Patrick Hand">Khatulistiwa (0° Lat)</text>
+
+            {/* Render 38 Individual Province Polygons (Sorted so active/hovered floats on top) */}
+            <g id="provinces-layer">
+              {sortedProvinces.map(prov => {
+                const isSelected = selectedProvince === prov.name;
+                const isHovered = hoveredProvince?.name === prov.name;
+                const fill = getProvinceFill(prov, isSelected, isHovered);
+                const summary = regionMap.get(normalizeName(prov.name).toLowerCase());
+                const hasCases = summary && summary.total_kasus > 0;
+
+                const provTier = getProvinceTierId(prov);
+                const effectiveLadderTier = hoveredLadderTier || activeLadderTier;
+                const isMatchingLadder = !effectiveLadderTier || provTier === effectiveLadderTier;
+
+                const transformStyle = isSelected
+                  ? 'scale(1.08) translate(0px, -6px)'
+                  : isHovered
+                  ? 'scale(1.05) translate(0px, -3px)'
+                  : effectiveLadderTier && isMatchingLadder
+                  ? 'scale(1.04) translate(0px, -3px)'
+                  : 'scale(1) translate(0px, 0px)';
+
+                const filterEffect = isSelected
+                  ? 'url(#selectedLiftedShadow)'
+                  : isHovered
+                  ? 'url(#hoverLiftedShadow)'
+                  : effectiveLadderTier && isMatchingLadder
+                  ? 'url(#activeLadderShadow)'
+                  : 'url(#paperShadow)';
+
+                const opacityStyle = effectiveLadderTier
+                  ? isMatchingLadder ? 1 : 0.22
+                  : 1;
+
+                return (
+                  <g
+                    key={prov.name}
+                    className="province-group cursor-pointer"
+                    style={{
+                      transform: transformStyle,
+                      transformOrigin: `${prov.cx}px ${prov.cy}px`,
+                      transition: 'transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.28s ease, opacity 0.25s ease',
+                      filter: filterEffect,
+                      opacity: opacityStyle,
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      sound.playSticker();
+                      onSelectProvince(prov.name === selectedProvince ? null : prov.name);
+                    }}
+                    onMouseEnter={() => {
+                      sound.playPop();
+                      setHoveredProvince(prov);
+                    }}
+                    onMouseLeave={() => {
+                      if (hoveredProvince?.name === prov.name) {
+                        setHoveredProvince(null);
+                      }
+                    }}
+                  >
+                    <path
+                      d={prov.path}
+                      fill={fill}
+                      stroke={isSelected ? '#7F1D1D' : isHovered ? '#C2410C' : '#6B5E45'}
+                      strokeWidth={isSelected ? 2.5 : isHovered ? 2.2 : 1}
+                      strokeDasharray={isSelected ? 'none' : isHovered ? 'none' : '4 2'}
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                      className="transition-colors duration-150"
+                    />
+
+                    {/* Cute mini washi tape tacked when selected */}
+                    {isSelected && prov.cx > 0 && prov.cy > 0 && (
+                      <g
+                        transform={`translate(${prov.cx - 16}, ${prov.cy - 18})`}
+                        className="pointer-events-none"
+                      >
+                        <rect
+                          width="32"
+                          height="9"
+                          rx="2"
+                          fill="#FDE047"
+                          stroke="#CA8A04"
+                          strokeWidth="0.8"
+                          opacity="0.95"
+                          transform="rotate(-5 16 4.5)"
+                        />
+                        <circle cx="16" cy="4.5" r="2.2" fill="#DC2626" />
+                      </g>
+                    )}
+
+                    {/* Hover subtle glowing tactile ring if not selected */}
+                    {isHovered && !isSelected && prov.cx > 0 && prov.cy > 0 && (
+                      <circle
+                        cx={prov.cx}
+                        cy={prov.cy}
+                        r="3.5"
+                        fill="#EA580C"
+                        stroke="#FFFFFF"
+                        strokeWidth="1.2"
+                        className="pointer-events-none animate-pulse"
+                      />
+                    )}
+
+                    {/* Small Landmark Pushpin if province has cases */}
+                    {hasCases && !isSelected && prov.cx > 0 && prov.cy > 0 && (
+                      <g
+                        transform={`translate(${prov.cx}, ${prov.cy})`}
+                        className="pointer-events-none"
+                      >
+                        {/* Little pushpin head */}
+                        <circle cx="0" cy="0" r="5" fill="#DC2626" stroke="#FFFFFF" strokeWidth="1.5" />
+                        <circle cx="-1.5" cy="-1.5" r="1.5" fill="#FFFFFF" opacity="0.8" />
+                        {/* Number of cases badge */}
+                        <rect x="-8" y="-18" width="16" height="11" rx="4" fill="#1E293B" />
+                        <text
+                          x="0"
+                          y="-10"
+                          textAnchor="middle"
+                          fill="#FFFFFF"
+                          fontSize="8"
+                          fontWeight="bold"
+                          fontFamily="sans-serif"
+                        >
+                          {summary.total_kasus}
+                        </text>
+                      </g>
+                    )}
+                  </g>
+                );
+              })}
+            </g>
+
+            {/* Labels for Major Regions in Scrapbook Marker Style */}
+            <g id="region-labels" className="pointer-events-none select-none">
+              <text x="110" y="160" fill="#786D58" fontSize="13" fontFamily="Patrick Hand" fontWeight="bold">Sumatera</text>
+              <text x="330" y="380" fill="#786D58" fontSize="13" fontFamily="Patrick Hand" fontWeight="bold">Jawa</text>
+              <text x="440" y="210" fill="#786D58" fontSize="13" fontFamily="Patrick Hand" fontWeight="bold">Kalimantan</text>
+              <text x="630" y="240" fill="#786D58" fontSize="13" fontFamily="Patrick Hand" fontWeight="bold">Sulawesi</text>
+              <text x="540" y="425" fill="#786D58" fontSize="11" fontFamily="Patrick Hand">Bali &amp; Nusa</text>
+              <text x="800" y="220" fill="#786D58" fontSize="12" fontFamily="Patrick Hand">Maluku</text>
+              <text x="960" y="270" fill="#786D58" fontSize="13" fontFamily="Patrick Hand" fontWeight="bold">Papua</text>
+            </g>
+          </svg>
+        </div>
+
+        {/* Dynamic Hover Tooltip Card (Scrapbook Paper Card) */}
+        {hoveredProvince && (
+          <div
+            className="absolute z-30 pointer-events-none bg-[#FFFDF8] border-2 border-[#D5C9AB] rounded-2xl p-3 shadow-xl max-w-xs transition-opacity duration-150 space-y-1.5"
+            style={{
+              left: Math.min(window.innerWidth > 768 ? mousePos.x + 15 : 20, 800),
+              top: Math.max(10, mousePos.y - 80)
+            }}
+          >
+            <div className="washi-tape washi-tape-yellow -top-2 left-6"></div>
+            <div className="flex items-center justify-between gap-2 border-b border-[#F0E6D0] pb-1">
+              <span className="font-marker text-base text-[#1E293B]">
+                {hoveredProvince.name}
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 bg-[#FEF3C7] text-[#92400E] rounded-full">
+                {hoveredProvince.island}
+              </span>
+            </div>
+
+            {(() => {
+              const sum = regionMap.get(normalizeName(hoveredProvince.name).toLowerCase());
+              if (!sum || sum.total_kasus === 0) {
+                return (
+                  <p className="text-xs text-gray-500 italic">
+                    Belum ada data perkara korupsi yang terverifikasi di database untuk provinsi ini.
+                  </p>
+                );
+              }
+
+              return (
+                <div className="space-y-1 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500">Jumlah Kasus:</span>
+                    <span className="font-bold text-[#1E293B]">{sum.total_kasus} Perkara</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500">Total Kerugian:</span>
+                    <span className="font-marker font-bold text-[#DC2626]">
+                      {formatRupiah(sum.total_kerugian)}
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-blue-600 font-bold pt-1">
+                    👆 Klik untuk membuka daftar perkara di {hoveredProvince.name}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+      </div>
+
+      {/* Selected Province Cases Bottom Panel */}
+      {selectedProvince && (
+        <div className="relative bg-[#FFFDF8] border-3 border-[#E7DECB] rounded-3xl p-6 sm:p-8 shadow-md space-y-6">
+          <div className="washi-tape washi-tape-pink -top-3 left-12"></div>
+          <div className="washi-tape washi-tape-yellow -top-3 right-12"></div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#EAE0CD] gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">📍</span>
+                <h3 className="font-marker text-2xl sm:text-3xl text-[#1E293B]">
+                  Berkas Perkara di Provinsi {selectedProvince}
+                </h3>
+              </div>
+              <p className="text-xs sm:text-sm text-[#64748B] mt-0.5">
+                Ditemukan <strong>{selectedProvinceCases.length}</strong> perkara tercatat dengan total akumulasi kerugian negara{' '}
+                <span className="font-marker text-[#DC2626] font-bold">
+                  {formatRupiah(selectedSummary?.total_kerugian || 0)}
+                </span>
+              </p>
+            </div>
+
+            <button
+              onClick={() => onSelectProvince(null)}
+              className="px-3.5 py-1.5 bg-[#F4EDE0] text-[#44403C] hover:bg-[#E8DDC6] rounded-xl text-xs font-bold transition-colors self-start sm:self-auto flex items-center gap-1"
+            >
+              <X className="w-4 h-4" /> Tutup Berkas Wilayah
+            </button>
+          </div>
+
+          {/* List of cases in selected province */}
+          {selectedProvinceCases.length === 0 ? (
+            <div className="p-8 text-center text-gray-500 font-hand text-lg bg-[#FAF5E8] rounded-2xl border-2 border-dashed border-[#E3D7BD]">
+              Belum ada berkas kasus yang tercatat di {selectedProvince}.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {selectedProvinceCases.map((item, idx) => (
+                <div
+                  key={item.id}
+                  onClick={() => {
+                    sound.playSticker();
+                    onSelectCase(item.id);
+                  }}
+                  className={`polaroid-card cursor-pointer group hover:scale-[1.02] transition-transform ${
+                    idx % 2 === 0 ? 'rotate-[-0.8deg]' : 'rotate-[0.8deg]'
+                  }`}
+                >
+                  <div className="washi-tape washi-tape-yellow -top-2 left-8"></div>
+                  
+                  <div className="space-y-2.5 pt-2">
+                    <div className="flex items-start gap-3">
+                      <img
+                        src={item.official?.foto_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80'}
+                        alt={item.official?.nama}
+                        referrerPolicy="no-referrer"
+                        className="w-14 h-14 rounded-xl object-cover border border-[#E2D6B8] shrink-0 bg-[#F5EFE1]"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between text-[10px] font-mono text-gray-500 font-bold">
+                          <span>{item.tahun_putusan || item.tahun_kejadian}</span>
+                          <span className="px-1.5 py-0.2 bg-[#FEF08A] text-[#854D0E] rounded-md uppercase">
+                            {item.official?.kota_kabupaten || selectedProvince}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm text-[#1E293B] truncate group-hover:text-[#0284C7] transition-colors mt-0.5">
+                          {item.official?.nama}
+                        </h4>
+                        <p className="text-[11px] text-[#64748B] truncate">
+                          {item.official?.jabatan}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-2 bg-[#FFF7ED] border border-[#FDBA74] rounded-xl flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-[#C2410C]">Kerugian/Suap:</span>
+                      <span className="font-marker text-xs font-bold text-[#EA580C]">
+                        {formatRupiah(item.nilai_kerugian_negara)}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-[#475569] line-clamp-2 leading-relaxed">
+                      {item.ringkasan_kasus}
+                    </p>
+
+                    <div className="pt-2 border-t border-[#F1EBD9] flex items-center justify-between text-xs">
+                      <span className="font-bold text-[10px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-800">
+                        {item.status_hukum}
+                      </span>
+                      <span className="text-[#0284C7] font-bold group-hover:underline flex items-center gap-1 text-[11px]">
+                        <Eye className="w-3 h-3" /> Berkas Lengkap
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+        </div>
+      )}
+
+    </div>
+  );
+};
