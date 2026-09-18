@@ -178,7 +178,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
     try {
       const res = await fetch('/api/admin/ai-command', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+        },
         body: JSON.stringify({
           command: message,
           history: updatedHistory
@@ -219,7 +222,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
     try {
       const res = await fetch('/api/admin/cases/confirm', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+        },
         body: JSON.stringify({
           log_id: activeLogId,
           catatan_admin: 'Disetujui oleh kurator via AI Assistant'
@@ -251,13 +257,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
     sound.playPop();
     try {
       const res = await fetch(`/api/admin/rollback/${logId}`, {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+        }
       });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || 'Gagal rollback');
       }
-      alert('Rollback berhasil! Data ditarik dari database publik.');
+      alert(data.message || 'Rollback berhasil! Data ditarik dari database publik.');
       onRefreshData();
       fetchAuditLogs();
     } catch (err: any) {
@@ -298,14 +308,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
     try {
       const res = await fetch('/api/admin/ai-command', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+        },
         body: JSON.stringify({ command: promptText })
       });
       const aiData = await res.json();
+      if (!res.ok) throw new Error(aiData.error || 'Gagal memproses data kasus');
       if (aiData.log_id) {
         const confirmRes = await fetch('/api/admin/cases/confirm', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+          },
           body: JSON.stringify({
             log_id: aiData.log_id,
             catatan_admin: 'Ditambahkan via Formulir Manual'
@@ -941,58 +958,104 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
           </div>
 
           <div className="divide-y divide-[#EFE5CF] border border-[#E7DECB] rounded-2xl overflow-hidden">
-            {auditLogs.length === 0 ? (
-              <div className="p-6 text-center text-gray-500 text-xs">Belum ada riwayat log audit.</div>
+            {loadingLogs ? (
+              <div className="p-8 text-center text-gray-500 text-xs flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-[#DC2626] border-t-transparent rounded-full animate-spin"></span>
+                <span>Memuat jejak log audit...</span>
+              </div>
+            ) : auditLogs.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 text-xs">Belum ada riwayat log audit.</div>
             ) : (
-              auditLogs.map(log => (
-                <div key={log.id} className="p-4 bg-[#FAF6EC] hover:bg-[#F3EEDB] transition-colors space-y-2">
-                  <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-gray-500 font-bold">{log.id}</span>
-                      <span className="text-gray-400">•</span>
-                      <span className="text-gray-600 font-mono">
-                        {new Date(log.timestamp).toLocaleString('id-ID')}
-                      </span>
-                      <span className="text-gray-400">•</span>
-                      <span className="font-bold text-[#334155]">{log.admin_id}</span>
-                    </div>
+              auditLogs.map(log => {
+                const dateVal = log.timestamp || (log as any).created_at;
+                const formattedDate = dateVal && !isNaN(new Date(dateVal).getTime())
+                  ? new Date(dateVal).toLocaleString('id-ID', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })
+                  : 'Waktu tercatat';
 
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          log.status === 'disetujui'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : log.status === 'ditolak'
-                            ? 'bg-rose-100 text-rose-800'
-                            : 'bg-amber-100 text-amber-800'
-                        }`}
-                      >
-                        {log.status.toUpperCase()}
-                      </span>
+                const rawStatus = (log.status || (log as any).action || 'selesai').toLowerCase();
+                const adminName = log.admin_id || (log as any).admin_username || 'Admin';
+                const actionType = ((log as any).action || 'create').toUpperCase();
+                const entityType = (log as any).entity_type || 'cases';
+                const entityId = (log as any).entity_id || log.created_case_id || '-';
+                
+                const originalCommand = log.perintah_asli || 
+                  (log as any).diff_snapshot?.title || 
+                  (log as any).diff_snapshot?.perintah_asli || 
+                  `Aksi ${actionType} pada ${entityType} (${entityId})`;
 
-                      {log.status === 'disetujui' && log.created_case_id && (
-                        <button
-                          onClick={() => handleRollback(log.id)}
-                          className="px-2.5 py-1 bg-[#FEE2E2] hover:bg-[#FCA5A5] text-[#991B1B] text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
+                const targetCaseId = log.created_case_id || (entityType === 'cases' && entityId !== 'pending' ? entityId : null);
+                const canRollback = (rawStatus === 'disetujui' || (log as any).action === 'create') && targetCaseId && (log as any).action !== 'rollback';
+
+                return (
+                  <div key={log.id} className="p-4 bg-[#FAF6EC] hover:bg-[#F3EEDB] transition-colors space-y-2.5">
+                    <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
+                      <div className="flex items-center flex-wrap gap-2">
+                        <span className="font-mono text-gray-600 font-bold bg-white px-2 py-0.5 rounded border border-[#E2D8C0]">
+                          {log.id}
+                        </span>
+                        <span className="text-gray-400">•</span>
+                        <span className="text-gray-600 font-mono text-[11px]">
+                          {formattedDate}
+                        </span>
+                        <span className="text-gray-400">•</span>
+                        <span className="font-bold text-[#334155] bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                          👤 {adminName}
+                        </span>
+                        <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-mono">
+                          {entityType}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                            rawStatus === 'disetujui' || (log as any).action === 'create'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                              : rawStatus === 'ditolak' || (log as any).action === 'rollback'
+                              ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                              : 'bg-amber-100 text-amber-800 border border-amber-300'
+                          }`}
                         >
-                          <RotateCcw className="w-3 h-3" /> Rollback
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                          {rawStatus.toUpperCase()}
+                        </span>
 
-                  <div className="text-xs bg-white p-2.5 rounded-xl border border-[#E5DCC6]">
-                    <span className="font-bold text-gray-600">Perintah Asli:</span>{' '}
-                    <span className="text-gray-800 font-mono">{log.perintah_asli}</span>
-                  </div>
-
-                  {log.catatan_admin && (
-                    <div className="text-[11px] text-gray-500 italic">
-                      Catatan: {log.catatan_admin}
+                        {canRollback && (
+                          <button
+                            onClick={() => handleRollback(log.id)}
+                            className="px-2.5 py-1 bg-[#FEE2E2] hover:bg-[#FCA5A5] text-[#991B1B] text-xs font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer border border-[#FECACA] shadow-xs"
+                            title="Tarik kembali data perkara dari database publik"
+                          >
+                            <RotateCcw className="w-3 h-3" /> Rollback
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))
+
+                    <div className="text-xs bg-white p-3 rounded-xl border border-[#E5DCC6] space-y-1">
+                      <div className="flex items-center justify-between text-gray-500 text-[11px] font-medium">
+                        <span>Aksi: <strong className="text-gray-700">{actionType}</strong></span>
+                        {targetCaseId && <span>Target Perkara: <strong className="font-mono text-[#0284C7]">{targetCaseId}</strong></span>}
+                      </div>
+                      <p className="text-gray-800 font-mono text-xs leading-relaxed">
+                        {originalCommand}
+                      </p>
+                    </div>
+
+                    {log.catatan_admin && (
+                      <div className="text-[11px] text-[#854D0E] bg-[#FEF9C3] px-3 py-1.5 rounded-lg border border-[#FDE047] flex items-center gap-1.5">
+                        <span className="font-bold">Catatan:</span>
+                        <span>{log.catatan_admin}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
         </div>

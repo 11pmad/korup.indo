@@ -4,6 +4,7 @@ import { eq, desc, sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { generateToken, verifyAdminJwt } from '../middleware/auth.js';
 import { z } from 'zod';
+import { processAdminCommand } from '../gemini.js';
 
 const router = Router();
 
@@ -471,12 +472,304 @@ router.post('/reports/:id/action', async (req, res) => {
   }
 });
 
+// Helper mapping functions
+const mapSectorCategory = (val?: string): 'pengadaan_barang_jasa' | 'bansos_bencana' | 'suap_gratifikasi' | 'perizinan_sda_tambang' | 'mafia_peradilan' => {
+  if (!val) return 'suap_gratifikasi';
+  const lower = val.toLowerCase();
+  if (lower.includes('bansos') || lower.includes('bencana')) return 'bansos_bencana';
+  if (lower.includes('tambang') || lower.includes('sda') || lower.includes('izin') || lower.includes('lingkungan')) return 'perizinan_sda_tambang';
+  if (lower.includes('peradilan') || lower.includes('hakim') || lower.includes('jaksa') || lower.includes('polisi') || lower.includes('mafia')) return 'mafia_peradilan';
+  if (lower.includes('pengadaan') || lower.includes('proyek') || lower.includes('jasa')) return 'pengadaan_barang_jasa';
+  return 'suap_gratifikasi';
+};
+
+const mapLegalStatus = (val?: string): 'tersangka' | 'terdakwa' | 'divonis_inkrah' | 'bebas' => {
+  if (!val) return 'tersangka';
+  const lower = val.toLowerCase();
+  if (lower.includes('inkrah') || lower.includes('vonis') || lower.includes('terpidana')) return 'divonis_inkrah';
+  if (lower.includes('terdakwa') || lower.includes('sidang')) return 'terdakwa';
+  if (lower.includes('bebas') || lower.includes('praperadilan')) return 'bebas';
+  return 'tersangka';
+};
+
+// POST /api/admin/ai-command
+router.post('/ai-command', async (req, res) => {
+  try {
+    const { command, history = [] } = req.body;
+    if (!command || typeof command !== 'string' || !command.trim()) {
+      return res.status(400).json({ error: 'Teks perintah wajib disertakan' });
+    }
+
+    const aiResult = await processAdminCommand(command, history);
+
+    const logId = `audit-${Date.now()}`;
+    await db.insert(schema.auditLogs).values({
+      id: logId,
+      admin_user_id: req.admin?.id,
+      entity_type: 'cases',
+      entity_id: 'pending',
+      action: 'create',
+      diff_snapshot: {
+        perintah_asli: command,
+        status: 'pending',
+        riwayat_klarifikasi: [
+          ...history,
+          { role: 'admin', text: command, timestamp: new Date().toISOString() },
+          { role: 'ai', text: aiResult.message, timestamp: new Date().toISOString() }
+        ],
+        hasil_ai: aiResult.is_draft_ready ? aiResult.draft : null
+      },
+      created_at: new Date()
+    });
+
+    res.json({
+      log_id: logId,
+      ...aiResult
+    });
+  } catch (err: any) {
+    console.error('Error in /api/admin/ai-command:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/cases/confirm
+router.post('/cases/confirm', async (req, res) => {
+  try {
+    const { log_id, catatan_admin } = req.body;
+    if (!log_id) {
+      return res.status(400).json({ error: 'log_id wajib disertakan untuk konfirmasi' });
+    }
+
+    const [log] = await db
+      .select()
+      .from(schema.auditLogs)
+      .where(eq(schema.auditLogs.id, log_id));
+
+    if (!log) {
+      return res.status(404).json({ error: 'Log audit tidak ditemukan' });
+    }
+
+    const diff = (log.diff_snapshot as any) || {};
+    const draft = diff.hasil_ai;
+    if (!draft || !draft.corruption_case || !draft.official) {
+      return res.status(400).json({ error: 'Draft belum lengkap atau belum siap dikonfirmasi' });
+    }
+
+    const provName = draft.official.provinsi || 'DKI Jakarta';
+    const provList = await db
+      .select()
+      .from(schema.provinces)
+      .where(sql`lower(${schema.provinces.name}) = lower(${provName})`)
+      .limit(1);
+    const prov = provList[0] || (await db.select().from(schema.provinces).limit(1))[0];
+    const provinceId = prov?.id || 'id-jk';
+
+    const year = Number(draft.corruption_case.tahun_kejadian) || new Date().getFullYear();
+    const allEras = await db.select().from(schema.presidentialEras);
+    const era = allEras.find(e => {
+      const start = new Date(e.start_date).getFullYear();
+      const end = e.end_date ? new Date(e.end_date).getFullYear() : 9999;
+      return year >= start && year <= end;
+    }) || allEras[0];
+    const eraId = era?.id || 'era-jokowi-2';
+
+    const lossAmount = Number(draft.corruption_case.nilai_kerugian_negara) || 0;
+    const legalStatus = mapLegalStatus(draft.corruption_case.status_hukum);
+    const sectorCategory = mapSectorCategory(draft.corruption_case.jenis_kasus);
+
+    // Official
+    let existingOfficial = await db.query.officials.findFirst({
+      where: sql`lower(${schema.officials.full_name}) = lower(${draft.official.nama})`
+    });
+
+    let officialId = existingOfficial?.id;
+    if (!existingOfficial) {
+      officialId = `off-${Date.now()}`;
+      await db.insert(schema.officials).values({
+        id: officialId,
+        full_name: draft.official.nama,
+        photo_url: draft.official.foto_url || null,
+        position_title: draft.official.jabatan || 'Pejabat Publik',
+        province_id: provinceId,
+        party_id: null,
+        total_loss_amount: lossAmount,
+        current_legal_status: legalStatus,
+        created_at: new Date(),
+        updated_at: new Date()
+      });
+    } else {
+      await db.update(schema.officials)
+        .set({
+          total_loss_amount: sql`${schema.officials.total_loss_amount} + ${lossAmount}`,
+          current_legal_status: legalStatus,
+          updated_at: new Date()
+        })
+        .where(eq(schema.officials.id, existingOfficial.id));
+    }
+
+    // Province counters
+    if (prov) {
+      await db.update(schema.provinces)
+        .set({
+          total_cases: sql`${schema.provinces.total_cases} + 1`,
+          total_loss_amount: sql`${schema.provinces.total_loss_amount} + ${lossAmount}`,
+          updated_at: new Date()
+        })
+        .where(eq(schema.provinces.id, prov.id));
+    }
+
+    // Create case
+    const caseId = `case-${Date.now()}`;
+    const sourceUrl = draft.sources?.[0]?.url || 'https://putusan3.mahkamahagung.go.id';
+
+    const [insertedCase] = await db.insert(schema.cases).values({
+      id: caseId,
+      title: `${draft.corruption_case.jenis_kasus || 'Tindak Pidana Korupsi'} - ${draft.official.nama}`,
+      primary_official_id: officialId!,
+      province_id: provinceId,
+      era_id: eraId,
+      sector_category: sectorCategory,
+      loss_amount: lossAmount,
+      fine_amount: 0,
+      restitution_amount: 0,
+      prison_sentence_months: legalStatus === 'divonis_inkrah' ? 48 : 0,
+      legal_status: legalStatus,
+      chronology: draft.corruption_case.ringkasan_kasus || 'Ringkasan perkara terverifikasi oleh tim kurator LKI.',
+      source_url: sourceUrl,
+      verified_by: req.admin?.id,
+      verified_at: new Date(),
+      case_date: new Date(year, 0, 1),
+      created_at: new Date(),
+      updated_at: new Date()
+    }).returning();
+
+    // Update the Audit Log
+    await db.update(schema.auditLogs)
+      .set({
+        entity_id: caseId,
+        action: 'create',
+        diff_snapshot: {
+          ...diff,
+          status: 'disetujui',
+          created_case_id: caseId,
+          title: insertedCase.title,
+          catatan_admin: catatan_admin || 'Disetujui oleh kurator via Panel Admin',
+          confirmed_at: new Date().toISOString()
+        }
+      })
+      .where(eq(schema.auditLogs.id, log_id));
+
+    res.json({
+      message: 'Data perkara korupsi berhasil diverifikasi dan dipublikasikan ke database resmi!',
+      case_id: caseId,
+      official_id: officialId
+    });
+  } catch (err: any) {
+    console.error('Error in /api/admin/cases/confirm:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/rollback/:log_id
+router.post('/rollback/:log_id', async (req, res) => {
+  try {
+    const { log_id } = req.params;
+
+    const [log] = await db
+      .select()
+      .from(schema.auditLogs)
+      .where(eq(schema.auditLogs.id, log_id));
+
+    if (!log) {
+      return res.status(404).json({ error: 'Log audit tidak ditemukan' });
+    }
+
+    const diff = (log.diff_snapshot as any) || {};
+    const caseId = (log.entity_type === 'cases' && log.entity_id !== 'pending') 
+      ? log.entity_id 
+      : diff.created_case_id;
+
+    if (!caseId) {
+      return res.status(400).json({ error: 'Tidak ada data perkara yang terhubung dengan log audit ini untuk di-rollback' });
+    }
+
+    const targetCase = await db.query.cases.findFirst({
+      where: eq(schema.cases.id, caseId)
+    });
+
+    if (targetCase) {
+      // Revert official's loss amount
+      if (targetCase.primary_official_id && targetCase.loss_amount > 0) {
+        await db.update(schema.officials)
+          .set({
+            total_loss_amount: sql`GREATEST(0, ${schema.officials.total_loss_amount} - ${targetCase.loss_amount})`,
+            updated_at: new Date()
+          })
+          .where(eq(schema.officials.id, targetCase.primary_official_id));
+      }
+
+      // Revert province loss & count
+      if (targetCase.province_id) {
+        await db.update(schema.provinces)
+          .set({
+            total_cases: sql`GREATEST(0, ${schema.provinces.total_cases} - 1)`,
+            total_loss_amount: sql`GREATEST(0, ${schema.provinces.total_loss_amount} - ${targetCase.loss_amount})`,
+            updated_at: new Date()
+          })
+          .where(eq(schema.provinces.id, targetCase.province_id));
+      }
+
+      // Delete the case
+      await db.delete(schema.cases).where(eq(schema.cases.id, caseId));
+    }
+
+    // Insert a new rollback record in auditLogs
+    const rollbackLogId = `audit-rollback-${Date.now()}`;
+    await db.insert(schema.auditLogs).values({
+      id: rollbackLogId,
+      admin_user_id: req.admin?.id,
+      entity_type: 'cases',
+      entity_id: caseId,
+      action: 'rollback',
+      diff_snapshot: {
+        original_log_id: log_id,
+        reverted_case_id: caseId,
+        title: targetCase?.title || diff.title || 'Perkara ditarik (rollback)',
+        perintah_asli: `Rollback perkara: ${targetCase?.title || caseId}`,
+        catatan_admin: `Data ditarik oleh ${req.admin?.username || 'admin'} pada ${new Date().toLocaleString('id-ID')}`,
+        status: 'ditolak'
+      },
+      created_at: new Date()
+    });
+
+    // Also update original log status
+    await db.update(schema.auditLogs)
+      .set({
+        action: 'rollback',
+        diff_snapshot: {
+          ...diff,
+          status: 'ditolak',
+          catatan_admin: `Di-rollback oleh ${req.admin?.username || 'admin'} pada ${new Date().toLocaleString('id-ID')}`
+        }
+      })
+      .where(eq(schema.auditLogs.id, log_id));
+
+    res.json({
+      message: 'Rollback berhasil! Data perkara telah ditarik dari database publik.'
+    });
+  } catch (err: any) {
+    console.error('Error in /api/admin/rollback:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/admin/audit-logs
 router.get('/audit-logs', async (req, res) => {
   try {
-    const logs = await db
+    const rawLogs = await db
       .select({
         id: schema.auditLogs.id,
+        admin_user_id: schema.auditLogs.admin_user_id,
         admin_username: schema.adminUsers.username,
         entity_type: schema.auditLogs.entity_type,
         entity_id: schema.auditLogs.entity_id,
@@ -487,10 +780,49 @@ router.get('/audit-logs', async (req, res) => {
       .from(schema.auditLogs)
       .leftJoin(schema.adminUsers, eq(schema.auditLogs.admin_user_id, schema.adminUsers.id))
       .orderBy(desc(schema.auditLogs.created_at))
-      .limit(50);
+      .limit(100);
+
+    const logs = rawLogs.map(l => {
+      const diff = (l.diff_snapshot as any) || {};
+      const status = diff.status || (
+        l.action === 'create' || l.action === 'approve_report' 
+          ? 'disetujui' 
+          : l.action === 'rollback' || l.action === 'reject_report' 
+          ? 'ditolak' 
+          : 'selesai'
+      );
+      const originalCommand = diff.perintah_asli || diff.command || diff.title || (
+        l.action === 'rollback' 
+          ? `Rollback perkara: ${l.entity_id}` 
+          : l.action === 'approve_report' 
+          ? `Menyetujui laporan warga untuk perkara: ${l.entity_id}` 
+          : l.action === 'reject_report'
+          ? `Menolak laporan warga untuk perkara: ${l.entity_id}`
+          : `Aksi ${l.action} pada ${l.entity_type} (${l.entity_id})`
+      );
+
+      return {
+        id: l.id,
+        admin_id: l.admin_username || l.admin_user_id || 'Admin',
+        admin_username: l.admin_username || 'admin',
+        entity_type: l.entity_type,
+        entity_id: l.entity_id,
+        action: l.action,
+        status: status,
+        perintah_asli: originalCommand,
+        riwayat_klarifikasi: diff.riwayat_klarifikasi || [],
+        hasil_ai: diff.hasil_ai || null,
+        created_case_id: (l.entity_type === 'cases' && l.entity_id !== 'pending') ? l.entity_id : diff.created_case_id || null,
+        catatan_admin: diff.catatan_admin || diff.notes || null,
+        diff_snapshot: l.diff_snapshot,
+        created_at: l.created_at,
+        timestamp: l.created_at ? new Date(l.created_at).toISOString() : new Date().toISOString()
+      };
+    });
 
     res.json(logs);
   } catch (err: any) {
+    console.error('Error in /api/admin/audit-logs:', err);
     res.status(500).json({ error: err.message });
   }
 });
