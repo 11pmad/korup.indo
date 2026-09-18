@@ -1,5 +1,6 @@
 import { db } from './index.js';
 import * as schema from './schema.js';
+import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
 export async function seed() {
@@ -771,7 +772,7 @@ export async function seed() {
         total_cases: totalCount,
         updated_at: new Date()
       })
-      .where(schema.provinces.id === prov.id as any);
+      .where(eq(schema.provinces.id, prov.id));
   }
 
   // Update parties aggregates
@@ -787,7 +788,7 @@ export async function seed() {
         total_loss_amount: totalLoss,
         total_cases: totalCount
       })
-      .where(schema.parties.id === party.id as any);
+      .where(eq(schema.parties.id, party.id));
   }
 
   console.log('✅ Seeding database LKI berhasil selesai dengan sempurna!');
