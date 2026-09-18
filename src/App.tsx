@@ -20,7 +20,12 @@ import { sound } from './utils/audio.js';
 import { Loader2 } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin'>('beranda');
+  const [activeTab, setActiveTab] = useState<'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin'>(() => {
+    if (typeof window !== 'undefined' && (window.location.pathname === '/admin' || window.location.hash === '#admin')) {
+      return 'admin';
+    }
+    return 'beranda';
+  });
   
   // Data states
   const [cases, setCases] = useState<CorruptionCase[]>([]);
@@ -34,6 +39,19 @@ export default function App() {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [reportModalOpen, setReportModalOpen] = useState<boolean>(false);
   const [reportTargetCaseId, setReportTargetCaseId] = useState<string | null>(null);
+
+  // Sync browser back/forward history
+  useEffect(() => {
+    const handlePopState = () => {
+      if (window.location.pathname === '/admin' || window.location.hash === '#admin') {
+        setActiveTab('admin');
+      } else {
+        setActiveTab('beranda');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const loadAllData = async () => {
     setIsLoading(true);
@@ -94,6 +112,22 @@ export default function App() {
     setReportTargetCaseId(caseId || (cases[0]?.id || null));
     setReportModalOpen(true);
   };
+
+  // DEDICATED ADMIN PORTAL VIEW (Page layout with sidebar)
+  if (activeTab === 'admin') {
+    return (
+      <AdminPanel 
+        onRefreshData={loadAllData} 
+        onBackToHome={() => {
+          sound.playPop();
+          setActiveTab('beranda');
+          if (typeof window !== 'undefined' && window.location.pathname === '/admin') {
+            window.history.pushState({}, '', '/');
+          }
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col selection:bg-[#FDE047] selection:text-[#713F12]">
@@ -176,14 +210,6 @@ export default function App() {
                 onSelectCase={(id) => setSelectedCaseId(id)}
               />
             )}
-
-            {/* TAB: ADMIN AI ASSISTANT */}
-            {activeTab === 'admin' && (
-              <AdminPanel 
-                onRefreshData={loadAllData} 
-                onBackToHome={() => setActiveTab('beranda')}
-              />
-            )}
           </>
         )}
 
@@ -208,7 +234,15 @@ export default function App() {
       />
 
       {/* Scrapbook Footer */}
-      <Footer onOpenAdmin={() => setActiveTab('admin')} />
+      <Footer 
+        onOpenAdmin={() => {
+          sound.playPop();
+          setActiveTab('admin');
+          if (typeof window !== 'undefined') {
+            window.history.pushState({}, '', '/admin');
+          }
+        }} 
+      />
 
     </div>
   );

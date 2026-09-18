@@ -21,6 +21,10 @@ import {
   Check,
   X
 } from 'lucide-react';
+import { AdminLayout, AdminSubtab } from './admin/AdminLayout.js';
+import { AdminDashboardOverview } from './admin/AdminDashboardOverview.js';
+import { AdminCasesManager } from './admin/AdminCasesManager.js';
+import { AdminOfficialsManager } from './admin/AdminOfficialsManager.js';
 
 interface AdminPanelProps {
   onRefreshData: () => void;
@@ -45,7 +49,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Active view tab
-  const [activeTab, setActiveTab] = useState<'ai' | 'manual' | 'audit' | 'reports'>('ai');
+  const [activeTab, setActiveTab] = useState<AdminSubtab>('dashboard');
 
   // AI Chat state
   const [chatInput, setChatInput] = useState<string>('');
@@ -341,187 +345,132 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
     }
   };
 
-  // If not logged in, show scrapbook login gate
+  // If not logged in, show modern dedicated login gate
   if (!isAuthenticated) {
     return (
-      <div id="admin-login-screen" className="max-w-md mx-auto py-12 px-4 space-y-4">
-        {onBackToHome && (
-          <button
-            onClick={onBackToHome}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#64748B] hover:text-[#1E293B] transition-colors cursor-pointer bg-[#FAF5E8] px-3 py-1.5 rounded-xl border border-[#D5C9AB]"
-          >
-            ← Kembali ke Beranda Publik
-          </button>
-        )}
-        <div className="relative bg-[#FFFDF9] border-3 border-[#E7DECB] rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
-          <div className="washi-tape washi-tape-yellow -top-3 left-12"></div>
-          <div className="washi-tape washi-tape-pink -top-3 right-12"></div>
-
+      <div id="admin-login-screen" className="min-h-screen bg-[#0B0F19] flex items-center justify-center p-4 selection:bg-[#DC2626] selection:text-white">
+        <div className="w-full max-w-md space-y-6">
+          {/* Header Logo */}
           <div className="text-center space-y-2">
-            <div className="w-16 h-16 bg-[#FEE2E2] text-[#DC2626] rounded-2xl mx-auto flex items-center justify-center border border-[#FECACA] shadow-inner rotate-[-3deg]">
-              <Lock className="w-8 h-8" />
+            <div className="w-14 h-14 bg-gradient-to-br from-[#DC2626] to-[#991B1B] text-white rounded-2xl mx-auto flex items-center justify-center shadow-lg border border-red-500/30">
+              <Lock className="w-7 h-7" />
             </div>
-            <h2 className="font-marker text-3xl text-[#1E293B]">
-              Ruang Admin &amp; Kurasi
-            </h2>
-            <p className="text-xs text-[#64748B]">
-              Masuk untuk menggunakan AI Assistant, memvalidasi bukti, dan memoderasi database.
+            <h1 className="text-2xl font-bold text-white tracking-wide">
+              Portal Verifikator LKI
+            </h1>
+            <p className="text-xs text-slate-400">
+              Area khusus tim kurator &amp; moderasi data putusan peradilan
             </p>
           </div>
 
-          <div className="p-3 bg-[#FEF9C3] border border-[#FACC15] rounded-2xl text-xs text-[#854D0E] space-y-1">
-            <div className="font-bold flex items-center gap-1.5">
-              <span>🔑 Kredensial Pengujian:</span>
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5">
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-xs text-amber-300 space-y-1">
+              <div className="font-bold flex items-center gap-1.5">
+                <span>🔑 Kredensial Pengujian:</span>
+              </div>
+              <div className="flex items-center justify-between font-mono text-[11px]">
+                <span>Username: <strong>admin</strong></span>
+                <span>Password: <strong>admin123</strong></span>
+              </div>
             </div>
-            <div>Username: <strong className="font-mono">admin</strong></div>
-            <div>Password: <strong className="font-mono">admin123</strong></div>
+
+            {authError && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-400">
+                {authError}
+              </div>
+            )}
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  value={authUsername}
+                  onChange={e => setAuthUsername(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-[#DC2626] focus:outline-none"
+                  placeholder="admin"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={authPassword}
+                  onChange={e => setAuthPassword(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-[#DC2626] focus:outline-none"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-2.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold rounded-xl text-xs transition-colors shadow-md flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Unlock className="w-4 h-4" />
+                <span>Masuk ke Panel Kurator</span>
+              </button>
+            </form>
+
+            {onBackToHome && (
+              <div className="pt-3 border-t border-slate-800/80 text-center">
+                <button
+                  type="button"
+                  onClick={onBackToHome}
+                  className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  ← Kembali ke Portal Publik
+                </button>
+              </div>
+            )}
           </div>
-
-          {authError && (
-            <div className="p-3 bg-[#FEF2F2] border border-[#FECACA] rounded-xl text-xs text-[#991B1B]">
-              {authError}
-            </div>
-          )}
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-[#475569] mb-1">
-                Username
-              </label>
-              <input
-                type="text"
-                value={authUsername}
-                onChange={e => setAuthUsername(e.target.value)}
-                className="w-full bg-[#FAF5E8] border border-[#D5C9AB] rounded-xl px-3 py-2 text-sm text-[#1F2937] focus:ring-2 focus:ring-[#DC2626] focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#475569] mb-1">
-                Password
-              </label>
-              <input
-                type="password"
-                value={authPassword}
-                onChange={e => setAuthPassword(e.target.value)}
-                className="w-full bg-[#FAF5E8] border border-[#D5C9AB] rounded-xl px-3 py-2 text-sm text-[#1F2937] focus:ring-2 focus:ring-[#DC2626] focus:outline-none"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full py-2.5 bg-[#DC2626] text-white font-bold rounded-xl text-sm hover:bg-[#B91C1C] transition-colors shadow-md flex items-center justify-center gap-2"
-            >
-              <Unlock className="w-4 h-4" />
-              <span>Masuk Ruang Kurator</span>
-            </button>
-          </form>
         </div>
       </div>
     );
   }
 
   return (
-    <div id="admin-panel-section" className="space-y-6">
-      
-      {/* Top Header Card */}
-      <div className="relative bg-[#FFFDF9] border-2 border-[#E7DECB] rounded-3xl p-5 sm:p-6 shadow-sm">
-        <div className="washi-tape washi-tape-purple -top-3 left-10"></div>
-        <div className="washi-tape washi-tape-green -top-3 right-10"></div>
+    <AdminLayout
+      activeSubtab={activeTab}
+      setActiveSubtab={setActiveTab}
+      onLogout={handleLogout}
+      onBackToPublic={onBackToHome || (() => {})}
+      pendingReportsCount={reports.filter(r => (r.status as string) === 'menunggu_review' || (r.status as string) === 'pending_review').length}
+      adminUsername={authUsername || 'admin'}
+    >
+      {/* TAB 1: DASHBOARD OVERVIEW */}
+      {activeTab === 'dashboard' && (
+        <AdminDashboardOverview
+          authToken={authToken}
+          auditLogs={auditLogs}
+          reports={reports}
+          onNavigate={setActiveTab}
+          onRefresh={onRefreshData}
+        />
+      )}
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-[#FFE4E6] border border-[#FECDD3] text-[#E11D48] flex items-center justify-center shadow-inner rotate-[-2deg]">
-              <Sparkles className="w-6 h-6 text-[#E11D48]" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-marker text-2xl sm:text-3xl text-[#1E293B]">
-                  Pusat Kurasi &amp; AI Assistant
-                </h2>
-                <span className="px-2 py-0.5 bg-[#DCFCE7] text-[#166534] font-bold text-[10px] rounded-full border border-[#86EFAC]">
-                  Human-in-the-Loop
-                </span>
-              </div>
-              <p className="text-xs text-[#64748B]">
-                Input data dengan perintah bahasa alami, klarifikasi bertahap, dan konfirmasi manusia sebelum publikasi.
-              </p>
-            </div>
-          </div>
+      {/* TAB 2: CASES MANAGER */}
+      {activeTab === 'cases' && (
+        <AdminCasesManager
+          authToken={authToken}
+          onOpenCreate={() => setActiveTab('manual')}
+          onRefreshGlobal={onRefreshData}
+        />
+      )}
 
-          {/* Subtabs */}
-          <div className="flex items-center gap-1.5 bg-[#F4EDE0] p-1.5 rounded-2xl border border-[#DFD3BA] overflow-x-auto">
-            <button
-              onClick={() => {
-                sound.playPop();
-                setActiveTab('ai');
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'ai' ? 'bg-[#DC2626] text-white shadow-xs' : 'text-[#57534E] hover:bg-[#EBE0C8]'
-              }`}
-            >
-              <MessageSquare className="w-3.5 h-3.5" /> AI Chat Assistant
-            </button>
+      {/* TAB 3: OFFICIALS MANAGER */}
+      {activeTab === 'officials' && (
+        <AdminOfficialsManager
+          authToken={authToken}
+          onRefreshGlobal={onRefreshData}
+        />
+      )}
 
-            <button
-              onClick={() => {
-                sound.playPop();
-                setActiveTab('manual');
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'manual' ? 'bg-[#EA580C] text-white shadow-xs' : 'text-[#57534E] hover:bg-[#EBE0C8]'
-              }`}
-            >
-              <FileEdit className="w-3.5 h-3.5" /> Input Manual
-            </button>
-
-            <button
-              onClick={() => {
-                sound.playPop();
-                setActiveTab('audit');
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'audit' ? 'bg-[#0284C7] text-white shadow-xs' : 'text-[#57534E] hover:bg-[#EBE0C8]'
-              }`}
-            >
-              <History className="w-3.5 h-3.5" /> Log Audit &amp; Rollback
-            </button>
-
-            <button
-              onClick={() => {
-                sound.playPop();
-                setActiveTab('reports');
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'reports' ? 'bg-[#7C3AED] text-white shadow-xs' : 'text-[#57534E] hover:bg-[#EBE0C8]'
-              }`}
-            >
-              <ShieldCheck className="w-3.5 h-3.5" /> Moderasi Laporan (
-              {reports.filter(r => (r.status as string) === 'menunggu_review' || (r.status as string) === 'pending_review').length})
-            </button>
-
-            {onBackToHome && (
-              <button
-                onClick={onBackToHome}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold text-[#475569] hover:bg-[#EBE0C8] hover:text-[#0F172A] transition-colors whitespace-nowrap"
-                title="Kembali ke tampilan utama portal"
-              >
-                ← Beranda Publik
-              </button>
-            )}
-
-            <button
-              onClick={handleLogout}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold text-[#DC2626] hover:bg-[#FEE2E2] transition-colors whitespace-nowrap border border-transparent hover:border-[#FECACA]"
-              title="Keluar dari sesi admin"
-            >
-              Keluar
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* TAB 1: AI ASSISTANT CHAT & DRAFT */}
+      {/* TAB 4: AI ASSISTANT CHAT & DRAFT */}
       {activeTab === 'ai' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
@@ -1134,6 +1083,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
         </div>
       )}
 
-    </div>
+    </AdminLayout>
   );
 };
