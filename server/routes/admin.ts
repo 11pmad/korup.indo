@@ -928,5 +928,113 @@ router.put('/settings/announcement', async (req, res) => {
   }
 });
 
+// --- SETTINGS: DONATION & QRIS ---
+const DEFAULT_DONATION = {
+  title: '☕ Dukung Independensi & Operasional LKI',
+  description: 'Bantu operasional server, infrastruktur pangkalan data, verifikasi berkas direktori putusan peradilan, dan keterbukaan informasi korupsi Indonesia tanpa kompromi.',
+  qris_image_url: '',
+  account_name: 'Pengelola Liga Korupsi Indonesia',
+  bank_info: 'Bisa discan melalui seluruh aplikasi Mobile Banking (BCA, Mandiri, BRI, BNI) & E-Wallet (GoPay, OVO, Dana, ShopeePay, LinkAja)',
+  is_active: true,
+  updated_at: new Date().toISOString(),
+  updated_by: 'system'
+};
+
+const donationInputSchema = z.object({
+  title: z.string().min(2, 'Judul minimal 2 karakter').max(150, 'Judul maksimal 150 karakter'),
+  description: z.string().max(1000, 'Deskripsi maksimal 1000 karakter').optional().default(''),
+  qris_image_url: z.string().max(10000000, 'Ukuran gambar/URL melebihi batas').optional().default(''),
+  account_name: z.string().max(100, 'Nama akun maksimal 100 karakter').optional().default(''),
+  bank_info: z.string().max(500, 'Info bank maksimal 500 karakter').optional().default(''),
+  is_active: z.boolean().default(true)
+});
+
+// GET /api/admin/settings/donation
+router.get('/settings/donation', async (req, res) => {
+  try {
+    const filePath = path.join(process.cwd(), 'data', 'donation.json');
+    if (fs.existsSync(filePath)) {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      return res.json(data);
+    }
+    res.json(DEFAULT_DONATION);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/admin/settings/donation
+router.put('/settings/donation', async (req, res) => {
+  try {
+    const parsed = donationInputSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: 'Format data donasi / QRIS tidak valid.',
+        details: parsed.error.issues
+      });
+    }
+
+    const filePath = path.join(process.cwd(), 'data', 'donation.json');
+    let prevConfig = DEFAULT_DONATION;
+    if (fs.existsSync(filePath)) {
+      try {
+        prevConfig = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      } catch (e) {
+        // use default
+      }
+    }
+
+    const updatedConfig = {
+      title: parsed.data.title,
+      description: parsed.data.description,
+      qris_image_url: parsed.data.qris_image_url,
+      account_name: parsed.data.account_name,
+      bank_info: parsed.data.bank_info,
+      is_active: parsed.data.is_active,
+      updated_at: new Date().toISOString(),
+      updated_by: req.admin?.username || 'admin'
+    };
+
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(updatedConfig, null, 2), 'utf8');
+
+    // Catat ke audit_logs
+    try {
+      await db.insert(schema.auditLogs).values({
+        id: crypto.randomUUID(),
+        admin_user_id: req.admin?.id || null,
+        entity_type: 'settings',
+        entity_id: 'donation',
+        action: 'update',
+        diff_snapshot: {
+          action_name: 'Perbarui Pengaturan Donasi & QRIS Admin',
+          perintah_asli: `Admin ${req.admin?.username || 'admin'} memperbarui data QRIS / donasi [a.n ${updatedConfig.account_name || 'Admin'}]`,
+          previous: {
+            ...prevConfig,
+            qris_image_url: prevConfig.qris_image_url ? (prevConfig.qris_image_url.startsWith('data:') ? '[Base64 Image]' : prevConfig.qris_image_url) : ''
+          },
+          updated: {
+            ...updatedConfig,
+            qris_image_url: updatedConfig.qris_image_url ? (updatedConfig.qris_image_url.startsWith('data:') ? '[Base64 Image]' : updatedConfig.qris_image_url) : ''
+          },
+          status: 'selesai'
+        },
+        created_at: new Date()
+      });
+    } catch (auditErr) {
+      console.warn('Gagal mencatat audit log donation:', auditErr);
+    }
+
+    res.json({
+      message: 'Pengaturan donasi & QRIS berhasil diperbarui!',
+      data: updatedConfig
+    });
+  } catch (err: any) {
+    console.error('Error in PUT /api/admin/settings/donation:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
+
 

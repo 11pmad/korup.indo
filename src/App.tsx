@@ -9,6 +9,7 @@ import { SearchCasesView } from './components/SearchCasesView.js';
 import { AdminPanel } from './components/AdminPanel.js';
 import { CaseDetailModal } from './components/CaseDetailModal.js';
 import { ReportModal } from './components/ReportModal.js';
+import { SupportDonationSection } from './components/SupportDonationSection.js';
 import { Footer } from './components/Footer.js';
 import { 
   CorruptionCase, 
@@ -233,8 +234,12 @@ export default function App() {
         }))}
       />
 
+      {/* Support & Admin QRIS Donation Card */}
+      <SupportDonationSection />
+
       {/* Scrapbook Footer */}
       <Footer 
+
         onOpenAdmin={() => {
           sound.playPop();
           setActiveTab('admin');

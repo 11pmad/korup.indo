@@ -1,0 +1,10 @@
+{
+  "title": "☕ Dukung Independensi Riset LKI",
+  "description": "Bantu operasional server, database perkara, dan penelusuran putusan inkracht pengadilan.",
+  "qris_image_url": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://github.com/ip1mad/korup.indo",
+  "account_name": "PENGELOLA LKI PEDULI",
+  "bank_info": "BCA 8899001122 a.n Admin LKI • QRIS all bank & e-wallet",
+  "is_active": true,
+  "updated_at": "2026-09-18T18:50:22.376Z",
+  "updated_by": "admin"
+}

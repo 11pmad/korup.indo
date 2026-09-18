@@ -14,11 +14,12 @@ import {
   Shield, 
   ChevronRight,
   Database,
-  Bell
+  Bell,
+  QrCode
 } from 'lucide-react';
 import { sound } from '../../utils/audio.js';
 
-export type AdminSubtab = 'dashboard' | 'ai' | 'cases' | 'officials' | 'reports' | 'audit' | 'manual' | 'announcement';
+export type AdminSubtab = 'dashboard' | 'ai' | 'cases' | 'officials' | 'reports' | 'audit' | 'manual' | 'announcement' | 'donation';
 
 interface AdminLayoutProps {
   activeSubtab: AdminSubtab;
@@ -55,7 +56,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     },
     { id: 'audit' as AdminSubtab, label: 'Log Audit & Rollback', icon: History },
     { id: 'manual' as AdminSubtab, label: 'Formulir Input Manual', icon: FileEdit },
-    { id: 'announcement' as AdminSubtab, label: 'Teks Pemberitahuan', icon: Bell }
+    { id: 'announcement' as AdminSubtab, label: 'Teks Pemberitahuan', icon: Bell },
+    { id: 'donation' as AdminSubtab, label: 'Donasi & QRIS Admin', icon: QrCode }
   ];
 
   const handleNav = (tab: AdminSubtab) => {
@@ -74,6 +76,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       case 'audit': return 'Jejak Audit & Rollback Mutasi';
       case 'manual': return 'Formulir Input Manual';
       case 'announcement': return 'Pengaturan Teks Pemberitahuan Hukum';
+      case 'donation': return 'Pengaturan Donasi & Kode QRIS Admin';
       default: return 'Panel Kurasi LKI';
     }
   };

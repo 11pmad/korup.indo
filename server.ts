@@ -24,7 +24,8 @@ import { generalApiLimiter } from './server/middleware/rateLimit.js';
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // General rate limiter for API routes
 app.use('/api/', generalApiLimiter);
@@ -64,6 +65,32 @@ app.get('/api/settings/announcement', (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Public Settings: Donation & Admin QRIS
+const DEFAULT_DONATION = {
+  title: '☕ Dukung Independensi & Operasional LKI',
+  description: 'Bantu operasional server, infrastruktur pangkalan data, verifikasi berkas direktori putusan peradilan, dan keterbukaan informasi korupsi Indonesia tanpa kompromi.',
+  qris_image_url: '',
+  account_name: 'Pengelola Liga Korupsi Indonesia',
+  bank_info: 'Bisa discan melalui seluruh aplikasi Mobile Banking (BCA, Mandiri, BRI, BNI) & E-Wallet (GoPay, OVO, Dana, ShopeePay, LinkAja)',
+  is_active: true,
+  updated_at: new Date().toISOString(),
+  updated_by: 'system'
+};
+
+app.get('/api/settings/donation', (req, res) => {
+  try {
+    const filePath = path.join(process.cwd(), 'data', 'donation.json');
+    if (fs.existsSync(filePath)) {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      return res.json(data);
+    }
+    res.json(DEFAULT_DONATION);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // 2. Compatibility Endpoints for existing frontend components
 
