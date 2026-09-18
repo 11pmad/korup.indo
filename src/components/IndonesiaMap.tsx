@@ -1,7 +1,8 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { RegionSummary, CorruptionCase } from '../types.js';
 import { formatRupiah } from '../utils/formatters.js';
 import { sound } from '../utils/audio.js';
+import { getOfficialPhoto, handleImageError } from '../utils/photo.js';
 import { INDONESIA_PROVINCES_GEO, ProvincePolygon } from '../data/provincesGeo.js';
 import { WatercolorLadder } from './WatercolorLadder.js';
 import { 
@@ -16,7 +17,10 @@ import {
   Search, 
   ChevronRight,
   TrendingUp,
-  X
+  X,
+  ShieldAlert,
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 
 interface IndonesiaMapProps {
@@ -25,6 +29,7 @@ interface IndonesiaMapProps {
   selectedProvince: string | null;
   onSelectProvince: (province: string | null) => void;
   onSelectCase: (caseId: string) => void;
+  onOpenReport?: (provinceName?: string) => void;
 }
 
 function normalizeName(name: string): string {
@@ -42,6 +47,7 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
   selectedProvince,
   onSelectProvince,
   onSelectCase,
+  onOpenReport,
 }) => {
   const [colorMode, setColorMode] = useState<'kerugian' | 'kasus' | 'scrapbook'>('kerugian');
   const [hoveredProvince, setHoveredProvince] = useState<ProvincePolygon | null>(null);
@@ -51,6 +57,53 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [activeLadderTier, setActiveLadderTier] = useState<string | null>(null);
   const [hoveredLadderTier, setHoveredLadderTier] = useState<string | null>(null);
+
+  // Live database fetching state for selected province
+  const [liveData, setLiveData] = useState<{
+    province: {
+      id: string;
+      name: string;
+      island_cluster: string;
+      total_cases: number;
+      total_loss_amount: number;
+    };
+    stats: {
+      total_cases: number;
+      total_loss_amount: number;
+      sector_breakdown: Record<string, number>;
+      status_breakdown: Record<string, number>;
+    };
+    cases: CorruptionCase[];
+  } | null>(null);
+  const [loadingLive, setLoadingLive] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!selectedProvince) {
+      setLiveData(null);
+      return;
+    }
+
+    let active = true;
+    const fetchProvinceLive = async () => {
+      setLoadingLive(true);
+      try {
+        const res = await fetch(`/api/provinces/${encodeURIComponent(selectedProvince)}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (active) {
+            setLiveData(json);
+          }
+        }
+      } catch (err) {
+        console.error('Gagal mengambil data live provinsi:', err);
+      } finally {
+        if (active) setLoadingLive(false);
+      }
+    };
+
+    fetchProvinceLive();
+    return () => { active = false; };
+  }, [selectedProvince]);
 
   const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -110,12 +163,18 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
     return counts;
   }, [regionMap, colorMode, maxKerugian, maxKasus]);
 
-  // Cases for currently selected province
+  // Cases for currently selected province (prioritizing live PostgreSQL database data)
   const selectedProvinceCases = useMemo(() => {
     if (!selectedProvince) return [];
+    if (liveData && Array.isArray(liveData.cases)) {
+      return liveData.cases;
+    }
     const norm = normalizeName(selectedProvince).toLowerCase();
-    return cases.filter(c => normalizeName(c.official?.provinsi || '').toLowerCase() === norm);
-  }, [cases, selectedProvince]);
+    return cases.filter(c => {
+      const caseProv = c.official?.provinsi || c.province_name || '';
+      return normalizeName(caseProv).toLowerCase() === norm;
+    });
+  }, [cases, selectedProvince, liveData]);
 
   // Sort provinces so hovered, selected, and active ladder matches are rendered last (on top in SVG layer stack)
   const sortedProvinces = useMemo(() => {
@@ -206,9 +265,18 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
 
   const filteredProvinces = INDONESIA_PROVINCES_GEO;
 
-  const selectedSummary = selectedProvince
-    ? regionMap.get(normalizeName(selectedProvince).toLowerCase())
-    : null;
+  const selectedSummary = useMemo(() => {
+    if (!selectedProvince) return null;
+    if (liveData && liveData.province) {
+      return {
+        provinsi: liveData.province.name,
+        total_kasus: liveData.province.total_cases,
+        total_kerugian: liveData.province.total_loss_amount,
+        island_group: liveData.province.island_cluster
+      };
+    }
+    return regionMap.get(normalizeName(selectedProvince).toLowerCase()) || null;
+  }, [selectedProvince, liveData, regionMap]);
 
   return (
     <div id="peta-nusantara-section" className="space-y-6">
@@ -220,16 +288,14 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h2 className="font-marker text-2xl sm:text-3xl text-[#1E293B]">
                 Peta Korupsi 38 Provinsi Nusantara
               </h2>
-              <span className="px-2.5 py-0.5 bg-[#FEF08A] text-[#854D0E] font-bold text-xs rounded-full border border-[#FACC15]">
-                Poligon Akurat
-              </span>
+
             </div>
             <p className="text-xs sm:text-sm text-[#64748B] mt-0.5">
-              Setiap batas wilayah provinsi dipetakan dengan poligon berkoordinat geografis presisi tinggi berbalut tekstur kertas scrapbook.
+              Visualisasi sebaran kasus korupsi di 38 provinsi berdasarkan data berkas perkara peradilan resmi.
             </p>
           </div>
 
@@ -657,11 +723,21 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#EAE0CD] gap-3">
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-2xl">📍</span>
                 <h3 className="font-marker text-2xl sm:text-3xl text-[#1E293B]">
                   Berkas Perkara di Provinsi {selectedProvince}
                 </h3>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-full text-[11px] font-bold shadow-2xs">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Data Terverifikasi</span>
+                </span>
+                {loadingLive && (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded-full">
+                    <Loader2 className="w-3 h-3 animate-spin text-amber-600" />
+                    <span>Sinkronisasi...</span>
+                  </span>
+                )}
               </div>
               <p className="text-xs sm:text-sm text-[#64748B] mt-0.5">
                 Ditemukan <strong>{selectedProvinceCases.length}</strong> perkara tercatat dengan total akumulasi kerugian negara{' '}
@@ -671,18 +747,58 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
               </p>
             </div>
 
-            <button
-              onClick={() => onSelectProvince(null)}
-              className="px-3.5 py-1.5 bg-[#F4EDE0] text-[#44403C] hover:bg-[#E8DDC6] rounded-xl text-xs font-bold transition-colors self-start sm:self-auto flex items-center gap-1"
-            >
-              <X className="w-4 h-4" /> Tutup Berkas Wilayah
-            </button>
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              {onOpenReport && (
+                <button
+                  onClick={() => {
+                    sound.playPop();
+                    onOpenReport(selectedProvince);
+                  }}
+                  className="px-3.5 py-1.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                  title="Usulkan kasus korupsi baru di provinsi ini"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span>+ Usul Kasus di {selectedProvince}</span>
+                </button>
+              )}
+              <button
+                onClick={() => onSelectProvince(null)}
+                className="px-3.5 py-1.5 bg-[#F4EDE0] text-[#44403C] hover:bg-[#E8DDC6] rounded-xl text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <X className="w-4 h-4" /> Tutup
+              </button>
+            </div>
           </div>
 
           {/* List of cases in selected province */}
-          {selectedProvinceCases.length === 0 ? (
-            <div className="p-8 text-center text-gray-500 font-hand text-lg bg-[#FAF5E8] rounded-2xl border-2 border-dashed border-[#E3D7BD]">
-              Belum ada berkas kasus yang tercatat di {selectedProvince}.
+          {loadingLive ? (
+            <div className="py-12 text-center bg-[#FAF5E8] rounded-2xl border-2 border-dashed border-[#E3D7BD] space-y-3">
+              <Loader2 className="w-8 h-8 text-amber-600 animate-spin mx-auto" />
+              <p className="font-hand text-base text-slate-700 font-bold">
+                Memuat berkas perkara peradilan...
+              </p>
+            </div>
+          ) : selectedProvinceCases.length === 0 ? (
+            <div className="p-8 text-center bg-[#FAF5E8] rounded-3xl border-2 border-dashed border-[#E3D7BD] space-y-3">
+              <div className="text-3xl">🌿</div>
+              <h4 className="font-bold text-base text-slate-800 font-sans">
+                Belum Ada Berkas Kasus yang Tercatat di {selectedProvince}
+              </h4>
+              <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+                Basis data LKI belum mencatat berkas perkara peradilan resmi berkekuatan hukum tetap untuk wilayah {selectedProvince}. Anda mengetahui adanya dugaan kasus yang sudah terbit di media massa atau direktori putusan pengadilan?
+              </p>
+              {onOpenReport && (
+                <button
+                  onClick={() => {
+                    sound.playPop();
+                    onOpenReport(selectedProvince);
+                  }}
+                  className="px-4 py-2 bg-[#DC2626] hover:bg-[#B91C1C] text-white text-xs font-bold rounded-xl shadow-sm transition-all inline-flex items-center gap-2 cursor-pointer"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span>Usulkan Berkas Kasus Baru di {selectedProvince}</span>
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -702,9 +818,10 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
                   <div className="space-y-2.5 pt-2">
                     <div className="flex items-start gap-3">
                       <img
-                        src={item.official?.foto_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80'}
-                        alt={item.official?.nama}
+                        src={getOfficialPhoto(item.official?.foto_url)}
+                        alt={item.official?.nama || 'Foto Pejabat'}
                         referrerPolicy="no-referrer"
+                        onError={handleImageError}
                         className="w-14 h-14 rounded-xl object-cover border border-[#E2D6B8] shrink-0 bg-[#F5EFE1]"
                       />
                       <div className="min-w-0 flex-1">

@@ -25,8 +25,11 @@ import {
   DollarSign,
   Calendar,
   Layers,
-  Info
+  Info,
+  Image as ImageIcon,
+  Upload
 } from 'lucide-react';
+import { getOfficialPhoto, handleImageError } from '../utils/photo.js';
 
 export const PROVINCES_LIST = [
   { id: 'pusat', name: 'Pusat / Nasional (Kementerian / Lembaga RI)' },
@@ -99,6 +102,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   // ==================== STATE: USULAN KASUS BARU ====================
   const [newTitle, setNewTitle] = useState<string>('');
   const [newSuspect, setNewSuspect] = useState<string>('');
+  const [newSuspectPhotoUrl, setNewSuspectPhotoUrl] = useState<string>('');
   const [newInstitution, setNewInstitution] = useState<string>('');
   const [newProvinceId, setNewProvinceId] = useState<string>('dki-jakarta');
   const [newSector, setNewSector] = useState<string>('suap_gratifikasi');
@@ -187,7 +191,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
     const selectedProvObj = PROVINCES_LIST.find(p => p.id === newProvinceId);
     const selectedSectorObj = SECTORS_LIST.find(s => s.id === newSector);
 
-    const fullDescription = `[USULAN KASUS BARU]\nJudul Kasus: ${newTitle.trim()}\nTerduga: ${newSuspect.trim()}\nInstansi: ${newInstitution.trim() || '-'}\nWilayah: ${selectedProvObj?.name || newProvinceId}\nSektor: ${selectedSectorObj?.label || newSector}\nEstimasi Kerugian: ${formatRupiah(parsedNewLoss)}\nStatus Hukum: ${newLegalStatus}\nTahun Kejadian: ${newIncidentYear}\n\nKronologi Perkara:\n${newChronology.trim()}`;
+    const fullDescription = `[USULAN KASUS BARU]\nJudul Kasus: ${newTitle.trim()}\nTerduga: ${newSuspect.trim()}\nInstansi: ${newInstitution.trim() || '-'}\nWilayah: ${selectedProvObj?.name || newProvinceId}\nSektor: ${selectedSectorObj?.label || newSector}\nEstimasi Kerugian: ${formatRupiah(parsedNewLoss)}\nStatus Hukum: ${newLegalStatus}\nTahun Kejadian: ${newIncidentYear}${newSuspectPhotoUrl.trim() ? `\nFoto Terduga: ${newSuspectPhotoUrl.trim()}` : ''}\n\nKronologi Perkara:\n${newChronology.trim()}`;
 
     try {
       const res = await fetch('/api/reports', {
@@ -202,6 +206,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
           metadata: {
             case_title: newTitle.trim(),
             suspect_name: newSuspect.trim(),
+            suspect_photo_url: newSuspectPhotoUrl.trim() || undefined,
             institution: newInstitution.trim(),
             province_id: newProvinceId,
             province_name: selectedProvObj?.name || newProvinceId,
@@ -300,6 +305,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
     // Reset new case
     setNewTitle('');
     setNewSuspect('');
+    setNewSuspectPhotoUrl('');
     setNewInstitution('');
     setNewLossInput('');
     setNewSourceUrl('');
@@ -591,6 +597,82 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                         placeholder="Contoh: Dinas PU / Kementerian ESDM"
                         className="w-full px-3.5 py-2.5 bg-white border border-[#D5C9AB] rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
                       />
+                    </div>
+                  </div>
+
+                  {/* Field: Foto Terduga / Pejabat (Opsional) */}
+                  <div className="p-3.5 bg-[#FAF5E8] border border-[#D5C9AB] rounded-2xl space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                        <ImageIcon className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Foto Terduga / Pejabat (Opsional)</span>
+                      </label>
+                      <span className="text-[10px] text-slate-500">
+                        Default: Siluet Berkas LKI
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="relative shrink-0">
+                        <div className="w-14 h-14 rounded-xl overflow-hidden border border-[#D5C9AB] bg-white shadow-2xs">
+                          <img
+                            src={getOfficialPhoto(newSuspectPhotoUrl)}
+                            alt="Pratinjau Foto"
+                            onError={handleImageError}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        {newSuspectPhotoUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setNewSuspectPhotoUrl('')}
+                            className="absolute -top-1 -right-1 p-0.5 bg-rose-600 text-white rounded-full hover:bg-rose-700 shadow-xs cursor-pointer transition-colors"
+                            title="Hapus foto"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex-1 space-y-1.5">
+                        <input
+                          type="url"
+                          value={newSuspectPhotoUrl}
+                          onChange={e => setNewSuspectPhotoUrl(e.target.value)}
+                          placeholder="Tempel tautan URL foto (https://...)"
+                          className="w-full px-3 py-1.5 bg-white border border-[#D5C9AB] rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-amber-500"
+                        />
+                        <div className="flex items-center gap-2">
+                          <label className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-[#D5C9AB] hover:bg-slate-50 rounded-lg text-[11px] font-semibold text-slate-700 cursor-pointer shadow-2xs transition-colors">
+                            <Upload className="w-3 h-3 text-amber-600" />
+                            <span>Unggah Foto</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={e => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  if (file.size > 2 * 1024 * 1024) {
+                                    alert('Ukuran file maksimal 2MB');
+                                    return;
+                                  }
+                                  const reader = new FileReader();
+                                  reader.onload = () => {
+                                    if (typeof reader.result === 'string') {
+                                      setNewSuspectPhotoUrl(reader.result);
+                                    }
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                          </label>
+                          <span className="text-[10px] text-slate-500">
+                            JPG, PNG, WebP (maks. 2MB)
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 

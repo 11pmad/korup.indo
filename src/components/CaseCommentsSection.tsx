@@ -12,7 +12,8 @@ import {
   HelpCircle,
   Clock,
   TrendingUp,
-  LogIn
+  LogIn,
+  X
 } from 'lucide-react';
 import { sound } from '../utils/audio.js';
 import { CitizenAuthModal, AVATAR_OPTIONS } from './CitizenAuthModal.js';
@@ -46,11 +47,17 @@ interface CaseComment {
 interface CaseCommentsSectionProps {
   caseId: string;
   caseTitle?: string;
+  embedded?: boolean;
+  onClose?: () => void;
+  onCountChange?: (count: number) => void;
 }
 
 export const CaseCommentsSection: React.FC<CaseCommentsSectionProps> = ({
   caseId,
-  caseTitle
+  caseTitle,
+  embedded = false,
+  onClose,
+  onCountChange
 }) => {
   const [comments, setComments] = useState<CaseComment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,7 +104,11 @@ export const CaseCommentsSection: React.FC<CaseCommentsSectionProps> = ({
       });
       if (res.ok) {
         const json = await res.json();
-        setComments(json.data || []);
+        const list = json.data || [];
+        setComments(list);
+        if (onCountChange) {
+          onCountChange(list.length);
+        }
       }
     } catch (err) {
       console.error('Error fetching comments:', err);
@@ -142,7 +153,11 @@ export const CaseCommentsSection: React.FC<CaseCommentsSectionProps> = ({
       sound.playSuccess();
       setContent('');
       setSelectedReaction('');
-      setComments(prev => [json.data, ...prev]);
+      setComments(prev => {
+        const updated = [json.data, ...prev];
+        if (onCountChange) onCountChange(updated.length);
+        return updated;
+      });
     } catch (err: any) {
       sound.playError();
       alert(err.message);
@@ -186,44 +201,51 @@ export const CaseCommentsSection: React.FC<CaseCommentsSectionProps> = ({
     return found ? found.emoji : '👤';
   };
 
-  return (
-    <div className="space-y-5 pt-2">
-      <div className="bg-[#FFFDF9] border-2 border-[#E7DECB] rounded-3xl p-4 sm:p-6 shadow-sm space-y-5">
-        
-        {/* Header Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-dashed border-[#DFD3BA]">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-[#854D0E]" />
-              <h3 className="font-hand font-bold text-base sm:text-lg text-[#1E293B]">
-                Ruang Diskusi &amp; Suara Warga ({comments.length})
-              </h3>
-            </div>
-            <p className="text-xs text-[#78716C]">
-              Sampaikan telaah kritis, pemakluman atas konteks tugas kedinasan, atau kecaman terhadap penyimpangan anggaran.
-            </p>
+  const mainContent = (
+    <div className="space-y-4">
+      {/* Header Section */}
+      <div className="flex items-center justify-between gap-2 pb-3 border-b border-dashed border-[#DFD3BA]">
+        <div className="space-y-0.5 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <MessageSquare className="w-4 h-4 text-[#854D0E]" />
+            <h3 className="font-hand font-bold text-base sm:text-lg text-[#1E293B] truncate">
+              Diskusi Warga ({comments.length})
+            </h3>
           </div>
-
-          {/* User Session Info Badge */}
-          <div className="self-start sm:self-auto">
-            {currentUser ? (
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-bold shadow-2xs">
-                <span>{getAvatarEmoji(currentUser.avatarSeed)}</span>
-                <span className="truncate max-w-[140px]">{currentUser.displayName}</span>
-                <span className="px-1.5 py-0.2 bg-emerald-200 text-emerald-950 rounded text-[9px]">Warga</span>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setAuthModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold transition-colors cursor-pointer border border-amber-300 shadow-2xs"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>Masuk Akun Warga</span>
-              </button>
-            )}
-          </div>
+          <p className="text-[11px] text-[#78716C] leading-snug truncate">
+            Komentar &amp; aspirasi masyarakat terbuka.
+          </p>
         </div>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          {currentUser ? (
+            <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-900 text-[11px] font-bold shadow-2xs">
+              <span>{getAvatarEmoji(currentUser.avatarSeed)}</span>
+              <span className="truncate max-w-[80px]">{currentUser.displayName}</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAuthModalOpen(true)}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 text-[11px] font-bold transition-colors cursor-pointer border border-amber-300 shadow-2xs"
+            >
+              <LogIn className="w-3 h-3" />
+              <span>Masuk</span>
+            </button>
+          )}
+
+          {embedded && onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Tutup Komentar"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
 
         {/* Form Komentar Baru */}
         <form onSubmit={handlePostComment} className="p-4 bg-[#FAF6EC] border border-[#EBE1CD] rounded-2xl space-y-3 shadow-2xs">
@@ -453,8 +475,18 @@ export const CaseCommentsSection: React.FC<CaseCommentsSectionProps> = ({
             })}
           </div>
         )}
-
       </div>
+  );
+
+  return (
+    <div className={embedded ? 'w-full' : 'space-y-5 pt-2'}>
+      {embedded ? (
+        <div className="space-y-4">{mainContent}</div>
+      ) : (
+        <div className="bg-[#FFFDF9] border-2 border-[#E7DECB] rounded-3xl p-4 sm:p-6 shadow-sm space-y-5">
+          {mainContent}
+        </div>
+      )}
 
       {/* Citizen Auth Modal */}
       <CitizenAuthModal

@@ -107,16 +107,39 @@ app.get('/api/settings/donation', (req, res) => {
 // 2. Compatibility Endpoints for existing frontend components
 
 
-// Backward compatibility: GET /api/regions/summary
+// Backward compatibility: GET /api/regions/summary (Dynamic Live Aggregation)
 app.get('/api/regions/summary', async (req, res) => {
   try {
     const list = await db.select().from(schema.provinces);
-    const summary = list.map(p => ({
-      provinsi: p.name,
-      total_kasus: p.total_cases,
-      total_kerugian: p.total_loss_amount,
-      island_group: p.island_cluster
-    }));
+    const caseStats = await db
+      .select({
+        province_id: schema.cases.province_id,
+        case_count: sql<number>`count(${schema.cases.id})::int`,
+        total_loss: sql<number>`coalesce(sum(${schema.cases.loss_amount}), 0)::float8`
+      })
+      .from(schema.cases)
+      .groupBy(schema.cases.province_id);
+
+    const statsMap: Record<string, { count: number; loss: number }> = {};
+    for (const cs of caseStats) {
+      if (cs.province_id) {
+        statsMap[cs.province_id] = {
+          count: Number(cs.case_count) || 0,
+          loss: Number(cs.total_loss) || 0
+        };
+      }
+    }
+
+    const summary = list.map(p => {
+      const st = statsMap[p.id] || { count: 0, loss: 0 };
+      return {
+        id: p.id,
+        provinsi: p.name,
+        total_kasus: st.count,
+        total_kerugian: st.loss,
+        island_group: p.island_cluster
+      };
+    });
     res.json(summary);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

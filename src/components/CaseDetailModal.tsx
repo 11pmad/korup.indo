@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { CorruptionCase } from '../types.js';
 import { formatRupiah, formatRupiahFull, getStatusBadgeStyle } from '../utils/formatters.js';
 import { sound } from '../utils/audio.js';
+import { getOfficialPhoto, handleImageError } from '../utils/photo.js';
 import { 
   X, 
   ExternalLink, 
@@ -10,7 +11,9 @@ import {
   Building2, 
   Flag, 
   ShieldAlert, 
-  Share2 
+  Share2,
+  Flame,
+  MessageSquare
 } from 'lucide-react';
 import { CaseReactionsSection } from './CaseReactionsSection.js';
 import { CaseCommentsSection } from './CaseCommentsSection.js';
@@ -28,6 +31,37 @@ export const CaseDetailModal: React.FC<ModalProps> = ({
 }) => {
   if (!caseData) return null;
 
+  const [showReactions, setShowReactions] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [reactionCount, setReactionCount] = useState(0);
+  const [commentCount, setCommentCount] = useState(0);
+
+  useEffect(() => {
+    if (!caseData?.id) return;
+    
+    // Fetch initial reaction count
+    fetch(`/api/reactions/case/${caseData.id}`)
+      .then(res => res.json())
+      .then(json => {
+        if (json.data && typeof json.data.total === 'number') {
+          setReactionCount(json.data.total);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch initial comment count
+    fetch(`/api/comments/case/${caseData.id}`)
+      .then(res => res.json())
+      .then(json => {
+        if (typeof json.total === 'number') {
+          setCommentCount(json.total);
+        } else if (Array.isArray(json.data)) {
+          setCommentCount(json.data.length);
+        }
+      })
+      .catch(() => {});
+  }, [caseData?.id]);
+
   const statusStyle = getStatusBadgeStyle(caseData.status_hukum);
 
   const handleShare = () => {
@@ -41,25 +75,153 @@ export const CaseDetailModal: React.FC<ModalProps> = ({
   return (
     <div
       id="case-detail-modal"
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 lg:p-6"
     >
-      <div 
-        className="relative w-full max-w-3xl bg-[#FFFDF8] border-3 border-[#E2D5B7] rounded-3xl shadow-2xl p-5 sm:p-8 space-y-6 animate-in fade-in zoom-in-95 duration-200"
-      >
-        {/* Scrapbook Corner Tapes */}
-        <div className="washi-tape washi-tape-yellow -top-3 left-8"></div>
-        <div className="washi-tape washi-tape-pink -top-3 right-16"></div>
+      <div className="relative flex items-start justify-center gap-4 w-full max-w-[1720px] my-auto transition-all duration-300">
+        
+        {/* === LEFT DRAWER: REACTION / SENTIMENT PANEL === */}
+        {showReactions && (
+          <>
+            {/* Desktop Companion Column (xl+) */}
+            <div className="hidden xl:block w-[380px] shrink-0 sticky top-6 bg-[#FFFDF8] border-3 border-[#E2D5B7] rounded-3xl shadow-2xl p-4 max-h-[88vh] overflow-y-auto animate-in slide-in-from-left duration-200">
+              <CaseReactionsSection 
+                caseId={caseData.id} 
+                caseTitle={caseData.official?.nama ? `${caseData.official.nama} - ${caseData.jenis_kasus}` : undefined}
+                embedded={true}
+                onClose={() => setShowReactions(false)}
+                onCountChange={setReactionCount}
+              />
+            </div>
 
-        {/* Close Button */}
-        <button
-          onClick={() => {
-            sound.playPop();
-            onClose();
-          }}
-          className="absolute top-4 right-4 p-2 rounded-full bg-[#F3EDE0] text-[#57534E] hover:bg-[#E5DAC0] hover:text-[#1F2937] transition-colors"
+            {/* Mobile / Tablet Slide-in Drawer (< xl) */}
+            <div 
+              className="xl:hidden fixed inset-0 z-60 bg-black/50 backdrop-blur-xs flex justify-start animate-in fade-in duration-200"
+              onClick={() => setShowReactions(false)}
+            >
+              <div 
+                className="w-[92vw] max-w-md h-full bg-[#FFFDF8] border-r-3 border-[#E2D5B7] shadow-2xl p-4 overflow-y-auto animate-in slide-in-from-left duration-200"
+                onClick={e => e.stopPropagation()}
+              >
+                <CaseReactionsSection 
+                  caseId={caseData.id} 
+                  caseTitle={caseData.official?.nama ? `${caseData.official.nama} - ${caseData.jenis_kasus}` : undefined}
+                  embedded={true}
+                  onClose={() => setShowReactions(false)}
+                  onCountChange={setReactionCount}
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* === CENTER DOSSIER CARD === */}
+        <div 
+          className="relative w-full max-w-3xl bg-[#FFFDF8] border-3 border-[#E2D5B7] rounded-3xl shadow-2xl p-5 sm:p-8 space-y-6 animate-in fade-in zoom-in-95 duration-200 shrink-1"
         >
-          <X className="w-5 h-5" />
-        </button>
+          {/* Scrapbook Corner Tapes */}
+          <div className="washi-tape washi-tape-yellow -top-3 left-8"></div>
+          <div className="washi-tape washi-tape-pink -top-3 right-16"></div>
+
+          {/* Left Side Pull Tab (Reaction Drawer Handle [ | ] matching user sketch) */}
+          <button
+            onClick={() => {
+              sound.playPop();
+              setShowReactions(prev => !prev);
+            }}
+            className={`hidden lg:flex absolute -left-4 top-24 -translate-x-full z-20 flex-col items-center gap-1.5 py-3 px-2 rounded-2xl border-2 shadow-lg transition-all duration-200 hover:scale-105 group cursor-pointer ${
+              showReactions 
+                ? 'bg-[#EA580C] text-white border-[#C2410C]' 
+                : 'bg-[#FFFDF8] text-[#78350F] border-[#E2D5B7] hover:bg-[#FEF3C7]'
+            }`}
+            title={showReactions ? 'Tutup Barometer Reaksi' : 'Buka Barometer Reaksi Warga'}
+          >
+            <div className="w-1 h-3 bg-current opacity-40 rounded-full mb-0.5"></div>
+            <Flame className={`w-4 h-4 ${showReactions ? 'text-white animate-pulse' : 'text-[#EA580C]'}`} />
+            <span 
+              className="text-[11px] font-bold font-mono tracking-wider"
+              style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+            >
+              REAKSI ({reactionCount})
+            </span>
+            <div className="w-1 h-3 bg-current opacity-40 rounded-full mt-0.5"></div>
+            <span className="text-[10px] font-bold">
+              {showReactions ? '◀' : '▶'}
+            </span>
+          </button>
+
+          {/* Right Side Pull Tab (Comment Drawer Handle [ | ] matching user sketch) */}
+          <button
+            onClick={() => {
+              sound.playPop();
+              setShowComments(prev => !prev);
+            }}
+            className={`hidden lg:flex absolute -right-4 top-24 translate-x-full z-20 flex-col items-center gap-1.5 py-3 px-2 rounded-2xl border-2 shadow-lg transition-all duration-200 hover:scale-105 group cursor-pointer ${
+              showComments 
+                ? 'bg-[#0284C7] text-white border-[#0369A1]' 
+                : 'bg-[#FFFDF8] text-[#0369A1] border-[#E2D5B7] hover:bg-[#E0F2FE]'
+            }`}
+            title={showComments ? 'Tutup Kolom Komentar' : 'Buka Kolom Diskusi & Komentar Warga'}
+          >
+            <div className="w-1 h-3 bg-current opacity-40 rounded-full mb-0.5"></div>
+            <MessageSquare className={`w-4 h-4 ${showComments ? 'text-white animate-pulse' : 'text-[#0284C7]'}`} />
+            <span 
+              className="text-[11px] font-bold font-mono tracking-wider"
+              style={{ writingMode: 'vertical-rl' }}
+            >
+              KOMENTAR ({commentCount})
+            </span>
+            <div className="w-1 h-3 bg-current opacity-40 rounded-full mt-0.5"></div>
+            <span className="text-[10px] font-bold">
+              {showComments ? '▶' : '◀'}
+            </span>
+          </button>
+
+          {/* Top Header Action Buttons & Close Button */}
+          <div className="absolute top-4 right-4 flex items-center gap-1.5 sm:gap-2">
+            {/* Quick Toggle Reactions Button */}
+            <button
+              onClick={() => {
+                sound.playPop();
+                setShowReactions(prev => !prev);
+              }}
+              className={`p-2 rounded-full border transition-colors flex items-center justify-center cursor-pointer ${
+                showReactions 
+                  ? 'bg-[#EA580C] text-white border-[#C2410C]' 
+                  : 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A] hover:bg-[#FDE68A]'
+              }`}
+              title="Toggle Barometer Reaksi Warga"
+            >
+              <Flame className="w-4 h-4" />
+            </button>
+
+            {/* Quick Toggle Comments Button */}
+            <button
+              onClick={() => {
+                sound.playPop();
+                setShowComments(prev => !prev);
+              }}
+              className={`p-2 rounded-full border transition-colors flex items-center justify-center cursor-pointer ${
+                showComments 
+                  ? 'bg-[#0284C7] text-white border-[#0369A1]' 
+                  : 'bg-[#E0F2FE] text-[#0369A1] border-[#BAE6FD] hover:bg-[#BAE6FD]'
+              }`}
+              title="Toggle Kolom Komentar Warga"
+            >
+              <MessageSquare className="w-4 h-4" />
+            </button>
+
+            {/* Close Modal Button */}
+            <button
+              onClick={() => {
+                sound.playPop();
+                onClose();
+              }}
+              className="p-2 rounded-full bg-[#F3EDE0] text-[#57534E] hover:bg-[#E5DAC0] hover:text-[#1F2937] transition-colors cursor-pointer"
+              title="Tutup Berkas Kasus"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
         {/* Top Header: Official Profile */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 pt-2">
@@ -67,9 +229,10 @@ export const CaseDetailModal: React.FC<ModalProps> = ({
           <div className="relative polaroid-card shrink-0 rotate-[-2deg] self-center sm:self-auto">
             <div className="w-24 h-24 sm:w-28 sm:h-28 overflow-hidden rounded-md bg-[#FAF6EC] border border-[#EBE1CD]">
               <img
-                src={caseData.official?.foto_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80'}
-                alt={caseData.official?.nama}
+                src={getOfficialPhoto(caseData.official?.foto_url)}
+                alt={caseData.official?.nama || 'Foto Pejabat'}
                 referrerPolicy="no-referrer"
+                onError={handleImageError}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -202,60 +365,180 @@ export const CaseDetailModal: React.FC<ModalProps> = ({
           </div>
         </div>
 
-        {/* Reaksi & Sentimen Masyarakat (Emoji & Barometer Suara Warga) */}
-        <CaseReactionsSection 
-          caseId={caseData.id} 
-          caseTitle={caseData.official?.nama ? `${caseData.official.nama} - ${caseData.jenis_kasus}` : undefined} 
-        />
-
-        {/* Kolom Diskusi & Komentar Warga */}
-        <CaseCommentsSection 
-          caseId={caseData.id} 
-          caseTitle={caseData.official?.nama ? `${caseData.official.nama} - ${caseData.jenis_kasus}` : undefined} 
-        />
-
-        {/* Permanent Legal Disclaimer */}
-        <div className="p-3.5 bg-[#FEF9C3] border border-[#FACC15] rounded-xl text-xs text-[#713F12] flex items-start gap-2.5">
-          <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-[#A16207]" />
-          <div>
-            <strong>Asas Praduga Tak Bersalah:</strong> Data ini disusun demi kepentingan transparansi publik berdasarkan dokumen hukum terbuka. Setiap pihak yang berstatus Tersangka atau Terdakwa tetap berhak atas asas praduga tak bersalah hingga adanya vonis berkekuatan hukum tetap (inkrah).
-          </div>
-        </div>
-
-        {/* Footer Actions */}
-        <div className="pt-2 flex items-center justify-between flex-wrap gap-2 border-t border-[#EFE5CE]">
-          <button
-            onClick={() => {
-              sound.playPop();
-              onOpenReport(caseData.id);
-            }}
-            className="px-3.5 py-2 bg-[#FEF2F2] border border-[#FECACA] text-[#DC2626] rounded-xl hover:bg-[#FEE2E2] text-xs font-bold flex items-center gap-1.5 transition-colors"
-          >
-            <Flag className="w-3.5 h-3.5" />
-            <span>Laporkan Kesalahan pada Berkas Ini</span>
-          </button>
-
-          <div className="flex items-center gap-2">
+          {/* Shorts-style Interactive Feature Callouts inside card */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <button
-              onClick={handleShare}
-              className="p-2 rounded-xl bg-white border border-[#CBD5E1] text-[#475569] hover:bg-gray-50 text-xs font-bold flex items-center gap-1.5"
-              title="Bagikan Tautan Kasus"
+              onClick={() => {
+                sound.playPop();
+                setShowReactions(prev => !prev);
+              }}
+              className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-center justify-between group cursor-pointer ${
+                showReactions 
+                  ? 'bg-[#FEF3C7] border-[#F59E0B] shadow-sm ring-2 ring-[#F59E0B]/30' 
+                  : 'bg-[#FFFBEB] border-[#FDE68A] hover:bg-[#FEF3C7] hover:border-[#F59E0B]'
+              }`}
             >
-              <Share2 className="w-3.5 h-3.5" />
-              <span>Bagikan</span>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl p-1.5 bg-white rounded-xl shadow-xs border border-[#FDE68A]">🔥</span>
+                <div>
+                  <div className="text-xs font-bold text-[#92400E] uppercase tracking-wider flex items-center gap-1.5">
+                    <span>Reaksi &amp; Sentimen Warga</span>
+                    <span className="px-1.5 py-0.5 bg-[#F59E0B] text-white text-[10px] font-mono rounded-full">
+                      {reactionCount}
+                    </span>
+                  </div>
+                  <div className="text-xs text-[#78350F] font-medium">
+                    {showReactions ? 'Sembunyikan panel reaksi ◂' : 'Buka barometer sentimen ▸'}
+                  </div>
+                </div>
+              </div>
+              <span className="text-xs font-bold text-[#D97706] group-hover:translate-x-0.5 transition-transform">
+                {showReactions ? '✕' : '❯'}
+              </span>
             </button>
 
             <button
               onClick={() => {
                 sound.playPop();
-                onClose();
+                setShowComments(prev => !prev);
               }}
-              className="px-4 py-2 bg-[#1E293B] text-white rounded-xl hover:bg-[#334155] text-xs font-bold transition-all shadow-xs"
+              className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-center justify-between group cursor-pointer ${
+                showComments 
+                  ? 'bg-[#E0F2FE] border-[#38BDF8] shadow-sm ring-2 ring-[#38BDF8]/30' 
+                  : 'bg-[#F0F9FF] border-[#BAE6FD] hover:bg-[#E0F2FE] hover:border-[#38BDF8]'
+              }`}
             >
-              Tutup Berkas ✕
+              <div className="flex items-center gap-3">
+                <span className="text-2xl p-1.5 bg-white rounded-xl shadow-xs border border-[#BAE6FD]">💬</span>
+                <div>
+                  <div className="text-xs font-bold text-[#0369A1] uppercase tracking-wider flex items-center gap-1.5">
+                    <span>Ruang Komentar &amp; Diskusi</span>
+                    <span className="px-1.5 py-0.5 bg-[#0284C7] text-white text-[10px] font-mono rounded-full">
+                      {commentCount}
+                    </span>
+                  </div>
+                  <div className="text-xs text-[#0284C7] font-medium">
+                    {showComments ? 'Sembunyikan kolom diskusi ◂' : 'Buka komentar (Shorts style) ▸'}
+                  </div>
+                </div>
+              </div>
+              <span className="text-xs font-bold text-[#0284C7] group-hover:translate-x-0.5 transition-transform">
+                {showComments ? '✕' : '❯'}
+              </span>
             </button>
           </div>
+
+          {/* Permanent Legal Disclaimer */}
+          <div className="p-3.5 bg-[#FEF9C3] border border-[#FACC15] rounded-xl text-xs text-[#713F12] flex items-start gap-2.5">
+            <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-[#A16207]" />
+            <div>
+              <strong>Asas Praduga Tak Bersalah:</strong> Data ini disusun demi kepentingan transparansi publik berdasarkan dokumen hukum terbuka. Setiap pihak yang berstatus Tersangka atau Terdakwa tetap berhak atas asas praduga tak bersalah hingga adanya vonis berkekuatan hukum tetap (inkrah).
+            </div>
+          </div>
+
+          {/* Footer Actions */}
+          <div className="pt-2 flex items-center justify-between flex-wrap gap-2.5 border-t border-[#EFE5CE]">
+            <button
+              onClick={() => {
+                sound.playPop();
+                onOpenReport(caseData.id);
+              }}
+              className="px-3.5 py-2 bg-[#FEF2F2] border border-[#FECACA] text-[#DC2626] rounded-xl hover:bg-[#FEE2E2] text-xs font-bold flex items-center gap-1.5 transition-colors"
+            >
+              <Flag className="w-3.5 h-3.5" />
+              <span>Laporkan Kesalahan Berkas</span>
+            </button>
+
+            <div className="flex items-center flex-wrap gap-2">
+              {/* Toggle Reaksi Footer Button */}
+              <button
+                onClick={() => {
+                  sound.playPop();
+                  setShowReactions(prev => !prev);
+                }}
+                className={`px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  showReactions
+                    ? 'bg-[#EA580C] text-white border-[#C2410C] shadow-xs'
+                    : 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A] hover:bg-[#FDE68A]'
+                }`}
+              >
+                <Flame className="w-3.5 h-3.5" />
+                <span>Reaksi ({reactionCount})</span>
+              </button>
+
+              {/* Toggle Komentar Footer Button */}
+              <button
+                onClick={() => {
+                  sound.playPop();
+                  setShowComments(prev => !prev);
+                }}
+                className={`px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  showComments
+                    ? 'bg-[#0284C7] text-white border-[#0369A1] shadow-xs'
+                    : 'bg-[#E0F2FE] text-[#0369A1] border-[#BAE6FD] hover:bg-[#BAE6FD]'
+                }`}
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Komentar ({commentCount})</span>
+              </button>
+
+              <button
+                onClick={handleShare}
+                className="p-2 rounded-xl bg-white border border-[#CBD5E1] text-[#475569] hover:bg-gray-50 text-xs font-bold flex items-center gap-1.5"
+                title="Bagikan Tautan Kasus"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Bagikan</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  sound.playPop();
+                  onClose();
+                }}
+                className="px-4 py-2 bg-[#1E293B] text-white rounded-xl hover:bg-[#334155] text-xs font-bold transition-all shadow-xs cursor-pointer"
+              >
+                Tutup ✕
+              </button>
+            </div>
+          </div>
+
         </div>
+
+        {/* === RIGHT DRAWER: COMMENTS PANEL === */}
+        {showComments && (
+          <>
+            {/* Desktop Companion Column (xl+) */}
+            <div className="hidden xl:block w-[400px] shrink-0 sticky top-6 bg-[#FFFDF8] border-3 border-[#E2D5B7] rounded-3xl shadow-2xl p-4 max-h-[88vh] overflow-y-auto animate-in slide-in-from-right duration-200">
+              <CaseCommentsSection 
+                caseId={caseData.id} 
+                caseTitle={caseData.official?.nama ? `${caseData.official.nama} - ${caseData.jenis_kasus}` : undefined}
+                embedded={true}
+                onClose={() => setShowComments(false)}
+                onCountChange={setCommentCount}
+              />
+            </div>
+
+            {/* Mobile / Tablet Slide-in Drawer (< xl) */}
+            <div 
+              className="xl:hidden fixed inset-0 z-60 bg-black/50 backdrop-blur-xs flex justify-end animate-in fade-in duration-200"
+              onClick={() => setShowComments(false)}
+            >
+              <div 
+                className="w-[92vw] max-w-md h-full bg-[#FFFDF8] border-l-3 border-[#E2D5B7] shadow-2xl p-4 overflow-y-auto animate-in slide-in-from-right duration-200"
+                onClick={e => e.stopPropagation()}
+              >
+                <CaseCommentsSection 
+                  caseId={caseData.id} 
+                  caseTitle={caseData.official?.nama ? `${caseData.official.nama} - ${caseData.jenis_kasus}` : undefined}
+                  embedded={true}
+                  onClose={() => setShowComments(false)}
+                  onCountChange={setCommentCount}
+                />
+              </div>
+            </div>
+          </>
+        )}
 
       </div>
     </div>

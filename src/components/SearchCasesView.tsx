@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { CorruptionCase } from '../types.js';
 import { formatRupiah, getStatusBadgeStyle } from '../utils/formatters.js';
 import { sound } from '../utils/audio.js';
+import { getOfficialPhoto, handleImageError } from '../utils/photo.js';
 import { Search, Filter, Calendar, ExternalLink, Building2, Eye, Loader2, Sparkles } from 'lucide-react';
 
 interface SearchProps {
@@ -241,12 +242,10 @@ export const SearchCasesView: React.FC<SearchProps> = ({
                   {/* Photo & Profile */}
                   <div className="flex items-start gap-3">
                     <img
-                      src={
-                        item.official?.foto_url ||
-                        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80'
-                      }
-                      alt={item.official?.nama}
+                      src={getOfficialPhoto(item.official?.foto_url)}
+                      alt={item.official?.nama || 'Foto Pejabat'}
                       referrerPolicy="no-referrer"
+                      onError={handleImageError}
                       className="w-16 h-16 rounded-xl object-cover border border-[#E2D6B8] shrink-0 bg-[#F5EFE1]"
                     />
                     <div className="min-w-0 flex-1">

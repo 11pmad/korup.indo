@@ -87,6 +87,7 @@ router.get('/cases', async (req, res) => {
         sector_category: schema.cases.sector_category,
         source_url: schema.cases.source_url,
         official_name: schema.officials.full_name,
+        official_photo: schema.officials.photo_url,
         province_name: schema.provinces.name,
         created_at: schema.cases.created_at
       })
@@ -250,6 +251,7 @@ router.get('/officials', async (req, res) => {
       .select({
         id: schema.officials.id,
         full_name: schema.officials.full_name,
+        photo_url: schema.officials.photo_url,
         position_title: schema.officials.position_title,
         province_name: schema.provinces.name,
         party_name: schema.parties.name,
@@ -536,6 +538,7 @@ router.post('/reports/:id/convert-to-case', async (req, res) => {
     const sectorCategory = mapSectorCategory(meta.sector_category || req.body.sector_category);
     const chronology = meta.chronology || report.description;
     const sourceUrl = report.reference_url || req.body.source_url || 'https://kpk.go.id';
+    const suspectPhotoUrl = meta.suspect_photo_url || req.body.suspect_photo_url || req.body.photo_url || null;
 
     // 1. Buat data tokoh/pejabat terdakwa baru
     const officialId = `off-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`;
@@ -544,6 +547,7 @@ router.post('/reports/:id/convert-to-case', async (req, res) => {
       .values({
         id: officialId,
         full_name: suspectName,
+        photo_url: suspectPhotoUrl,
         position_title: position,
         province_id: provinceId,
         party_id: 'pty-non-partisan',
@@ -664,6 +668,133 @@ router.post('/ai-command', async (req, res) => {
   } catch (err: any) {
     console.error('Error in /api/admin/ai-command:', err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/cases/manual - Input manual berkas perkara & pelaku korupsi
+router.post('/cases/manual', async (req, res) => {
+  try {
+    const {
+      nama,
+      jabatan,
+      partai,
+      provinsi,
+      kota_kabupaten,
+      daerah_pemilihan,
+      ringkasan_kasus,
+      nilai_kerugian_negara,
+      tahun_kejadian,
+      tahun_putusan,
+      status_hukum,
+      jenis_kasus,
+      perusahaan,
+      sumber_url,
+      sumber_media,
+      foto_url
+    } = req.body;
+
+    if (!nama || !jabatan || !sumber_url) {
+      return res.status(400).json({ error: 'Nama pejabat/pelaku, jabatan, dan URL sumber rujukan resmi wajib diisi.' });
+    }
+
+    // Resolve province
+    const provList = await db
+      .select()
+      .from(schema.provinces)
+      .where(sql`lower(${schema.provinces.name}) = lower(${provinsi || 'DKI Jakarta'})`);
+    const prov = provList[0] || (await db.select().from(schema.provinces).limit(1))[0];
+    const provinceId = prov ? prov.id : 'dki-jakarta';
+
+    // Resolve loss
+    const cleanLoss = typeof nilai_kerugian_negara === 'string' 
+      ? parseFloat(nilai_kerugian_negara.replace(/[^0-9.]/g, '')) || 0
+      : Number(nilai_kerugian_negara) || 0;
+
+    const legalStatus = mapLegalStatus(status_hukum);
+    const sectorCategory = mapSectorCategory(jenis_kasus);
+
+    // Official
+    let existingOfficial = await db.query.officials.findFirst({
+      where: sql`lower(${schema.officials.full_name}) = lower(${nama.trim()})`
+    });
+
+    let officialId = existingOfficial?.id;
+    if (!existingOfficial) {
+      officialId = `off-${Date.now()}`;
+      await db.insert(schema.officials).values({
+        id: officialId,
+        full_name: nama.trim(),
+        photo_url: foto_url?.trim() || null,
+        position_title: jabatan.trim(),
+        province_id: provinceId,
+        party_id: null,
+        total_loss_amount: cleanLoss,
+        current_legal_status: legalStatus,
+        created_at: new Date(),
+        updated_at: new Date()
+      });
+    } else {
+      const updatePayload: any = {
+        total_loss_amount: sql`${schema.officials.total_loss_amount} + ${cleanLoss}`,
+        current_legal_status: legalStatus,
+        updated_at: new Date()
+      };
+      if (foto_url?.trim()) {
+        updatePayload.photo_url = foto_url.trim();
+      }
+      await db.update(schema.officials)
+        .set(updatePayload)
+        .where(eq(schema.officials.id, existingOfficial.id));
+    }
+
+    // Case
+    const caseId = `case-${Date.now()}`;
+    const caseYear = parseInt(tahun_kejadian || tahun_putusan || new Date().getFullYear().toString(), 10);
+    const caseDate = new Date(`${caseYear}-01-01`);
+
+    const [insertedCase] = await db.insert(schema.cases).values({
+      id: caseId,
+      title: `${jenis_kasus || 'Tindak Pidana Korupsi'} - ${nama.trim()}`,
+      primary_official_id: officialId,
+      province_id: provinceId,
+      era_id: 'era-prabowo',
+      sector_category: sectorCategory,
+      loss_amount: cleanLoss,
+      fine_amount: 0,
+      restitution_amount: 0,
+      prison_sentence_months: 0,
+      legal_status: legalStatus,
+      chronology: ringkasan_kasus || `Dugaan korupsi yang melibatkan ${nama} terkait ${jabatan}.`,
+      source_url: sumber_url,
+      case_date: caseDate,
+      created_at: new Date(),
+      updated_at: new Date()
+    }).returning();
+
+    // Audit log
+    await db.insert(schema.auditLogs).values({
+      id: `audit-${Date.now()}`,
+      admin_user_id: req.admin?.id,
+      entity_type: 'cases',
+      entity_id: caseId,
+      action: 'create',
+      diff_snapshot: {
+        perintah_asli: `Input manual berkas perkara: ${insertedCase.title}`,
+        diff_snapshot: insertedCase,
+        status: 'selesai'
+      },
+      created_at: new Date()
+    });
+
+    return res.status(201).json({
+      status: 'success',
+      message: 'Berkas perkara dan data pejabat publik berhasil disimpan ke basis data.',
+      case_id: caseId,
+      official_id: officialId
+    });
+  } catch (err: any) {
+    console.error('Error in POST /api/admin/cases/manual:', err);
+    return res.status(500).json({ error: err.message || 'Gagal menyimpan berkas perkara manual.' });
   }
 });
 

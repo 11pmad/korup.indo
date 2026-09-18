@@ -16,11 +16,12 @@ import {
   Database,
   Bell,
   QrCode,
-  Activity
+  Activity,
+  MessageSquare
 } from 'lucide-react';
 import { sound } from '../../utils/audio.js';
 
-export type AdminSubtab = 'dashboard' | 'ai' | 'cases' | 'officials' | 'reports' | 'monitoring' | 'audit' | 'manual' | 'announcement' | 'donation';
+export type AdminSubtab = 'dashboard' | 'ai' | 'cases' | 'officials' | 'reports' | 'comments' | 'monitoring' | 'audit' | 'manual' | 'announcement' | 'donation';
 
 interface AdminLayoutProps {
   activeSubtab: AdminSubtab;
@@ -56,6 +57,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       badgeColor: 'bg-amber-500 text-white'
     },
     { 
+      id: 'comments' as AdminSubtab, 
+      label: 'Moderasi Komentar Warga', 
+      icon: MessageSquare 
+    },
+    { 
       id: 'monitoring' as AdminSubtab, 
       label: 'Monitoring & Trafik Log', 
       icon: Activity,
@@ -81,6 +87,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       case 'cases': return 'Direktori Berkas Perkara Korupsi';
       case 'officials': return 'Pangkalan Data Pejabat Publik';
       case 'reports': return 'Antrean Moderasi Laporan Warga';
+      case 'comments': return 'Moderasi Komentar Warga & Suara Publik';
       case 'monitoring': return 'Observabilitas Trafik Pengunjung & Monitoring Log';
       case 'audit': return 'Jejak Audit & Rollback Mutasi';
       case 'manual': return 'Formulir Input Manual';

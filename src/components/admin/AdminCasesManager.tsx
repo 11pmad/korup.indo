@@ -14,6 +14,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { formatRupiah, getStatusBadgeStyle } from '../../utils/formatters.js';
+import { getOfficialPhoto, handleImageError } from '../../utils/photo.js';
 
 interface CasesManagerProps {
   authToken: string;
@@ -210,12 +211,22 @@ export const AdminCasesManager: React.FC<CasesManagerProps> = ({
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <div className="font-semibold text-slate-800">
-                          {c.official_name || 'Tidak Terhubung'}
-                        </div>
-                        <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                          <MapPin className="w-3 h-3 text-slate-400" />
-                          <span>{c.province_name || '-'}</span>
+                        <div className="flex items-center gap-2.5">
+                          <img
+                            src={getOfficialPhoto(c.official_photo)}
+                            alt={c.official_name || 'Pejabat'}
+                            onError={handleImageError}
+                            className="w-8 h-8 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-100"
+                          />
+                          <div className="min-w-0">
+                            <div className="font-semibold text-slate-800 truncate">
+                              {c.official_name || 'Tidak Terhubung'}
+                            </div>
+                            <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                              <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                              <span className="truncate">{c.province_name || '-'}</span>
+                            </div>
+                          </div>
                         </div>
                       </td>
 

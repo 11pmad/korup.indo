@@ -2,6 +2,7 @@ import React from 'react';
 import { CorruptionCase } from '../types.js';
 import { formatRupiah } from '../utils/formatters.js';
 import { sound } from '../utils/audio.js';
+import { getOfficialPhoto, handleImageError } from '../utils/photo.js';
 import { 
   X, 
   Building2, 
@@ -145,17 +146,12 @@ export const StatsDrilldownModal: React.FC<StatsDrilldownModalProps> = ({
                   {/* Row Top: Official & Status */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#F4EDE0] pb-2.5">
                     <div className="flex items-center gap-3">
-                      {off?.foto_url ? (
-                        <img 
-                          src={off.foto_url} 
-                          alt={off.nama} 
-                          className="w-11 h-11 rounded-xl object-cover border border-[#D5C9AB] shrink-0" 
-                        />
-                      ) : (
-                        <div className="w-11 h-11 rounded-xl bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] flex items-center justify-center font-marker text-base shrink-0">
-                          {off?.nama ? off.nama.charAt(0) : '#'}
-                        </div>
-                      )}
+                      <img 
+                        src={getOfficialPhoto(off?.foto_url)} 
+                        alt={off?.nama || 'Foto Pejabat'} 
+                        onError={handleImageError}
+                        className="w-11 h-11 rounded-xl object-cover border border-[#D5C9AB] shrink-0" 
+                      />
                       <div>
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-bold text-sm text-[#1E293B] group-hover:text-[#0284C7] transition-colors">

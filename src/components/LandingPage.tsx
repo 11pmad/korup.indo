@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { StatsOverview, CorruptionCase } from '../types.js';
 import { formatRupiah } from '../utils/formatters.js';
 import { sound } from '../utils/audio.js';
+import { getOfficialPhoto, handleImageError } from '../utils/photo.js';
 import { 
   Trophy, 
   MapPin, 
@@ -282,11 +283,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
               <div className="flex items-start gap-3">
                 <img
-                  src={
-                    c.official?.foto_url ||
-                    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200'
-                  }
-                  alt={c.official?.nama}
+                  src={getOfficialPhoto(c.official?.foto_url)}
+                  alt={c.official?.nama || 'Foto Pejabat'}
+                  onError={handleImageError}
                   className="w-14 h-14 rounded-xl object-cover border border-[#E7DECB] shrink-0"
                 />
                 <div className="min-w-0 flex-1">

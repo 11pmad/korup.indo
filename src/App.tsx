@@ -182,6 +182,7 @@ export default function App() {
                 selectedProvince={selectedProvince}
                 onSelectProvince={setSelectedProvince}
                 onSelectCase={(id) => setSelectedCaseId(id)}
+                onOpenReport={() => handleOpenReport(undefined, 'new_case')}
               />
             )}
 

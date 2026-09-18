@@ -458,7 +458,7 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
     return result;
   }, [processedOfficials]);
 
-  // 4. AGGREGATED LIGA WILAYAH / PROVINSI
+  // 4. AGGREGATED LIGA WILAYAH / PROVINSI (aggregated from cases, not officials)
   const regionLeaderboard = useMemo(() => {
     const regMap = new Map<
       string,
@@ -472,8 +472,55 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
       }
     >();
 
-    processedOfficials.forEach(it => {
-      const prov = it.provinsi || 'Lainnya';
+    // Use the same filtered cases as processedOfficials uses
+    let relevantCases = (cases || []).filter(c => !c.is_template);
+    if (selectedPeriod !== 'alltime') {
+      const yr = parseInt(selectedPeriod, 10);
+      relevantCases = relevantCases.filter(
+        c => c.tahun_putusan === yr || c.tahun_kejadian === yr
+      );
+    }
+    if (selectedEra) {
+      const era = HISTORICAL_ERAS.find(e => e.id === selectedEra);
+      if (era) {
+        relevantCases = relevantCases.filter(c => {
+          const yrK = c.tahun_kejadian;
+          const yrP = c.tahun_putusan;
+          return (yrK && yrK >= era.startYear && yrK <= era.endYear) ||
+                 (yrP && yrP >= era.startYear && yrP <= era.endYear);
+        });
+      }
+    }
+    if (filterPulau && filterPulau !== 'Semua Pulau') {
+      relevantCases = relevantCases.filter(c => {
+        const prov = c.official?.provinsi;
+        const island = prov ? PROVINCE_TO_ISLAND[prov] : undefined;
+        return island === filterPulau;
+      });
+    }
+    if (filterProvinsi) {
+      relevantCases = relevantCases.filter(
+        c => c.official?.provinsi?.toLowerCase() === filterProvinsi.toLowerCase()
+      );
+    }
+    if (filterPartai) {
+      relevantCases = relevantCases.filter(c => {
+        const p = c.official?.partai || '';
+        if (filterPartai === 'Non-Partai / Independen') {
+          return p.toLowerCase().includes('non-partai') || p.toLowerCase().includes('independen');
+        }
+        return p.toLowerCase().includes(filterPartai.toLowerCase());
+      });
+    }
+    if (filterStatus) {
+      relevantCases = relevantCases.filter(
+        c => c.status_hukum.toLowerCase() === filterStatus.toLowerCase()
+      );
+    }
+
+    // Group by case province (not official province)
+    for (const c of relevantCases) {
+      const prov = c.official?.provinsi || 'Lainnya';
       if (!regMap.has(prov)) {
         regMap.set(prov, {
           provinsi: prov,
@@ -481,14 +528,14 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
           total_kerugian: 0,
           total_kasus: 0,
           pejabat_count: new Set(),
-          sample_case_id: it.case_ids[0] || ''
+          sample_case_id: c.id
         });
       }
       const entry = regMap.get(prov)!;
-      entry.total_kerugian += it.total_kerugian_negara;
-      entry.total_kasus += it.total_kasus;
-      entry.pejabat_count.add(it.official_id);
-    });
+      entry.total_kerugian += c.nilai_kerugian_negara;
+      entry.total_kasus += 1;
+      if (c.official?.id) entry.pejabat_count.add(c.official.id);
+    }
 
     const result = Array.from(regMap.values()).map(r => ({
       provinsi: r.provinsi,
@@ -501,7 +548,7 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
 
     result.sort((a, b) => b.total_kerugian - a.total_kerugian);
     return result;
-  }, [processedOfficials]);
+  }, [cases, selectedPeriod, selectedEra, filterPulau, filterProvinsi, filterPartai, filterStatus]);
 
   // Pagination for Officials view
   const totalPages = Math.ceil(sortedOfficials.length / pageSize) || 1;

@@ -26,7 +26,29 @@ router.get('/', async (req, res) => {
     const conditions = [];
 
     if (province) {
-      conditions.push(eq(schema.cases.province_id, String(province)));
+      const pStr = String(province).trim();
+      let aliasId: string | null = null;
+      const norm = pStr.toLowerCase();
+      if (norm.includes('yogyakarta') || norm.includes('jogja')) aliasId = 'diy';
+      else if (norm.includes('bangka')) aliasId = 'babel';
+      else if (norm.includes('jakarta')) aliasId = 'dki-jakarta';
+      else if (norm.includes('sumatera utara') || norm.includes('sumut')) aliasId = 'sumut';
+      else if (norm.includes('sumatera barat') || norm.includes('sumbar')) aliasId = 'sumbar';
+      else if (norm.includes('sumatera selatan') || norm.includes('sumsel')) aliasId = 'sumsel';
+      else if (norm.includes('jawa timur') || norm.includes('jatim')) aliasId = 'jatim';
+      else if (norm.includes('jawa barat') || norm.includes('jabar')) aliasId = 'jabar';
+      else if (norm.includes('jawa tengah') || norm.includes('jateng')) aliasId = 'jateng';
+
+      const provConditions = [
+        eq(schema.cases.province_id, pStr),
+        eq(schema.provinces.id, pStr),
+        ilike(schema.provinces.name, pStr),
+        ilike(schema.provinces.name, `%${pStr}%`)
+      ];
+      if (aliasId) {
+        provConditions.push(eq(schema.cases.province_id, aliasId));
+      }
+      conditions.push(or(...provConditions));
     }
 
     if (era) {

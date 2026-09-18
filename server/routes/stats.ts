@@ -151,10 +151,17 @@ router.get('/overview', async (req, res) => {
     const totalLossSum = await db.select({ sum: sql<number>`sum(${schema.cases.loss_amount})::double precision` }).from(schema.cases);
     const totalOfficialsCount = await db.select({ count: sql<number>`count(*)::int` }).from(schema.officials);
 
-    const topProvince = await db
-      .select()
-      .from(schema.provinces)
-      .orderBy(desc(schema.provinces.total_loss_amount))
+    const topProvinceAgg = await db
+      .select({
+        province_id: schema.cases.province_id,
+        province_name: schema.provinces.name,
+        case_count: sql<number>`count(${schema.cases.id})::int`,
+        total_loss: sql<number>`coalesce(sum(${schema.cases.loss_amount}), 0)::float8`
+      })
+      .from(schema.cases)
+      .leftJoin(schema.provinces, eq(schema.cases.province_id, schema.provinces.id))
+      .groupBy(schema.cases.province_id, schema.provinces.name)
+      .orderBy(sql`sum(${schema.cases.loss_amount}) desc nulls last`)
       .limit(1);
 
     const topCases = await db
@@ -207,11 +214,11 @@ router.get('/overview', async (req, res) => {
       total_kerugian: totalLossSum[0]?.sum || 0,
       total_pejabat: totalOfficialsCount[0]?.count || 0,
       total_pejabat_terdata: totalOfficialsCount[0]?.count || 0,
-      provinsi_terbanyak: topProvince[0]
+      provinsi_terbanyak: topProvinceAgg[0]
         ? {
-            provinsi: topProvince[0].name,
-            total_kasus: topProvince[0].total_cases,
-            total_kerugian: topProvince[0].total_loss_amount
+            provinsi: topProvinceAgg[0].province_name || '-',
+            total_kasus: topProvinceAgg[0].case_count,
+            total_kerugian: topProvinceAgg[0].total_loss
           }
         : { provinsi: '-', total_kasus: 0, total_kerugian: 0 },
       top_kerugian: topCases.map(c => ({

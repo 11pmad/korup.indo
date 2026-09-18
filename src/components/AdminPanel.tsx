@@ -19,8 +19,11 @@ import {
   Lock,
   Unlock,
   Check,
-  X
+  X,
+  Image as ImageIcon,
+  Upload
 } from 'lucide-react';
+import { getOfficialPhoto, handleImageError } from '../utils/photo.js';
 import { AdminLayout, AdminSubtab } from './admin/AdminLayout.js';
 import { AdminDashboardOverview } from './admin/AdminDashboardOverview.js';
 import { AdminCasesManager } from './admin/AdminCasesManager.js';
@@ -29,6 +32,7 @@ import { AdminAnnouncementManager } from './admin/AdminAnnouncementManager.js';
 import { AdminDonationManager } from './admin/AdminDonationManager.js';
 import { AdminReportsManager } from './admin/AdminReportsManager.js';
 import { AdminMonitoringManager } from './admin/AdminMonitoringManager.js';
+import { AdminCommentsManager } from './admin/AdminCommentsManager.js';
 
 interface AdminPanelProps {
   onRefreshData: () => void;
@@ -92,7 +96,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
     jenis_kasus: 'Suap / Gratifikasi',
     perusahaan: '',
     sumber_url: '',
-    sumber_media: ''
+    sumber_media: '',
+    foto_url: ''
   });
   const [manualError, setManualError] = useState<string | null>(null);
   const [manualSuccess, setManualSuccess] = useState<string | null>(null);
@@ -310,40 +315,40 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
       return;
     }
 
-    // Build synthetic prompt for confirmation
-    const promptText = `Tambahkan pejabat ${manualForm.nama} (${manualForm.jabatan}) dari partai ${manualForm.partai} di ${manualForm.provinsi}, nilai kerugian ${manualForm.nilai_kerugian_negara}, tahun ${manualForm.tahun_kejadian}, status ${manualForm.status_hukum}, sumber ${manualForm.sumber_url}`;
-
     try {
-      const res = await fetch('/api/admin/ai-command', {
+      const res = await fetch('/api/admin/cases/manual', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
         },
-        body: JSON.stringify({ command: promptText })
+        body: JSON.stringify(manualForm)
       });
-      const aiData = await res.json();
-      if (!res.ok) throw new Error(aiData.error || 'Gagal memproses data kasus');
-      if (aiData.log_id) {
-        const confirmRes = await fetch('/api/admin/cases/confirm', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
-          },
-          body: JSON.stringify({
-            log_id: aiData.log_id,
-            catatan_admin: 'Ditambahkan via Formulir Manual'
-          })
-        });
-        const confirmData = await confirmRes.json();
-        if (!confirmRes.ok) throw new Error(confirmData.error);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal memproses data kasus');
 
-        sound.playCheer();
-        setManualSuccess('Data kasus berhasil ditambahkan dan dipublikasikan!');
-        onRefreshData();
-        fetchAuditLogs();
-      }
+      sound.playCheer();
+      setManualSuccess('Data kasus dan pejabat publik berhasil disimpan dan dipublikasikan!');
+      setManualForm({
+        nama: '',
+        jabatan: '',
+        partai: 'Non-Partai',
+        provinsi: 'DKI Jakarta',
+        kota_kabupaten: '',
+        daerah_pemilihan: '',
+        ringkasan_kasus: '',
+        nilai_kerugian_negara: '',
+        tahun_kejadian: new Date().getFullYear().toString(),
+        tahun_putusan: '',
+        status_hukum: 'Tersangka' as LegalStatus,
+        jenis_kasus: 'Suap / Gratifikasi',
+        perusahaan: '',
+        sumber_url: '',
+        sumber_media: '',
+        foto_url: ''
+      });
+      onRefreshData();
+      fetchAuditLogs();
     } catch (err: any) {
       setManualError(err.message);
     }
@@ -750,6 +755,84 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
           )}
 
           <form onSubmit={handleManualSubmit} className="space-y-4">
+            {/* Foto Pejabat / Pelaku Korupsi */}
+            <div className="p-4 bg-[#FAF5E8] border border-[#D5C9AB] rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-[#475569] uppercase tracking-wider flex items-center gap-1.5">
+                  <ImageIcon className="w-4 h-4 text-[#EA580C]" />
+                  <span>Foto Pejabat / Pelaku Korupsi (Opsional)</span>
+                </label>
+                <span className="text-[11px] text-slate-500 font-medium">
+                  Default otomatis: Siluet Berkas LKI
+                </span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                {/* Photo Preview */}
+                <div className="relative shrink-0">
+                  <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-[#D5C9AB] bg-white shadow-xs">
+                    <img
+                      src={getOfficialPhoto(manualForm.foto_url)}
+                      alt="Preview Foto"
+                      onError={handleImageError}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  {manualForm.foto_url && (
+                    <button
+                      type="button"
+                      onClick={() => setManualForm({ ...manualForm, foto_url: '' })}
+                      className="absolute -top-1.5 -right-1.5 p-1 bg-rose-600 text-white rounded-full hover:bg-rose-700 shadow-xs cursor-pointer transition-colors"
+                      title="Hapus foto (gunakan default)"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Input Controls */}
+                <div className="flex-1 w-full space-y-2">
+                  <input
+                    type="url"
+                    placeholder="Tempel URL Gambar (https://...)"
+                    value={manualForm.foto_url}
+                    onChange={e => setManualForm({ ...manualForm, foto_url: e.target.value })}
+                    className="w-full bg-white border border-[#D5C9AB] rounded-xl px-3 py-2 text-xs text-[#1F2937] focus:ring-2 focus:ring-[#EA580C] focus:outline-none"
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#D5C9AB] hover:bg-slate-50 rounded-xl text-xs font-semibold text-slate-700 cursor-pointer transition-colors shadow-2xs">
+                      <Upload className="w-3.5 h-3.5 text-[#EA580C]" />
+                      <span>Unggah File Foto</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > 2 * 1024 * 1024) {
+                              alert('Ukuran file maksimal 2MB');
+                              return;
+                            }
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              if (typeof reader.result === 'string') {
+                                setManualForm({ ...manualForm, foto_url: reader.result });
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                    <span className="text-[11px] text-slate-500">
+                      Format JPG, PNG, WebP (maks. 2MB). Jika dikosongkan, siluet generik LKI akan ditampilkan otomatis.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-[#475569] mb-1">
@@ -1040,6 +1123,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
             fetchReports();
             onRefreshData();
           }}
+        />
+      )}
+
+      {/* TAB: CITIZEN COMMENTS MODERATION */}
+      {activeTab === 'comments' && (
+        <AdminCommentsManager
+          authToken={authToken}
+          onRefreshGlobal={onRefreshData}
         />
       )}
 
