@@ -161,12 +161,12 @@ app.get('/sitemap.xml', async (req, res) => {
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>${host}/peta</loc>
+    <loc>${host}/klasemen</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>${host}/klasemen</loc>
+    <loc>${host}/peta</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
@@ -174,6 +174,16 @@ app.get('/sitemap.xml', async (req, res) => {
     <loc>${host}/statistik</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${host}/cari</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${host}/lapor</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   ${casesUrls}
 </urlset>`;

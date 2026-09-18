@@ -65,11 +65,30 @@ export default function App() {
     loadAllData();
   }, []);
 
-  const provincesList = Array.from(new Set(regions.map(r => r.provinsi))).sort();
-
   const activeCaseDetail = selectedCaseId
     ? cases.find(c => c.id === selectedCaseId) || null
     : null;
+
+  const provincesList = Array.from(new Set(regions.map(r => r.provinsi))).sort();
+
+  // Dynamic SEO Page Title update
+  useEffect(() => {
+    if (activeCaseDetail) {
+      document.title = `Berkas: ${activeCaseDetail.official?.nama || 'Perkara'} (${activeCaseDetail.status_hukum}) — Liga Korupsi Indonesia`;
+      return;
+    }
+
+    const titles: Record<string, string> = {
+      beranda: 'Liga Korupsi Indonesia (LKI) — Portal Transparansi Perkara & Putusan Hukum',
+      klasemen: 'Klasemen Liga Korupsi Indonesia — Peringkat Pejabat & Partai | LKI',
+      peta: 'Peta Spasial Korupsi 38 Provinsi Indonesia | LKI',
+      statistik: 'Statistik & Analisis Tren Perkara Korupsi Nasional | LKI',
+      cari: 'Eksplorasi & Cari Berkas Kasus Korupsi | LKI',
+      admin: 'Panel Kurasi & Moderasi Verifikator | LKI'
+    };
+
+    document.title = titles[activeTab] || 'Liga Korupsi Indonesia (LKI)';
+  }, [activeTab, activeCaseDetail]);
 
   const handleOpenReport = (caseId?: string) => {
     setReportTargetCaseId(caseId || (cases[0]?.id || null));
