@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
@@ -40,7 +41,32 @@ app.use('/api/reports', reportsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/eras', erasRouter);
 
+// Public Settings: Announcement / Disclaimer Banner
+const DEFAULT_ANNOUNCEMENT = {
+  title: '⚖️ PEMBERITAHUAN ASAS HUKUM & SUMBER RESMI:',
+  badge: 'Wajib Dibaca',
+  main_text: 'Data bersumber dari putusan pengadilan & pemberitaan media yang tercantum. Setiap orang berhak atas asas praduga tak bersalah hingga ada putusan berkekuatan hukum tetap.',
+  sub_text: 'Setiap data diverifikasi dengan tautan resmi direktori putusan Mahkamah Agung RI, KPK.go.id, atau media nasional kredibel.',
+  is_active: true,
+  updated_at: new Date().toISOString(),
+  updated_by: 'system'
+};
+
+app.get('/api/settings/announcement', (req, res) => {
+  try {
+    const filePath = path.join(process.cwd(), 'data', 'announcement.json');
+    if (fs.existsSync(filePath)) {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      return res.json(data);
+    }
+    res.json(DEFAULT_ANNOUNCEMENT);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 2. Compatibility Endpoints for existing frontend components
+
 
 // Backward compatibility: GET /api/regions/summary
 app.get('/api/regions/summary', async (req, res) => {

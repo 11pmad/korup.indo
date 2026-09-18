@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Scale, ShieldAlert, X } from 'lucide-react';
 import { sound } from '../utils/audio.js';
 
@@ -7,8 +7,54 @@ interface Props {
   variant?: 'banner' | 'compact' | 'footer';
 }
 
+interface AnnouncementData {
+  title: string;
+  badge: string;
+  main_text: string;
+  sub_text: string;
+  is_active: boolean;
+}
+
+const DEFAULT_DATA: AnnouncementData = {
+  title: '⚖️ PEMBERITAHUAN ASAS HUKUM & SUMBER RESMI:',
+  badge: 'Wajib Dibaca',
+  main_text: 'Data bersumber dari putusan pengadilan & pemberitaan media yang tercantum. Setiap orang berhak atas asas praduga tak bersalah hingga ada putusan berkekuatan hukum tetap.',
+  sub_text: 'Setiap data diverifikasi dengan tautan resmi direktori putusan Mahkamah Agung RI, KPK.go.id, atau media nasional kredibel.',
+  is_active: true
+};
+
 export const DisclaimerBanner: React.FC<Props> = ({ className = '', variant = 'banner' }) => {
   const [isDismissed, setIsDismissed] = useState<boolean>(false);
+  const [data, setData] = useState<AnnouncementData>(DEFAULT_DATA);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch('/api/settings/announcement')
+      .then(res => res.ok ? res.json() : null)
+      .then(json => {
+        if (json && isMounted) {
+          setData({
+            title: json.title || DEFAULT_DATA.title,
+            badge: json.badge || DEFAULT_DATA.badge,
+            main_text: json.main_text || DEFAULT_DATA.main_text,
+            sub_text: json.sub_text !== undefined ? json.sub_text : DEFAULT_DATA.sub_text,
+            is_active: json.is_active !== undefined ? json.is_active : true
+          });
+        }
+      })
+      .catch(() => {
+        // Fallback gracefully to DEFAULT_DATA
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // If banner is disabled by admin in settings, don't show it
+  if (!data.is_active) {
+    return null;
+  }
 
   if (isDismissed) {
     return (
@@ -57,21 +103,26 @@ export const DisclaimerBanner: React.FC<Props> = ({ className = '', variant = 'b
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-hand font-bold text-lg text-[#854D0E] tracking-wide">
-              ⚖️ PEMBERITAHUAN ASAS HUKUM &amp; SUMBER RESMI:
+              {data.title}
             </span>
-            <span className="px-2 py-0.5 bg-[#FACC15] text-[#713F12] text-xs font-semibold rounded-full uppercase tracking-wider">
-              Wajib Dibaca
-            </span>
+            {data.badge && (
+              <span className="px-2 py-0.5 bg-[#FACC15] text-[#713F12] text-xs font-semibold rounded-full uppercase tracking-wider">
+                {data.badge}
+              </span>
+            )}
           </div>
           <p className="text-sm sm:text-base leading-relaxed text-[#5F370E]">
-            &ldquo;Data bersumber dari putusan pengadilan &amp; pemberitaan media yang tercantum. Setiap orang berhak atas asas praduga tak bersalah hingga ada putusan berkekuatan hukum tetap.&rdquo;
+            &ldquo;{data.main_text}&rdquo;
           </p>
-          <p className="text-xs text-[#854D0E] opacity-90 flex items-center gap-1.5 pt-1">
-            <ShieldAlert className="w-3.5 h-3.5 inline" />
-            Setiap data diverifikasi dengan tautan resmi direktori putusan Mahkamah Agung RI, KPK.go.id, atau media nasional kredibel.
-          </p>
+          {data.sub_text && (
+            <p className="text-xs text-[#854D0E] opacity-90 flex items-center gap-1.5 pt-1">
+              <ShieldAlert className="w-3.5 h-3.5 inline shrink-0" />
+              <span>{data.sub_text}</span>
+            </p>
+          )}
         </div>
       </div>
     </div>
   );
 };
+

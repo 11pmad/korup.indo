@@ -5,6 +5,19 @@ import bcrypt from 'bcryptjs';
 import { generateToken, verifyAdminJwt } from '../middleware/auth.js';
 import { z } from 'zod';
 import { processAdminCommand } from '../gemini.js';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+
+const DEFAULT_ANNOUNCEMENT = {
+  title: '⚖️ PEMBERITAHUAN ASAS HUKUM & SUMBER RESMI:',
+  badge: 'Wajib Dibaca',
+  main_text: 'Data bersumber dari putusan pengadilan & pemberitaan media yang tercantum. Setiap orang berhak atas asas praduga tak bersalah hingga ada putusan berkekuatan hukum tetap.',
+  sub_text: 'Setiap data diverifikasi dengan tautan resmi direktori putusan Mahkamah Agung RI, KPK.go.id, atau media nasional kredibel.',
+  is_active: true,
+  updated_at: new Date().toISOString(),
+  updated_by: 'system'
+};
 
 const router = Router();
 
@@ -827,4 +840,93 @@ router.get('/audit-logs', async (req, res) => {
   }
 });
 
+// --- SETTINGS: ANNOUNCEMENT ---
+const announcementInputSchema = z.object({
+  title: z.string().min(3, 'Judul minimal 3 karakter').max(150, 'Judul maksimal 150 karakter'),
+  badge: z.string().min(1, 'Badge minimal 1 karakter').max(50, 'Badge maksimal 50 karakter'),
+  main_text: z.string().min(10, 'Teks utama minimal 10 karakter').max(1000, 'Teks utama maksimal 1000 karakter'),
+  sub_text: z.string().max(500, 'Subteks maksimal 500 karakter').optional().default(''),
+  is_active: z.boolean().default(true)
+});
+
+// GET /api/admin/settings/announcement
+router.get('/settings/announcement', async (req, res) => {
+  try {
+    const filePath = path.join(process.cwd(), 'data', 'announcement.json');
+    if (fs.existsSync(filePath)) {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      return res.json(data);
+    }
+    res.json(DEFAULT_ANNOUNCEMENT);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/admin/settings/announcement
+router.put('/settings/announcement', async (req, res) => {
+  try {
+    const parsed = announcementInputSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: 'Format data pemberitahuan tidak valid.',
+        details: parsed.error.issues
+      });
+    }
+
+    const filePath = path.join(process.cwd(), 'data', 'announcement.json');
+    let prevConfig = DEFAULT_ANNOUNCEMENT;
+    if (fs.existsSync(filePath)) {
+      try {
+        prevConfig = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      } catch (e) {
+        // use default
+      }
+    }
+
+    const updatedConfig = {
+      title: parsed.data.title,
+      badge: parsed.data.badge,
+      main_text: parsed.data.main_text,
+      sub_text: parsed.data.sub_text,
+      is_active: parsed.data.is_active,
+      updated_at: new Date().toISOString(),
+      updated_by: req.admin?.username || 'admin'
+    };
+
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(updatedConfig, null, 2), 'utf8');
+
+    // Catat ke audit_logs
+    try {
+      await db.insert(schema.auditLogs).values({
+        id: crypto.randomUUID(),
+        admin_user_id: req.admin?.id || null,
+        entity_type: 'settings',
+        entity_id: 'announcement',
+        action: 'update',
+        diff_snapshot: {
+          action_name: 'Perbarui Teks Pemberitahuan Hukum',
+          perintah_asli: `Admin ${req.admin?.username || 'admin'} memperbarui teks pemberitahuan portal publik [Badge: ${updatedConfig.badge}]`,
+          previous: prevConfig,
+          updated: updatedConfig,
+          status: 'selesai'
+        },
+        created_at: new Date()
+      });
+    } catch (auditErr) {
+      console.warn('Gagal mencatat audit log announcement:', auditErr);
+    }
+
+    res.json({
+      message: 'Teks pemberitahuan berhasil diperbarui dan dipublikasikan!',
+      data: updatedConfig
+    });
+  } catch (err: any) {
+    console.error('Error in PUT /api/admin/settings/announcement:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
+

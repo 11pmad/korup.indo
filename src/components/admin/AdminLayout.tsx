@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { sound } from '../../utils/audio.js';
 
-export type AdminSubtab = 'dashboard' | 'ai' | 'cases' | 'officials' | 'reports' | 'audit' | 'manual';
+export type AdminSubtab = 'dashboard' | 'ai' | 'cases' | 'officials' | 'reports' | 'audit' | 'manual' | 'announcement';
 
 interface AdminLayoutProps {
   activeSubtab: AdminSubtab;
@@ -54,7 +54,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       badgeColor: 'bg-amber-500 text-white'
     },
     { id: 'audit' as AdminSubtab, label: 'Log Audit & Rollback', icon: History },
-    { id: 'manual' as AdminSubtab, label: 'Formulir Input Manual', icon: FileEdit }
+    { id: 'manual' as AdminSubtab, label: 'Formulir Input Manual', icon: FileEdit },
+    { id: 'announcement' as AdminSubtab, label: 'Teks Pemberitahuan', icon: Bell }
   ];
 
   const handleNav = (tab: AdminSubtab) => {
@@ -72,6 +73,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       case 'reports': return 'Antrean Moderasi Laporan Warga';
       case 'audit': return 'Jejak Audit & Rollback Mutasi';
       case 'manual': return 'Formulir Input Manual';
+      case 'announcement': return 'Pengaturan Teks Pemberitahuan Hukum';
       default: return 'Panel Kurasi LKI';
     }
   };

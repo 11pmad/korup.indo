@@ -25,6 +25,7 @@ import { AdminLayout, AdminSubtab } from './admin/AdminLayout.js';
 import { AdminDashboardOverview } from './admin/AdminDashboardOverview.js';
 import { AdminCasesManager } from './admin/AdminCasesManager.js';
 import { AdminOfficialsManager } from './admin/AdminOfficialsManager.js';
+import { AdminAnnouncementManager } from './admin/AdminAnnouncementManager.js';
 
 interface AdminPanelProps {
   onRefreshData: () => void;
@@ -470,7 +471,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
         />
       )}
 
+      {/* TAB: ANNOUNCEMENT MANAGER */}
+      {activeTab === 'announcement' && (
+        <AdminAnnouncementManager
+          authToken={authToken}
+          onRefreshGlobal={onRefreshData}
+        />
+      )}
+
       {/* TAB 4: AI ASSISTANT CHAT & DRAFT */}
+
       {activeTab === 'ai' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
