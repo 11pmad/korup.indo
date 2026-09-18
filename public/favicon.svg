@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Shadow filter -->
+    <filter id="shadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="1" dy="2" stdDeviation="1.5" flood-color="#78350F" flood-opacity="0.25" />
+    </filter>
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <feStop offset="0%" stop-color="#FEF08A" />
+      <feStop offset="100%" stop-color="#FACC15" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Base (Document/Stamp shape) -->
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#badgeGrad)" stroke="#B45309" stroke-width="2.5" filter="url(#shadow)"/>
+
+  <!-- Inner Stitching / Dashed border for Court Document feel -->
+  <rect x="7.5" y="7.5" width="49" height="49" rx="10.5" fill="none" stroke="#CA8A04" stroke-width="1.2" stroke-dasharray="3,2.5" />
+
+  <!-- Scales of Justice (Neraca Keadilan) -->
+  <g fill="#78350F" stroke="#78350F">
+    <!-- Center Pillar -->
+    <rect x="30.5" y="16" width="3" height="32" rx="1.5" />
+    <!-- Top Finial / Knob -->
+    <circle cx="32" cy="15" r="2.5" />
+    <!-- Pedestal Base -->
+    <path d="M24 49 C24 46, 40 46, 40 49 Z" />
+    <rect x="22" y="49" width="20" height="3" rx="1.5" />
+
+    <!-- Cross Beam -->
+    <rect x="14" y="21" width="36" height="2.5" rx="1.2" />
+
+    <!-- Left Pan -->
+    <line x1="16" y1="23" x2="11" y2="34" stroke-width="1.2" />
+    <line x1="22" y1="23" x2="21" y2="34" stroke-width="1.2" />
+    <path d="M9 34 Q16 41 23 34 Z" fill="#991B1B" stroke="#78350F" stroke-width="1.2" />
+
+    <!-- Right Pan -->
+    <line x1="42" y1="23" x2="43" y2="34" stroke-width="1.2" />
+    <line x1="48" y1="23" x2="53" y2="34" stroke-width="1.2" />
+    <path d="M41 34 Q48 41 55 34 Z" fill="#991B1B" stroke="#78350F" stroke-width="1.2" />
+  </g>
+
+  <!-- Red & White Indonesian Badge Ribbon on Top Right -->
+  <g transform="translate(42, 2)">
+    <!-- Red stripe -->
+    <path d="M0 0 L18 0 C19 0, 20 1, 20 2 L20 8 L0 8 Z" fill="#DC2626" />
+    <!-- White stripe -->
+    <path d="M0 8 L20 8 L20 14 C20 15, 19 16, 18 16 L0 16 Z" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.5" />
+    <!-- Border -->
+    <rect x="0" y="0" width="20" height="16" rx="2" fill="none" stroke="#991B1B" stroke-width="1" />
+  </g>
+</svg>
