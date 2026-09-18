@@ -1,0 +1,122 @@
+[
+  {
+    "case_company_id": "cc-de-unie-roeslan",
+    "case_id": "cas-de-unie-roeslan-1956",
+    "company_id": "comp-nv-de-unie",
+    "company_role_in_case": "Percetakan Barter Luar Negeri",
+    "transaction_value": null,
+    "contract_value": null,
+    "tender_value": null,
+    "transaction_date": "1956-08-01",
+    "company_case_status": "dilikuidasi",
+    "source_id": "src-jaksa-agung-soeprapto-1956"
+  },
+  {
+    "case_company_id": "cc-bank-duta-dicky",
+    "case_id": "cas-bank-duta-dicky-1990",
+    "company_id": "comp-pt-bank-duta",
+    "company_role_in_case": "Bank Pengendali Transaksi Valas Spekulatif",
+    "transaction_value": 811000000000,
+    "contract_value": null,
+    "tender_value": null,
+    "transaction_date": "1990-09-04",
+    "company_case_status": "merger_bank_danmon",
+    "source_id": "src-ma-bank-duta-dicky-1992"
+  },
+  {
+    "case_company_id": "cc-bapindo-golden-key",
+    "case_id": "cas-bapindo-eddy-tansil-1994",
+    "company_id": "comp-pt-golden-key-group",
+    "company_role_in_case": "Debitur Kredit Macet dan Pembobol L/C",
+    "transaction_value": 1300000000000,
+    "contract_value": null,
+    "tender_value": null,
+    "transaction_date": "1994-02-14",
+    "company_case_status": "dilikuidasi",
+    "source_id": "src-pn-jakpus-eddy-tansil-1994"
+  },
+  {
+    "case_company_id": "cc-supersemar-yayasan",
+    "case_id": "cas-yayasan-supersemar-soeharto",
+    "company_id": "comp-yayasan-supersemar",
+    "company_role_in_case": "Tergugat Badan Hukum Penyeleweng Dana Beasiswa",
+    "transaction_value": 4448000000000,
+    "contract_value": null,
+    "tender_value": null,
+    "transaction_date": "1998-05-21",
+    "company_case_status": "sita_eksekusi",
+    "source_id": "src-ma-yayasan-supersemar-2015"
+  },
+  {
+    "case_company_id": "cc-bank-bali-egp",
+    "case_id": "cas-bank-bali-1999",
+    "company_id": "comp-pt-era-giat-prima",
+    "company_role_in_case": "Penerima Kuasa Pengalihan Hak Tagih Cessie",
+    "transaction_value": 546468544738,
+    "contract_value": 904000000000,
+    "tender_value": null,
+    "transaction_date": "1999-01-11",
+    "company_case_status": "dana_dirampas_negara",
+    "source_id": "src-ma-bank-bali-2009"
+  },
+  {
+    "case_company_id": "cc-mapala-hasan",
+    "case_id": "cas-mapala-rabda-bob-hasan",
+    "company_id": "comp-pt-mapala-rabda",
+    "company_role_in_case": "Pelaksana Kontrak Pemetaan Udara Kehutanan",
+    "transaction_value": 84400000000,
+    "contract_value": null,
+    "tender_value": null,
+    "transaction_date": "1996-06-01",
+    "company_case_status": "korporasi_disebut_dalam_dakwaan",
+    "source_id": "src-ma-bob-hasan-2001"
+  },
+  {
+    "case_company_id": "cc-wisma-dgi",
+    "case_id": "cas-wisma-atlet-nazaruddin-2011",
+    "company_id": "comp-pt-duta-graha-indah",
+    "company_role_in_case": "Pemenang Kontrak Proyek Wisma Atlet Jakabaring",
+    "transaction_value": 4675000000,
+    "contract_value": 191000000000,
+    "tender_value": null,
+    "transaction_date": "2010-10-12",
+    "company_case_status": "terdakwa_korporasi",
+    "source_id": "src-ma-wisma-atlet-nazaruddin-2013"
+  },
+  {
+    "case_company_id": "cc-duta-palma-surya",
+    "case_id": "cas-duta-palma-surya-darmadi-2022",
+    "company_id": "comp-duta-palma-group",
+    "company_role_in_case": "Induk Korporasi Penguasa Kebun Sawit Hutan Ilegal",
+    "transaction_value": 2238000000000,
+    "contract_value": null,
+    "tender_value": null,
+    "transaction_date": "2004-05-10",
+    "company_case_status": "aset_perkebunan_disita_eksekusi",
+    "source_id": "src-ma-surya-darmadi-2023"
+  },
+  {
+    "case_company_id": "cc-jiwasraya-hanson",
+    "case_id": "cas-jiwasraya-benny-tjokro-2020",
+    "company_id": "comp-pt-hanson-international",
+    "company_role_in_case": "Emiten Saham Manipulasi Investasi Jiwasraya",
+    "transaction_value": 6078500000000,
+    "contract_value": null,
+    "tender_value": null,
+    "transaction_date": "2018-10-01",
+    "company_case_status": "pailit_sita_eksekusi",
+    "source_id": "src-ma-jiwasraya-benny-tjokro-2021"
+  },
+  {
+    "case_company_id": "cc-timah-rbt",
+    "case_id": "cas-timah-harvey-moeis-2024",
+    "company_id": "comp-pt-refined-bangka-tin",
+    "company_role_in_case": "Penyedia Jasa Sewa Smelter Peleburan Timah Ilegal",
+    "transaction_value": null,
+    "contract_value": null,
+    "tender_value": null,
+    "transaction_date": "2018-05-10",
+    "company_case_status": "disita_penyidik",
+    "source_id": "src-tipikor-timah-harvey-moeis-2024"
+  }
+]

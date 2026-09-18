@@ -1,0 +1,110 @@
+{
+  "metadata": {
+    "report_title": "Laporan Kualitas Data Riset Perkara Korupsi Indonesia (1945 - 2026)",
+    "version": "2026.09-final",
+    "generated_at": "2026-09-18T18:44:00.392Z",
+    "audited_by": "Antigravity Data Engineering & Legal Fact-Checking Core"
+  },
+  "overview": {
+    "total_persons": 43,
+    "total_cases": 43,
+    "total_companies": 10,
+    "total_parties": 11,
+    "total_positions": 43,
+    "total_verdicts": 35,
+    "total_timeline_events": 9,
+    "total_sources": 43
+  },
+  "verification_and_completeness": {
+    "cases_with_primary_source": 43,
+    "cases_with_court_decision": 35,
+    "cases_with_final_decision": 38,
+    "cases_without_final_decision": 5,
+    "cases_with_financial_data": 30,
+    "cases_with_complete_timeline": 6,
+    "cases_needing_review": 3,
+    "possible_duplicates": 0,
+    "unverified_records": 0,
+    "secondary_only_records": 0
+  },
+  "financial_totals_separated": {
+    "total_court_recognized_loss_idr": 5285893044738,
+    "total_audit_loss_idr": 357958102210381,
+    "total_alleged_loss_idr": 400000000000,
+    "total_bribe_idr": 80137000000,
+    "total_gratification_idr": 60000000000,
+    "total_illegal_profit_idr": 14147144786,
+    "total_restitution_idr": 12045277280580,
+    "total_fines_idr": 0,
+    "total_assets_seized_idr": 920000000000
+  },
+  "breakdowns": {
+    "cases_per_era": {
+      "Era Kemerdekaan & Orde Lama (1945 - 1966)": 2,
+      "Era Orde Baru (1966 - 1998)": 4,
+      "Reformasi Awal / B.J. Habibie": 2,
+      "Abdurrahman Wahid": 2,
+      "Megawati Soekarnoputri": 3,
+      "Susilo Bambang Yudhoyono Periode I": 5,
+      "Susilo Bambang Yudhoyono Periode II": 8,
+      "Joko Widodo Periode I": 4,
+      "Joko Widodo Periode II": 10,
+      "Prabowo Subianto": 3
+    },
+    "cases_per_sector": {
+      "Penyalahgunaan Anggaran": 5,
+      "Perbankan": 8,
+      "Kehutanan": 1,
+      "Pengadaan Barang/Jasa": 7,
+      "Mafia Peradilan": 3,
+      "Suap": 4,
+      "Infrastruktur": 4,
+      "Pajak": 1,
+      "Perizinan": 4,
+      "BUMN": 2,
+      "Pertambangan": 1,
+      "Bansos": 1,
+      "Pemerasan": 1,
+      "Perkebunan": 1
+    },
+    "cases_per_mode": {
+      "Penyalahgunaan Anggaran": 14,
+      "Penggelapan": 2,
+      "Pengadaan Barang/Jasa": 10,
+      "Suap": 13,
+      "Perizinan": 2,
+      "Pemerasan": 1,
+      "Mafia Peradilan": 1
+    },
+    "cases_per_province": {
+      "DKI Jakarta": 6,
+      "Kalimantan Timur": 1,
+      "Aceh": 1,
+      "Jawa Barat": 2,
+      "Sumatera Selatan": 1,
+      "Riau": 1,
+      "Kepulauan Bangka Belitung": 1,
+      "Jawa Timur": 1,
+      "Kalimantan Selatan": 1
+    },
+    "persons_per_legal_status": {
+      "bebas": 1,
+      "divonis_inkrah": 36,
+      "lepas": 2,
+      "terdakwa": 3,
+      "tersangka": 1
+    },
+    "positions_per_government_level": {
+      "Nasional": 9,
+      "Kementerian/Lembaga": 11,
+      "BUMN": 4,
+      "Swasta": 6,
+      "Korporasi": 1,
+      "Provinsi": 2,
+      "Aparat Penegak Hukum": 2,
+      "Legislatif": 5,
+      "Yudikatif": 2,
+      "Kabupaten/Kota": 1
+    }
+  }
+}

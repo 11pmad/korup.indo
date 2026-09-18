@@ -1,0 +1,145 @@
+[
+  {
+    "location_id": "loc-dki-jakpus",
+    "island_cluster": "Jawa",
+    "province": "DKI Jakarta",
+    "city_regency": "Jakarta Pusat",
+    "district": "Gambir",
+    "village": null,
+    "latitude": -6.1754,
+    "longitude": 106.8272,
+    "location_type": "institution_location"
+  },
+  {
+    "location_id": "loc-dki-jaksel",
+    "island_cluster": "Jawa",
+    "province": "DKI Jakarta",
+    "city_regency": "Jakarta Selatan",
+    "district": "Kebayoran Baru",
+    "village": null,
+    "latitude": -6.2444,
+    "longitude": 106.8006,
+    "location_type": "offense_location"
+  },
+  {
+    "location_id": "loc-aceh-banda",
+    "island_cluster": "Sumatera",
+    "province": "Aceh",
+    "city_regency": "Kota Banda Aceh",
+    "district": "Baiturrahman",
+    "village": null,
+    "latitude": 5.5483,
+    "longitude": 95.3238,
+    "location_type": "project_location"
+  },
+  {
+    "location_id": "loc-jabar-bogor",
+    "island_cluster": "Jawa",
+    "province": "Jawa Barat",
+    "city_regency": "Kabupaten Bogor",
+    "district": "Citeureup",
+    "village": "Hambalang",
+    "latitude": -6.5369,
+    "longitude": 106.8834,
+    "location_type": "project_location"
+  },
+  {
+    "location_id": "loc-jabar-bekasi",
+    "island_cluster": "Jawa",
+    "province": "Jawa Barat",
+    "city_regency": "Kabupaten Bekasi",
+    "district": "Cikarang Pusat",
+    "village": null,
+    "latitude": -6.3644,
+    "longitude": 107.1725,
+    "location_type": "project_location"
+  },
+  {
+    "location_id": "loc-sumsel-palembang",
+    "island_cluster": "Sumatera",
+    "province": "Sumatera Selatan",
+    "city_regency": "Kota Palembang",
+    "district": "Jakabaring",
+    "village": null,
+    "latitude": -3.0189,
+    "longitude": 104.7901,
+    "location_type": "project_location"
+  },
+  {
+    "location_id": "loc-riau-inhu",
+    "island_cluster": "Sumatera",
+    "province": "Riau",
+    "city_regency": "Kabupaten Indragiri Hulu",
+    "district": "Rengat",
+    "village": null,
+    "latitude": -0.3756,
+    "longitude": 102.5441,
+    "location_type": "offense_location"
+  },
+  {
+    "location_id": "loc-babel-pangkalpinang",
+    "island_cluster": "Sumatera",
+    "province": "Kepulauan Bangka Belitung",
+    "city_regency": "Kota Pangkalpinang",
+    "district": "Gerunggang",
+    "village": null,
+    "latitude": -2.129,
+    "longitude": 106.1129,
+    "location_type": "project_location"
+  },
+  {
+    "location_id": "loc-jatim-surabaya",
+    "island_cluster": "Jawa",
+    "province": "Jawa Timur",
+    "city_regency": "Kota Surabaya",
+    "district": "Sawahan",
+    "village": null,
+    "latitude": -7.2575,
+    "longitude": 112.7521,
+    "location_type": "court_location"
+  },
+  {
+    "location_id": "loc-kalsel-banjarbaru",
+    "island_cluster": "Kalimantan",
+    "province": "Kalimantan Selatan",
+    "city_regency": "Kota Banjarbaru",
+    "district": "Cempaka",
+    "village": null,
+    "latitude": -3.4572,
+    "longitude": 114.8103,
+    "location_type": "project_location"
+  },
+  {
+    "location_id": "loc-kaltim-samarinda",
+    "island_cluster": "Kalimantan",
+    "province": "Kalimantan Timur",
+    "city_regency": "Kota Samarinda",
+    "district": "Samarinda Kota",
+    "village": null,
+    "latitude": -0.5016,
+    "longitude": 117.1537,
+    "location_type": "project_location"
+  },
+  {
+    "location_id": "loc-sulsel-makassar",
+    "island_cluster": "Sulawesi",
+    "province": "Sulawesi Selatan",
+    "city_regency": "Kota Makassar",
+    "district": "Ujung Pandang",
+    "village": null,
+    "latitude": -5.1477,
+    "longitude": 119.4327,
+    "location_type": "institution_location"
+  },
+  {
+    "location_id": "loc-papua-jayapura",
+    "island_cluster": "Papua",
+    "province": "Papua",
+    "city_regency": "Kota Jayapura",
+    "district": "Jayapura Utara",
+    "village": null,
+    "latitude": -2.5337,
+    "longitude": 140.7181,
+    "location_type": "institution_location"
+  }
+]

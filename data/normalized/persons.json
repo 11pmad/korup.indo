@@ -1,0 +1,566 @@
+[
+  {
+    "person_id": "per-jusuf-muda-dalam",
+    "full_name": "Teuku Jusuf Muda Dalam",
+    "normalized_name": "teuku jusuf muda dalam",
+    "alias": [
+      "JMD",
+      "Jusuf Muda Dalam"
+    ],
+    "gender": "L",
+    "birth_place": "Sigli, Pidie, Aceh",
+    "birth_date": "1914-12-10",
+    "occupation": "Menteri Urusan Bank Sentral / Gubernur Bank Indonesia (1963–1966)",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-roeslan-abdulgani",
+    "full_name": "Dr. H. Roeslan Abdulgani",
+    "normalized_name": "roeslan abdulgani",
+    "alias": [
+      "Cak Roes"
+    ],
+    "gender": "L",
+    "birth_place": "Surabaya, Jatim",
+    "birth_date": "1914-11-24",
+    "occupation": "Menteri Luar Negeri RI (Kabinet Ali Sastroamidjojo II)",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-budiadji",
+    "full_name": "Kolonel Inf. Budiadji",
+    "normalized_name": "budiadji",
+    "alias": [
+      "Budiadji"
+    ],
+    "gender": "L",
+    "birth_place": "Jawa Tengah",
+    "birth_date": "1930-01-01",
+    "occupation": "Kepala Depot Logistik (Dolog) Kalimantan Timur",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-dicky-di-nata",
+    "full_name": "Dicky Iskandar Di Nata",
+    "normalized_name": "dicky iskandar di nata",
+    "alias": [
+      "Dicky Iskandar"
+    ],
+    "gender": "L",
+    "birth_place": "Bandung, Jabar",
+    "birth_date": "1951-04-18",
+    "occupation": "Direktur Utama PT Bank Duta Ekonomi",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-eddy-tansil",
+    "full_name": "Eddy Tansil",
+    "normalized_name": "eddy tansil",
+    "alias": [
+      "Tan Tjoe Hong"
+    ],
+    "gender": "L",
+    "birth_place": "Makassar, Sulsel",
+    "birth_date": "1953-02-02",
+    "occupation": "Pemilik PT Golden Key Group / Pengusaha Petrokimia",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-soeharto",
+    "full_name": "Jenderal Besar TNI Purn. H.M. Soeharto",
+    "normalized_name": "soeharto",
+    "alias": [
+      "Pak Harto",
+      "H.M. Soeharto"
+    ],
+    "gender": "L",
+    "birth_place": "Kemusuk, Argomulyo, Bantul, DIY",
+    "birth_date": "1921-06-08",
+    "occupation": "Presiden Republik Indonesia ke-2 (1967–1998) / Ketua Yayasan Supersemar",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-djoko-tjandra",
+    "full_name": "Djoko Soegiarto Tjandra",
+    "normalized_name": "djoko soegiarto tjandra",
+    "alias": [
+      "Joko Tjandra",
+      "Joe Chan",
+      "Tjan Kok Hui"
+    ],
+    "gender": "L",
+    "birth_place": "Sanggau, Kalbar",
+    "birth_date": "1951-08-27",
+    "occupation": "Direktur Utama PT EGP / Pengusaha",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-syahril-sabirin",
+    "full_name": "Dr. Syahril Sabirin, S.E., M.A.",
+    "normalized_name": "syahril sabirin",
+    "alias": [
+      "Syahril Sabirin"
+    ],
+    "gender": "L",
+    "birth_place": "Bukittinggi, Sumbar",
+    "birth_date": "1943-10-18",
+    "occupation": "Mantan Gubernur Bank Indonesia",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-bob-hasan",
+    "full_name": "Mohamad Bob Hasan",
+    "normalized_name": "mohamad bob hasan",
+    "alias": [
+      "The Kian Seng",
+      "Bob Hasan"
+    ],
+    "gender": "L",
+    "birth_place": "Semarang, Jateng",
+    "birth_date": "1931-03-05",
+    "occupation": "Ketua Umum APHI / Mantan Menteri Perindustrian",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-sapuan",
+    "full_name": "Sapuan",
+    "normalized_name": "sapuan",
+    "alias": [
+      "Sapuan"
+    ],
+    "gender": "L",
+    "birth_place": "Jawa Timur",
+    "birth_date": "1947-01-01",
+    "occupation": "Mantan Wakil Kepala Bulog",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-abdullah-puteh",
+    "full_name": "Ir. H. Abdullah Puteh, M.Si.",
+    "normalized_name": "abdullah puteh",
+    "alias": [
+      "Abdullah Puteh"
+    ],
+    "gender": "L",
+    "birth_place": "Pidie Jaya, Aceh",
+    "birth_date": "1948-07-04",
+    "occupation": "Mantan Gubernur Nanggroe Aceh Darussalam",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-akbar-tandjung",
+    "full_name": "Dr. Ir. H. Akbar Tandjung",
+    "normalized_name": "akbar tandjung",
+    "alias": [
+      "Akbar Tandjung"
+    ],
+    "gender": "L",
+    "birth_place": "Tapanuli Tengah, Sumut",
+    "birth_date": "1945-08-14",
+    "occupation": "Mantan Mensesneg / Mantan Ketua DPR RI",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-syafruddin-temenggung",
+    "full_name": "Dr. Syafruddin Arsyad Temenggung",
+    "normalized_name": "syafruddin arsyad temenggung",
+    "alias": [
+      "SAT"
+    ],
+    "gender": "L",
+    "birth_place": "Palembang, Sumsel",
+    "birth_date": "1959-04-28",
+    "occupation": "Mantan Kepala BPPN",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-nazaruddin-sjamsuddin",
+    "full_name": "Prof. Dr. Nazaruddin Sjamsuddin, M.A.",
+    "normalized_name": "nazaruddin sjamsuddin",
+    "alias": [
+      "Nazaruddin Sjamsuddin"
+    ],
+    "gender": "L",
+    "birth_place": "Bireuen, Aceh",
+    "birth_date": "1944-11-05",
+    "occupation": "Mantan Ketua KPU RI",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-aulia-pohan",
+    "full_name": "Drs. Aulia Tantowi Pohan",
+    "normalized_name": "aulia tantowi pohan",
+    "alias": [
+      "Aulia Pohan"
+    ],
+    "gender": "L",
+    "birth_place": "Palembang, Sumsel",
+    "birth_date": "1945-07-11",
+    "occupation": "Mantan Deputi Gubernur Bank Indonesia",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-urip-tri-gunawan",
+    "full_name": "Urip Tri Gunawan, S.H., M.H.",
+    "normalized_name": "urip tri gunawan",
+    "alias": [
+      "Jaksa Urip"
+    ],
+    "gender": "L",
+    "birth_place": "Kendal, Jateng",
+    "birth_date": "1967-08-25",
+    "occupation": "Mantan Jaksa Utama Kejaksaan Agung RI",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-hari-sabarno",
+    "full_name": "Jenderal TNI Purn. Hari Sabarno",
+    "normalized_name": "hari sabarno",
+    "alias": [
+      "Hari Sabarno"
+    ],
+    "gender": "L",
+    "birth_place": "Surakarta, Jateng",
+    "birth_date": "1944-08-12",
+    "occupation": "Mantan Menteri Dalam Negeri RI",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-miranda-goeltom",
+    "full_name": "Prof. Miranda Swaray Goeltom, S.E., M.B.A., Ph.D.",
+    "normalized_name": "miranda swaray goeltom",
+    "alias": [
+      "Miranda Goeltom"
+    ],
+    "gender": "P",
+    "birth_place": "Jakarta",
+    "birth_date": "1949-06-19",
+    "occupation": "Mantan Deputi Gubernur Senior Bank Indonesia",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-anas-urbaningrum",
+    "full_name": "Dr. Anas Urbaningrum, M.Si.",
+    "normalized_name": "anas urbaningrum",
+    "alias": [
+      "Anas Urbaningrum"
+    ],
+    "gender": "L",
+    "birth_place": "Blitar, Jatim",
+    "birth_date": "1969-07-15",
+    "occupation": "Mantan Anggota DPR RI / Mantan Ketum Partai Demokrat",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-akil-mochtar",
+    "full_name": "Dr. H. M. Akil Mochtar, S.H., M.H.",
+    "normalized_name": "m akil mochtar",
+    "alias": [
+      "Akil Mochtar"
+    ],
+    "gender": "L",
+    "birth_place": "Putussibau, Kalbar",
+    "birth_date": "1960-10-18",
+    "occupation": "Mantan Ketua Mahkamah Konstitusi RI",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-djoko-susilo",
+    "full_name": "Irjen Pol. Drs. Djoko Susilo, S.H., M.Si.",
+    "normalized_name": "djoko susilo",
+    "alias": [
+      "Djoko Susilo"
+    ],
+    "gender": "L",
+    "birth_place": "Madiun, Jatim",
+    "birth_date": "1960-10-07",
+    "occupation": "Mantan Kakorlantas Polri",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-luthfi-hasan",
+    "full_name": "H. Luthfi Hasan Ishaaq, M.A.",
+    "normalized_name": "luthfi hasan ishaaq",
+    "alias": [
+      "LHI"
+    ],
+    "gender": "L",
+    "birth_place": "Malang, Jatim",
+    "birth_date": "1961-08-05",
+    "occupation": "Mantan Anggota DPR RI / Mantan Presiden PKS",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-rudi-rubiandini",
+    "full_name": "Prof. Dr. Ir. Rudi Rubiandini R.S.",
+    "normalized_name": "rudi rubiandini",
+    "alias": [
+      "Rudi Rubiandini"
+    ],
+    "gender": "L",
+    "birth_place": "Tasikmalaya, Jabar",
+    "birth_date": "1962-02-09",
+    "occupation": "Mantan Kepala SKK Migas",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-m-nazaruddin",
+    "full_name": "Muhammad Nazaruddin",
+    "normalized_name": "muhammad nazaruddin",
+    "alias": [
+      "Nazaruddin"
+    ],
+    "gender": "L",
+    "birth_place": "Bangun, Simalungun, Sumut",
+    "birth_date": "1978-08-26",
+    "occupation": "Mantan Bendahara Umum Partai Demokrat / Anggota DPR RI",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-budi-mulya",
+    "full_name": "Budi Mulya",
+    "normalized_name": "budi mulya",
+    "alias": [
+      "Budi Mulya"
+    ],
+    "gender": "L",
+    "birth_place": "Rawamangun, Jakarta",
+    "birth_date": "1954-12-07",
+    "occupation": "Mantan Deputi Gubernur Bank Indonesia Bidang Pengelolaan Moneter",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-gayus-tambunan",
+    "full_name": "Gayus Halomoan Partahanan Tambunan",
+    "normalized_name": "gayus tambunan",
+    "alias": [
+      "Gayus Tambunan"
+    ],
+    "gender": "L",
+    "birth_place": "Jakarta",
+    "birth_date": "1979-05-09",
+    "occupation": "Mantan Pegawai Ditjen Pajak Golongan III/a",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-setya-novanto",
+    "full_name": "Drs. Setya Novanto, Ak.",
+    "normalized_name": "setya novanto",
+    "alias": [
+      "Setnov"
+    ],
+    "gender": "L",
+    "birth_place": "Bandung, Jabar",
+    "birth_date": "1954-11-12",
+    "occupation": "Mantan Ketua DPR RI / Ketua Fraksi Golkar",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-neneng-yasin",
+    "full_name": "dr. Hj. Neneng Hassanah Yasin",
+    "normalized_name": "neneng hassanah yasin",
+    "alias": [
+      "Neneng Yasin"
+    ],
+    "gender": "P",
+    "birth_place": "Bekasi, Jabar",
+    "birth_date": "1980-07-23",
+    "occupation": "Mantan Bupati Bekasi",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-idrus-marham",
+    "full_name": "Dr. H. Idrus Marham, M.Sc.",
+    "normalized_name": "idrus marham",
+    "alias": [
+      "Idrus Marham"
+    ],
+    "gender": "L",
+    "birth_place": "Pinrang, Sulsel",
+    "birth_date": "1962-08-14",
+    "occupation": "Mantan Menteri Sosial RI / Mantan Sekjen Golkar",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-romahurmuziy",
+    "full_name": "Ir. H. Muhammad Romahurmuziy, M.T.",
+    "normalized_name": "muhammad romahurmuziy",
+    "alias": [
+      "Romy"
+    ],
+    "gender": "L",
+    "birth_place": "Sleman, DIY",
+    "birth_date": "1974-09-10",
+    "occupation": "Mantan Anggota DPR RI / Mantan Ketum PPP",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-benny-tjokro",
+    "full_name": "Benny Tjokrosaputro",
+    "normalized_name": "benny tjokrosaputro",
+    "alias": [
+      "Bentjok"
+    ],
+    "gender": "L",
+    "birth_place": "Surakarta, Jateng",
+    "birth_date": "1969-05-15",
+    "occupation": "Direktur Utama PT Hanson International Tbk / Investor Saham",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-sonny-widjaja",
+    "full_name": "Letjen TNI Purn. Sonny Widjaja",
+    "normalized_name": "sonny widjaja",
+    "alias": [
+      "Sonny Widjaja"
+    ],
+    "gender": "L",
+    "birth_place": "Klaten, Jateng",
+    "birth_date": "1958-01-01",
+    "occupation": "Mantan Direktur Utama PT ASABRI (Persero)",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-wisnu-wardhana",
+    "full_name": "Indrasari Wisnu Wardhana",
+    "normalized_name": "indrasari wisnu wardhana",
+    "alias": [
+      "Wisnu Wardhana"
+    ],
+    "gender": "L",
+    "birth_place": "Jakarta",
+    "birth_date": "1965-01-01",
+    "occupation": "Mantan Dirjen Perdagangan Luar Negeri Kemendag",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-harvey-moeis",
+    "full_name": "Harvey Moeis",
+    "normalized_name": "harvey moeis",
+    "alias": [
+      "Harvey Moeis"
+    ],
+    "gender": "L",
+    "birth_place": "Jakarta",
+    "birth_date": "1985-11-30",
+    "occupation": "Pengusaha Tambang / Perwakilan PT RBT",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-emirsyah-satar",
+    "full_name": "Emirsyah Satar",
+    "normalized_name": "emirsyah satar",
+    "alias": [
+      "Emir Satar"
+    ],
+    "gender": "L",
+    "birth_place": "Jakarta",
+    "birth_date": "1959-06-28",
+    "occupation": "Mantan Direktur Utama PT Garuda Indonesia (Persero) Tbk",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-juliari-batubara",
+    "full_name": "Juliari Peter Batubara, M.B.A.",
+    "normalized_name": "juliari peter batubara",
+    "alias": [
+      "Juliari Batubara"
+    ],
+    "gender": "L",
+    "birth_place": "Jakarta",
+    "birth_date": "1972-07-22",
+    "occupation": "Mantan Menteri Sosial RI",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-edhy-prabowo",
+    "full_name": "H. Edhy Prabowo, S.E., M.M., M.B.A.",
+    "normalized_name": "edhy prabowo",
+    "alias": [
+      "Edhy Prabowo"
+    ],
+    "gender": "L",
+    "birth_place": "Muara Enim, Sumsel",
+    "birth_date": "1972-12-24",
+    "occupation": "Mantan Menteri Kelautan dan Perikanan RI",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-johnny-plate",
+    "full_name": "Johnny Gerard Plate, S.E.",
+    "normalized_name": "johnny gerard plate",
+    "alias": [
+      "Johnny G. Plate"
+    ],
+    "gender": "L",
+    "birth_place": "Manggarai, NTT",
+    "birth_date": "1956-09-10",
+    "occupation": "Mantan Menkominfo RI",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-syahrul-yasin-limpo",
+    "full_name": "Prof. Dr. H. Syahrul Yasin Limpo, S.H., M.Si., M.H.",
+    "normalized_name": "syahrul yasin limpo",
+    "alias": [
+      "SYL"
+    ],
+    "gender": "L",
+    "birth_place": "Makassar, Sulsel",
+    "birth_date": "1955-03-16",
+    "occupation": "Mantan Menteri Pertanian RI",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-surya-darmadi",
+    "full_name": "Surya Darmadi",
+    "normalized_name": "surya darmadi",
+    "alias": [
+      "Apeng"
+    ],
+    "gender": "L",
+    "birth_place": "Jakarta",
+    "birth_date": "1951-11-15",
+    "occupation": "Pemilik Duta Palma Group",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-zarof-ricar",
+    "full_name": "Dr. Zarof Ricar, S.H., S.Sos., M.Hum.",
+    "normalized_name": "zarof ricar",
+    "alias": [
+      "Zarof Ricar"
+    ],
+    "gender": "L",
+    "birth_place": "Sumenep, Jatim",
+    "birth_date": "1962-01-16",
+    "occupation": "Mantan Kepala Balitbang Diklat Kumdil MA RI",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-thomas-lembong",
+    "full_name": "Thomas Trikasih Lembong",
+    "normalized_name": "thomas trikasih lembong",
+    "alias": [
+      "Tom Lembong"
+    ],
+    "gender": "L",
+    "birth_place": "Jakarta",
+    "birth_date": "1971-03-04",
+    "occupation": "Mantan Menteri Perdagangan RI / Mantan Kepala BKPM",
+    "nationality": "Indonesia"
+  },
+  {
+    "person_id": "per-sahbirin-noor",
+    "full_name": "H. Sahbirin Noor, S.Sos., M.H.",
+    "normalized_name": "sahbirin noor",
+    "alias": [
+      "Paman Birin"
+    ],
+    "gender": "L",
+    "birth_place": "Banjarmasin, Kalsel",
+    "birth_date": "1967-11-12",
+    "occupation": "Mantan Gubernur Kalimantan Selatan",
+    "nationality": "Indonesia"
+  }
+]

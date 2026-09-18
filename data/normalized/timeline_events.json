@@ -1,0 +1,101 @@
+[
+  {
+    "event_id": "evt-bank-bali-01",
+    "case_id": "cas-bank-bali-1999",
+    "event_date": "1999-01-11",
+    "event_type": "transaksi",
+    "event_description": "Penandatanganan perjanjian pengalihan hak tagih piutang (cessie) antara Bank Bali dan PT Era Giat Prima",
+    "institution": "Bank Bali & BPPN",
+    "location": "DKI Jakarta",
+    "source_id": "src-ma-bank-bali-2009",
+    "source_page": "hal. 10"
+  },
+  {
+    "event_id": "evt-bank-bali-02",
+    "case_id": "cas-bank-bali-1999",
+    "event_date": "2009-06-11",
+    "event_type": "PK",
+    "event_description": "Mahkamah Agung mengabulkan permohonan PK Jaksa dan memvonis Djoko Tjandra bersalah 2 tahun penjara",
+    "institution": "Mahkamah Agung RI",
+    "location": "DKI Jakarta",
+    "source_id": "src-ma-bank-bali-2009",
+    "source_page": "hal. 112"
+  },
+  {
+    "event_id": "evt-puteh-01",
+    "case_id": "cas-helikopter-mi2-puteh-2004",
+    "event_date": "2004-06-29",
+    "event_type": "penetapan_tersangka",
+    "event_description": "KPK menetapkan Gubernur NAD Abdullah Puteh sebagai tersangka korupsi pengadaan helikopter Mi-2",
+    "institution": "KPK",
+    "location": "DKI Jakarta",
+    "source_id": "src-kpk-puteh-2005",
+    "source_page": "Siaran Pers KPK"
+  },
+  {
+    "event_id": "evt-puteh-02",
+    "case_id": "cas-helikopter-mi2-puteh-2004",
+    "event_date": "2005-03-28",
+    "event_type": "putusan_pertama",
+    "event_description": "Pengadilan Tipikor Jakarta menjatuhkan vonis 10 tahun penjara kepada Abdullah Puteh",
+    "institution": "Pengadilan Tipikor Jakarta",
+    "location": "DKI Jakarta",
+    "source_id": "src-kpk-puteh-2005",
+    "source_page": "hal. 95"
+  },
+  {
+    "event_id": "evt-urip-01",
+    "case_id": "cas-suap-jaksa-urip-2008",
+    "event_date": "2008-03-02",
+    "event_type": "OTT",
+    "event_description": "KPK melakukan Operasi Tangkap Tangan terhadap Jaksa Urip Tri Gunawan dengan barang bukti uang tunai USD 660.000",
+    "institution": "KPK",
+    "location": "DKI Jakarta",
+    "source_id": "src-ma-urip-tri-gunawan-2009",
+    "source_page": "hal. 12"
+  },
+  {
+    "event_id": "evt-mk-akil-01",
+    "case_id": "cas-mk-akil-mochtar-2013",
+    "event_date": "2013-10-02",
+    "event_type": "OTT",
+    "event_description": "KPK menangkap Ketua Mahkamah Konstitusi Akil Mochtar di kediaman dinas Widya Chandra terkait suap sengketa pilkada",
+    "institution": "KPK",
+    "location": "DKI Jakarta",
+    "source_id": "src-ma-akil-mochtar-2015",
+    "source_page": "hal. 15"
+  },
+  {
+    "event_id": "evt-bansos-01",
+    "case_id": "cas-bansos-covid-juliari-2020",
+    "event_date": "2020-12-05",
+    "event_type": "OTT",
+    "event_description": "KPK melakukan Operasi Tangkap Tangan terhadap pejabat Kemensos dan rekanan penyedia bansos sembako Covid-19",
+    "institution": "KPK",
+    "location": "DKI Jakarta",
+    "source_id": "src-tipikor-juliari-batubara-2021",
+    "source_page": "hal. 24"
+  },
+  {
+    "event_id": "evt-bansos-02",
+    "case_id": "cas-bansos-covid-juliari-2020",
+    "event_date": "2021-08-23",
+    "event_type": "inkrah",
+    "event_description": "Juliari Batubara menerima vonis 12 tahun penjara dan uang pengganti Rp14,59 miliar sehingga perkara berkekuatan hukum tetap",
+    "institution": "Pengadilan Tipikor Jakarta",
+    "location": "DKI Jakarta",
+    "source_id": "src-tipikor-juliari-batubara-2021",
+    "source_page": "hal. 210"
+  },
+  {
+    "event_id": "evt-zarof-ricar-01",
+    "case_id": "cas-suap-ronald-tannur-zarof-ricar-2024",
+    "event_date": "2024-10-24",
+    "event_type": "penahanan",
+    "event_description": "Kejaksaan Agung menangkap dan menahan Zarof Ricar di Bali serta menyita uang tunai Rp920 miliar dan emas 51 kg di Jakarta",
+    "institution": "Kejaksaan Agung RI",
+    "location": "DKI Jakarta / Bali",
+    "source_id": "src-kejagung-zarof-ricar-2024",
+    "source_page": "Siaran Pers"
+  }
+]

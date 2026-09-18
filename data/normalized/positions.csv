@@ -1,0 +1,44 @@
+position_id,person_id,position_title,institution,government_level,sector,province,city_regency,district,village,period_start,period_end,position_at_offense,position_at_arrest,position_at_verdict,source_id
+pos-per-jusuf-muda-dalam,per-jusuf-muda-dalam,Menteri Urusan Bank Sentral / Gubernur BI,Bank Indonesia,Nasional,Perbankan,DKI Jakarta,,,,,,true,false,false,src-pn-istimewa-jmd-1966
+pos-per-roeslan-abdulgani,per-roeslan-abdulgani,Menteri Luar Negeri RI,Kementerian Luar Negeri,Kementerian/Lembaga,Penyalahgunaan Anggaran,DKI Jakarta,,,,,,true,false,false,src-jaksa-agung-soeprapto-1956
+pos-per-budiadji,per-budiadji,Kepala Depot Logistik (Dolog) Kalimantan Timur,Bulog / Dolog Kaltim,BUMN,Penyalahgunaan Anggaran,Kalimantan Timur,,,,,,true,false,false,src-pn-samarinda-budiadji-1977
+pos-per-dicky-di-nata,per-dicky-di-nata,Direktur Utama PT Bank Duta Ekonomi,PT Bank Duta,Swasta,Perbankan,DKI Jakarta,,,,,,true,false,false,src-ma-bank-duta-dicky-1992
+pos-per-eddy-tansil,per-eddy-tansil,Pemilik PT Golden Key Group,PT Golden Key Group,Swasta,Perbankan,DKI Jakarta,,,,,,true,false,false,src-pn-jakpus-eddy-tansil-1994
+pos-per-soeharto,per-soeharto,Ketua Yayasan Beasiswa Supersemar / Presiden RI ke-2,Yayasan Supersemar / Lembaga Kepresidenan,Nasional,Penyalahgunaan Anggaran,DKI Jakarta,,,,,,true,false,false,src-ma-yayasan-supersemar-2015
+pos-per-djoko-tjandra,per-djoko-tjandra,Direktur Utama PT Era Giat Prima,PT EGP,Swasta,Perbankan,DKI Jakarta,,,,,,true,false,false,src-ma-bank-bali-2009
+pos-per-syahril-sabirin,per-syahril-sabirin,Gubernur Bank Indonesia,Bank Indonesia,Nasional,Perbankan,DKI Jakarta,,,,,,true,false,false,src-ma-syahril-sabirin-2004
+pos-per-bob-hasan,per-bob-hasan,Ketua Umum APHI / Dirut PT Mapala Rabda,APHI,Korporasi,Kehutanan,DKI Jakarta,,,,,,true,false,false,src-ma-bob-hasan-2001
+pos-per-sapuan,per-sapuan,Wakil Kepala Badan Urusan Logistik,Bulog,BUMN,Penyalahgunaan Anggaran,DKI Jakarta,,,,,,true,false,false,src-ma-yanatera-sapuan-2003
+pos-per-abdullah-puteh,per-abdullah-puteh,Gubernur Nanggroe Aceh Darussalam,Pemprov NAD,Provinsi,Pengadaan Barang/Jasa,Aceh,,,,,,true,false,false,src-kpk-puteh-2005
+pos-per-akbar-tandjung,per-akbar-tandjung,Menteri Sekretaris Negara,Kemensetneg RI,Kementerian/Lembaga,Penyalahgunaan Anggaran,DKI Jakarta,,,,,,true,false,false,src-ma-akbar-bulog-2004
+pos-per-syafruddin-temenggung,per-syafruddin-temenggung,Kepala BPPN,BPPN,Nasional,Perbankan,DKI Jakarta,,,,,,true,false,false,src-ma-sat-skl-blbi-2019
+pos-per-nazaruddin-sjamsuddin,per-nazaruddin-sjamsuddin,Ketua Komisi Pemilihan Umum RI,KPU RI,Nasional,Pengadaan Barang/Jasa,DKI Jakarta,,,,,,true,false,false,src-tipikor-kpu-nazaruddin-2005
+pos-per-aulia-pohan,per-aulia-pohan,Deputi Gubernur Bank Indonesia,Bank Indonesia,Nasional,Perbankan,DKI Jakarta,,,,,,true,false,false,src-ma-aulia-pohan-2009
+pos-per-urip-tri-gunawan,per-urip-tri-gunawan,Ketua Tim Penyelidik BLBI Kejaksaan Agung,Kejaksaan Agung RI,Aparat Penegak Hukum,Mafia Peradilan,DKI Jakarta,,,,,,true,false,false,src-ma-urip-tri-gunawan-2009
+pos-per-hari-sabarno,per-hari-sabarno,Menteri Dalam Negeri RI,Kementerian Dalam Negeri,Kementerian/Lembaga,Pengadaan Barang/Jasa,DKI Jakarta,,,,,,true,false,false,src-ma-damkar-hari-sabarno-2012
+pos-per-miranda-goeltom,per-miranda-goeltom,Deputi Gubernur Senior Terpilih Bank Indonesia,Bank Indonesia,Nasional,Suap,DKI Jakarta,,,,,,true,false,false,src-tipikor-dgs-miranda-2012
+pos-per-anas-urbaningrum,per-anas-urbaningrum,Ketua Fraksi Partai Demokrat DPR RI,DPR RI,Legislatif,Infrastruktur,DKI Jakarta,,,,,,true,false,false,src-ma-anas-urbaningrum-2020
+pos-per-akil-mochtar,per-akil-mochtar,Ketua Mahkamah Konstitusi RI,Mahkamah Konstitusi RI,Yudikatif,Mafia Peradilan,DKI Jakarta,,,,,,true,false,false,src-ma-akil-mochtar-2015
+pos-per-djoko-susilo,per-djoko-susilo,Kepala Korlantas Polri,Polri,Aparat Penegak Hukum,Pengadaan Barang/Jasa,DKI Jakarta,,,,,,true,false,false,src-ma-djoko-susilo-2014
+pos-per-luthfi-hasan,per-luthfi-hasan,Anggota DPR RI / Presiden PKS,DPR RI,Legislatif,Suap,DKI Jakarta,,,,,,true,false,false,src-ma-luthfi-hasan-2014
+pos-per-rudi-rubiandini,per-rudi-rubiandini,Kepala SKK Migas,SKK Migas,Nasional,Suap,DKI Jakarta,,,,,,true,false,false,src-tipikor-skk-migas-rudi-2014
+pos-per-m-nazaruddin,per-m-nazaruddin,Anggota DPR RI / Bendahara Umum Partai,DPR RI,Legislatif,Infrastruktur,DKI Jakarta,,,,,,true,false,false,src-ma-wisma-atlet-nazaruddin-2013
+pos-per-budi-mulya,per-budi-mulya,Deputi Gubernur Bank Indonesia,Bank Indonesia,Nasional,Perbankan,DKI Jakarta,,,,,,true,false,false,src-ma-bank-century-budi-mulya-2015
+pos-per-gayus-tambunan,per-gayus-tambunan,Penelaah Keberatan Ditjen Pajak Gol III/a,Direktorat Jenderal Pajak,Kementerian/Lembaga,Pajak,DKI Jakarta,,,,,,true,false,false,src-ma-gayus-tambunan-2013
+pos-per-setya-novanto,per-setya-novanto,Ketua Fraksi Golkar DPR RI,DPR RI,Legislatif,Pengadaan Barang/Jasa,DKI Jakarta,,,,,,true,false,false,src-ma-setya-novanto-2020
+pos-per-neneng-yasin,per-neneng-yasin,Bupati Bekasi,Pemkab Bekasi,Kabupaten/Kota,Perizinan,Jawa Barat,,,,,,true,false,false,src-tipikor-meikarta-neneng-2019
+pos-per-idrus-marham,per-idrus-marham,Menteri Sosial RI / Sekjen Golkar,Kemensos / DPR,Kementerian/Lembaga,Infrastruktur,DKI Jakarta,,,,,,true,false,false,src-ma-pltu-riau-idrus-2019
+pos-per-romahurmuziy,per-romahurmuziy,Anggota DPR RI / Ketum PPP,DPR RI,Legislatif,Suap,DKI Jakarta,,,,,,true,false,false,src-ma-romahurmuziy-2020
+pos-per-benny-tjokro,per-benny-tjokro,Direktur Utama PT Hanson International Tbk,PT Hanson International,Swasta,BUMN,DKI Jakarta,,,,,,true,false,false,src-ma-jiwasraya-benny-tjokro-2021
+pos-per-sonny-widjaja,per-sonny-widjaja,Direktur Utama PT ASABRI (Persero),PT ASABRI (Persero),BUMN,BUMN,DKI Jakarta,,,,,,true,false,false,src-ma-asabri-sonny-widjaja-2023
+pos-per-wisnu-wardhana,per-wisnu-wardhana,Dirjen Perdagangan Luar Negeri Kemendag,Kementerian Perdagangan,Kementerian/Lembaga,Perizinan,DKI Jakarta,,,,,,true,false,false,src-ma-cpo-wisnu-wardhana-2023
+pos-per-harvey-moeis,per-harvey-moeis,Perwakilan PT Refined Bangka Tin (RBT),PT RBT,Swasta,Pertambangan,Kepulauan Bangka Belitung,,,,,,true,false,false,src-tipikor-timah-harvey-moeis-2024
+pos-per-emirsyah-satar,per-emirsyah-satar,Direktur Utama PT Garuda Indonesia (Persero) Tbk,PT Garuda Indonesia,BUMN,Pengadaan Barang/Jasa,DKI Jakarta,,,,,,true,false,false,src-tipikor-garuda-emirsyah-2020
+pos-per-juliari-batubara,per-juliari-batubara,Menteri Sosial RI,Kementerian Sosial RI,Kementerian/Lembaga,Bansos,DKI Jakarta,,,,,,true,false,false,src-tipikor-juliari-batubara-2021
+pos-per-edhy-prabowo,per-edhy-prabowo,Menteri Kelautan dan Perikanan RI,Kementerian Kelautan dan Perikanan RI,Kementerian/Lembaga,Perizinan,DKI Jakarta,,,,,,true,false,false,src-ma-edhy-prabowo-2022
+pos-per-johnny-plate,per-johnny-plate,Menteri Komunikasi dan Informatika RI,Kementerian Komunikasi dan Informatika RI,Kementerian/Lembaga,Infrastruktur,DKI Jakarta,,,,,,true,false,false,src-tipikor-bts-johnny-plate-2023
+pos-per-syahrul-yasin-limpo,per-syahrul-yasin-limpo,Menteri Pertanian RI,Kementerian Pertanian RI,Kementerian/Lembaga,Pemerasan,DKI Jakarta,,,,,,true,false,false,src-tipikor-syl-2024
+pos-per-surya-darmadi,per-surya-darmadi,Pemilik Manfaat Duta Palma Group,Duta Palma Group,Swasta,Perkebunan,Riau,,,,,,true,false,false,src-ma-surya-darmadi-2023
+pos-per-zarof-ricar,per-zarof-ricar,Kepala Balitbang Diklat Kumdil MA RI,Mahkamah Agung RI,Yudikatif,Mafia Peradilan,DKI Jakarta,,,,,,true,false,false,src-kejagung-zarof-ricar-2024
+pos-per-thomas-lembong,per-thomas-lembong,Menteri Perdagangan RI,Kementerian Perdagangan RI,Kementerian/Lembaga,Perizinan,DKI Jakarta,,,,,,true,false,false,src-kejagung-tom-lembong-2024
+pos-per-sahbirin-noor,per-sahbirin-noor,Gubernur Kalimantan Selatan,Pemerintah Provinsi Kalsel,Provinsi,Pengadaan Barang/Jasa,Kalimantan Selatan,,,,,,true,false,false,src-kpk-ott-sahbirin-noor-2024

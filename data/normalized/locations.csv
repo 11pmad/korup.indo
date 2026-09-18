@@ -1,0 +1,14 @@
+location_id,island_cluster,province,city_regency,district,village,latitude,longitude,location_type
+loc-dki-jakpus,Jawa,DKI Jakarta,Jakarta Pusat,Gambir,,-6.1754,106.8272,institution_location
+loc-dki-jaksel,Jawa,DKI Jakarta,Jakarta Selatan,Kebayoran Baru,,-6.2444,106.8006,offense_location
+loc-aceh-banda,Sumatera,Aceh,Kota Banda Aceh,Baiturrahman,,5.5483,95.3238,project_location
+loc-jabar-bogor,Jawa,Jawa Barat,Kabupaten Bogor,Citeureup,Hambalang,-6.5369,106.8834,project_location
+loc-jabar-bekasi,Jawa,Jawa Barat,Kabupaten Bekasi,Cikarang Pusat,,-6.3644,107.1725,project_location
+loc-sumsel-palembang,Sumatera,Sumatera Selatan,Kota Palembang,Jakabaring,,-3.0189,104.7901,project_location
+loc-riau-inhu,Sumatera,Riau,Kabupaten Indragiri Hulu,Rengat,,-0.3756,102.5441,offense_location
+loc-babel-pangkalpinang,Sumatera,Kepulauan Bangka Belitung,Kota Pangkalpinang,Gerunggang,,-2.129,106.1129,project_location
+loc-jatim-surabaya,Jawa,Jawa Timur,Kota Surabaya,Sawahan,,-7.2575,112.7521,court_location
+loc-kalsel-banjarbaru,Kalimantan,Kalimantan Selatan,Kota Banjarbaru,Cempaka,,-3.4572,114.8103,project_location
+loc-kaltim-samarinda,Kalimantan,Kalimantan Timur,Kota Samarinda,Samarinda Kota,,-0.5016,117.1537,project_location
+loc-sulsel-makassar,Sulawesi,Sulawesi Selatan,Kota Makassar,Ujung Pandang,,-5.1477,119.4327,institution_location
+loc-papua-jayapura,Papua,Papua,Kota Jayapura,Jayapura Utara,,-2.5337,140.7181,institution_location

@@ -1,0 +1,57 @@
+[
+  {
+    "party_id": "pty-pni",
+    "party_name": "Partai Nasional Indonesia",
+    "party_abbreviation": "PNI"
+  },
+  {
+    "party_id": "pty-golkar",
+    "party_name": "Partai Golongan Karya",
+    "party_abbreviation": "GOLKAR"
+  },
+  {
+    "party_id": "pty-pdi-p",
+    "party_name": "Partai Demokrasi Indonesia Perjuangan",
+    "party_abbreviation": "PDI-P"
+  },
+  {
+    "party_id": "pty-demokrat",
+    "party_name": "Partai Demokrat",
+    "party_abbreviation": "DEMOKRAT"
+  },
+  {
+    "party_id": "pty-pks",
+    "party_name": "Partai Keadilan Sejahtera",
+    "party_abbreviation": "PKS"
+  },
+  {
+    "party_id": "pty-nasdem",
+    "party_name": "Partai NasDem",
+    "party_abbreviation": "NASDEM"
+  },
+  {
+    "party_id": "pty-gerindra",
+    "party_name": "Partai Gerakan Indonesia Raya",
+    "party_abbreviation": "GERINDRA"
+  },
+  {
+    "party_id": "pty-ppp",
+    "party_name": "Partai Persatuan Pembangunan",
+    "party_abbreviation": "PPP"
+  },
+  {
+    "party_id": "pty-pan",
+    "party_name": "Partai Amanat Nasional",
+    "party_abbreviation": "PAN"
+  },
+  {
+    "party_id": "pty-pkb",
+    "party_name": "Partai Kebangkitan Bangsa",
+    "party_abbreviation": "PKB"
+  },
+  {
+    "party_id": "pty-non-partisan",
+    "party_name": "Non-Partai / Independen / Aparatur Karir / Militer",
+    "party_abbreviation": "NON-PARTAI"
+  }
+]

@@ -1,0 +1,50 @@
+[
+  {
+    "review_id": "rq-tom-lembong-gula",
+    "entity_type": "case",
+    "entity_id": "cas-impor-gula-tom-lembong-2024",
+    "reason": "Perkara belum berputusan pengadilan tingkat pertama; angka kerugian negara Rp400 miliar masih merupakan estimasi klaim Kejaksaan Agung.",
+    "disparity_details": "Klaim kerugian negara belum diverifikasi oleh audit BPK/BPKP final dalam amar putusan peradilan.",
+    "conflicting_sources": [
+      "src-kejagung-tom-lembong-2024"
+    ],
+    "status": "pending",
+    "created_at": "2026-09-19"
+  },
+  {
+    "review_id": "rq-timah-harvey-moeis",
+    "entity_type": "case",
+    "entity_id": "cas-timah-harvey-moeis-2024",
+    "reason": "Perkara dalam tahap pembuktian sidang Tipikor Jakarta; audit BPKP membedakan kerugian keuangan negara Rp29T dan lingkungan hidup Rp271T.",
+    "disparity_details": "Pemisahan ketat kerugian keuangan riil negara vs kerugian kerusakan ekologis.",
+    "conflicting_sources": [
+      "src-tipikor-timah-harvey-moeis-2024"
+    ],
+    "status": "pending",
+    "created_at": "2026-09-19"
+  },
+  {
+    "review_id": "rq-sahbirin-noor-praperadilan",
+    "entity_type": "case",
+    "entity_id": "cas-ott-pupr-kalsel-sahbirin-2024",
+    "reason": "Status penetapan tersangka sempat dipraperadilankan di PN Jaksel; riwayat status hukum tetap dipertahankan kronologis.",
+    "disparity_details": "Putusan praperadilan membatalkan status tersangka sementara bukti permulaan terus disidik KPK.",
+    "conflicting_sources": [
+      "src-kpk-ott-sahbirin-noor-2024"
+    ],
+    "status": "pending",
+    "created_at": "2026-09-19"
+  },
+  {
+    "review_id": "rq-duta-palma-loss-disparity",
+    "entity_type": "financial",
+    "entity_id": "fin-duta-palma-court-loss",
+    "reason": "Disparitas klaim angka kerugian negara: Jaksa menuntut kerugian ekonomi dan keuangan Rp78 triliun, Kasasi MA mengoreksi menjadi Rp2,238 triliun.",
+    "disparity_details": "Telah diselesaikan dengan menggunakan angka final kasasi MA (Rp2,238 triliun) sebagai court_recognized_loss_amount dan mencatat disparitas di verification_note.",
+    "conflicting_sources": [
+      "src-ma-surya-darmadi-2023"
+    ],
+    "status": "resolved",
+    "created_at": "2026-09-19"
+  }
+]

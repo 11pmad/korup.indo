@@ -1,0 +1,92 @@
+[
+  {
+    "case_location_id": "cl-de-unie-jakpus",
+    "case_id": "cas-de-unie-roeslan-1956",
+    "location_id": "loc-dki-jakpus",
+    "location_context": "Percetakan NV De Unie dan Kemlu RI"
+  },
+  {
+    "case_location_id": "cl-jmd-jakpus",
+    "case_id": "cas-jmd-bank-sentral-1966",
+    "location_id": "loc-dki-jakpus",
+    "location_context": "Bank Sentral RI dan Pengadilan Negeri Istimewa Jakarta"
+  },
+  {
+    "case_location_id": "cl-budiadji-samarinda",
+    "case_id": "cas-dolog-kaltim-budiadji-1976",
+    "location_id": "loc-kaltim-samarinda",
+    "location_context": "Gudang beras dan Kantor Dolog Kalimantan Timur"
+  },
+  {
+    "case_location_id": "cl-bank-duta-jakpus",
+    "case_id": "cas-bank-duta-dicky-1990",
+    "location_id": "loc-dki-jakpus",
+    "location_context": "Kantor Pusat PT Bank Duta Kebon Sirih"
+  },
+  {
+    "case_location_id": "cl-eddy-tansil-jakpus",
+    "case_id": "cas-bapindo-eddy-tansil-1994",
+    "location_id": "loc-dki-jakpus",
+    "location_context": "Kantor Pusat Bapindo dan PN Jakarta Pusat"
+  },
+  {
+    "case_location_id": "cl-supersemar-jaksel",
+    "case_id": "cas-yayasan-supersemar-soeharto",
+    "location_id": "loc-dki-jaksel",
+    "location_context": "Gedung Granadi HR Rasuna Said Jakarta Selatan"
+  },
+  {
+    "case_location_id": "cl-bank-bali-jkt",
+    "case_id": "cas-bank-bali-1999",
+    "location_id": "loc-dki-jakpus",
+    "location_context": "Pusat transaksi BPPN dan Bank Bali"
+  },
+  {
+    "case_location_id": "cl-puteh-aceh",
+    "case_id": "cas-helikopter-mi2-puteh-2004",
+    "location_id": "loc-aceh-banda",
+    "location_context": "Kantor Gubernur NAD penganggaran APBD"
+  },
+  {
+    "case_location_id": "cl-hambalang-bogor",
+    "case_id": "cas-hambalang-anas-2012",
+    "location_id": "loc-jabar-bogor",
+    "location_context": "Lokasi fisik proyek sarana olahraga Hambalang"
+  },
+  {
+    "case_location_id": "cl-meikarta-bekasi",
+    "case_id": "cas-meikarta-neneng-2018",
+    "location_id": "loc-jabar-bekasi",
+    "location_context": "Lokasi perizinan lahan proyek Meikarta"
+  },
+  {
+    "case_location_id": "cl-wisma-atlet-palembang",
+    "case_id": "cas-wisma-atlet-nazaruddin-2011",
+    "location_id": "loc-sumsel-palembang",
+    "location_context": "Lokasi pembangunan Wisma Atlet SEA Games"
+  },
+  {
+    "case_location_id": "cl-duta-palma-riau",
+    "case_id": "cas-duta-palma-surya-darmadi-2022",
+    "location_id": "loc-riau-inhu",
+    "location_context": "Hutan lindung yang dijadikan kebun sawit ilegal"
+  },
+  {
+    "case_location_id": "cl-timah-babel",
+    "case_id": "cas-timah-harvey-moeis-2024",
+    "location_id": "loc-babel-pangkalpinang",
+    "location_context": "Wilayah IUP pertambangan timah darat dan laut"
+  },
+  {
+    "case_location_id": "cl-tannur-surabaya",
+    "case_id": "cas-suap-ronald-tannur-zarof-ricar-2024",
+    "location_id": "loc-jatim-surabaya",
+    "location_context": "Pengadilan Negeri Surabaya tempat vonis bebas dijatuhkan"
+  },
+  {
+    "case_location_id": "cl-pupr-kalsel",
+    "case_id": "cas-ott-pupr-kalsel-sahbirin-2024",
+    "location_id": "loc-kalsel-banjarbaru",
+    "location_context": "Dinas PUPR Provinsi Kalimantan Selatan"
+  }
+]

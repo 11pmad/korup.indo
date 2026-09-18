@@ -1,0 +1,17 @@
+membership_id,person_id,party_id,membership_start,membership_end,party_position,party_position_start,party_position_end,party_status,party_at_offense,party_at_arrest,party_at_verdict,source_id
+pm-roeslan-pni,per-roeslan-abdulgani,pty-pni,1946-01-01,1970-01-01,Pimpinan / Tokoh PNI,,,aktif,true,false,false,src-jaksa-agung-soeprapto-1956
+pm-soeharto-golkar,per-soeharto,pty-golkar,1968-01-01,1998-05-21,Ketua Dewan Pembina Golkar,1971-01-01,1998-05-21,pensiun,true,false,false,src-ma-yayasan-supersemar-2015
+pm-akbar-golkar,per-akbar-tandjung,pty-golkar,1970-01-01,,Ketua Umum DPP Golkar,1998-07-11,2004-12-19,aktif,true,false,true,src-ma-akbar-bulog-2004
+pm-anas-demokrat,per-anas-urbaningrum,pty-demokrat,2005-05-01,2013-02-23,Ketua Umum DPP Partai Demokrat,2010-05-23,2013-02-23,berhenti,true,false,false,src-ma-anas-urbaningrum-2020
+pm-akil-golkar,per-akil-mochtar,pty-golkar,1999-01-01,2008-08-01,Wakil Sekretaris Fraksi Golkar,1999-10-01,2004-10-01,keluar_hakim_mk,false,false,false,src-ma-akil-mochtar-2015
+pm-luthfi-pks,per-luthfi-hasan,pty-pks,1998-07-20,2013-01-31,Presiden PKS,2010-06-20,2013-01-31,berhenti,true,true,false,src-ma-luthfi-hasan-2014
+pm-nazaruddin-demokrat,per-m-nazaruddin,pty-demokrat,2006-01-01,2011-05-24,Bendahara Umum DPP Partai Demokrat,2010-05-23,2011-05-24,diberhentikan,true,true,false,src-ma-wisma-atlet-nazaruddin-2013
+pm-setnov-golkar,per-setya-novanto,pty-golkar,1990-01-01,2017-12-13,Ketua Umum DPP Golkar,2016-05-17,2017-12-13,dinonaktifkan,true,true,false,src-ma-setya-novanto-2020
+pm-neneng-golkar,per-neneng-yasin,pty-golkar,2007-01-01,2018-10-16,Ketua DPD Golkar Kabupaten Bekasi,2010-01-01,2018-10-16,dinonaktifkan,true,true,false,src-tipikor-meikarta-neneng-2019
+pm-idrus-golkar,per-idrus-marham,pty-golkar,1997-01-01,2018-08-24,Sekretaris Jenderal DPP Partai Golkar,2009-10-08,2018-01-22,mengundurkan_diri,true,true,false,src-ma-pltu-riau-idrus-2019
+pm-romy-ppp,per-romahurmuziy,pty-ppp,2005-01-01,2019-03-16,Ketua Umum DPP PPP,2016-04-11,2019-03-16,diberhentikan,true,true,false,src-ma-romahurmuziy-2020
+pm-juliari-pdip,per-juliari-batubara,pty-pdi-p,2010-01-01,2020-12-06,Wakil Bendahara Umum DPP PDI-P,2019-08-10,2020-12-06,dinonaktifkan,true,true,false,src-tipikor-juliari-batubara-2021
+pm-edhy-gerindra,per-edhy-prabowo,pty-gerindra,2008-02-06,2020-11-26,Wakil Ketua Umum DPP Gerindra,2014-09-01,2020-11-26,mengundurkan_diri,true,true,false,src-ma-edhy-prabowo-2022
+pm-johnny-nasdem,per-johnny-plate,pty-nasdem,2013-01-01,2023-05-17,Sekretaris Jenderal DPP NasDem,2017-09-01,2023-05-17,dinonaktifkan,true,true,false,src-tipikor-bts-johnny-plate-2023
+pm-syl-nasdem,per-syahrul-yasin-limpo,pty-nasdem,2018-03-21,2023-10-06,Ketua DPP Partai NasDem,2019-11-11,2023-10-06,mengundurkan_diri,true,true,false,src-tipikor-syl-2024
+pm-sahbirin-golkar,per-sahbirin-noor,pty-golkar,2015-01-01,,Ketua DPD Golkar Kalimantan Selatan,2016-01-01,,aktif,true,false,false,src-kpk-ott-sahbirin-noor-2024

@@ -1,0 +1,44 @@
+case_person_id,case_id,person_id,role_in_case,legal_status,offense_role,defendant_role,source_id
+cp-de-unie-roeslan,cas-de-unie-roeslan-1956,per-roeslan-abdulgani,Menteri Luar Negeri RI,bebas,kebijakan_administrasi,terdakwa_bebas_lepas,src-jaksa-agung-soeprapto-1956
+cp-jmd-bank-sentral,cas-jmd-bank-sentral-1966,per-jusuf-muda-dalam,Menteri Urusan Bank Sentral / Gubernur BI,divonis_inkrah,pelaku_utama,terpidana,src-pn-istimewa-jmd-1966
+cp-dolog-kaltim-budiadji,cas-dolog-kaltim-budiadji-1976,per-budiadji,Kepala Dolog Kalimantan Timur,divonis_inkrah,pelaku_utama,terpidana,src-pn-samarinda-budiadji-1977
+cp-bank-duta-dicky,cas-bank-duta-dicky-1990,per-dicky-di-nata,Direktur Utama PT Bank Duta,divonis_inkrah,pelaku_utama,terpidana,src-ma-bank-duta-dicky-1992
+cp-bapindo-eddy-tansil,cas-bapindo-eddy-tansil-1994,per-eddy-tansil,Pemilik PT Golden Key Group,divonis_inkrah,pelaku_utama,terpidana,src-pn-jakpus-eddy-tansil-1994
+cp-supersemar-soeharto,cas-yayasan-supersemar-soeharto,per-soeharto,Ketua Yayasan Beasiswa Supersemar,divonis_inkrah,pelaku_utama,terpidana,src-ma-yayasan-supersemar-2015
+cp-bank-bali-djoko,cas-bank-bali-1999,per-djoko-tjandra,Direktur Utama PT EGP,divonis_inkrah,turut_serta,terpidana,src-ma-bank-bali-2009
+cp-bi-cessie-syahril,cas-bi-cessie-syahril-2002,per-syahril-sabirin,Gubernur Bank Indonesia,divonis_inkrah,pelaku_utama,terpidana,src-ma-syahril-sabirin-2004
+cp-mapala-bob-hasan,cas-mapala-rabda-bob-hasan,per-bob-hasan,Ketua Umum APHI,divonis_inkrah,pelaku_utama,terpidana,src-ma-bob-hasan-2001
+cp-yanatera-sapuan,cas-yanatera-bulog-sapuan-2000,per-sapuan,Wakil Kepala Bulog,divonis_inkrah,pelaku_utama,terpidana,src-ma-yanatera-sapuan-2003
+cp-puteh-helikopter,cas-helikopter-mi2-puteh-2004,per-abdullah-puteh,Gubernur NAD,divonis_inkrah,pelaku_utama,terpidana,src-kpk-puteh-2005
+cp-bulog-akbar,cas-buloggate-akbar-tandjung-2002,per-akbar-tandjung,Mantan Mensesneg,lepas,perintah_jabatan,terdakwa_bebas_lepas,src-ma-akbar-bulog-2004
+cp-skl-blbi-sat,cas-skl-blbi-bdni-2004,per-syafruddin-temenggung,Kepala BPPN,lepas,kebijakan_administrasi,terdakwa_bebas_lepas,src-ma-sat-skl-blbi-2019
+cp-kpu-nazaruddin,cas-kpu-logistik-2004,per-nazaruddin-sjamsuddin,Ketua KPU RI,divonis_inkrah,pelaku_utama,terpidana,src-tipikor-kpu-nazaruddin-2005
+cp-bi-aulia-pohan,cas-bi-yppi-2008,per-aulia-pohan,Deputi Gubernur BI,divonis_inkrah,turut_serta,terpidana,src-ma-aulia-pohan-2009
+cp-urip-jaksa,cas-suap-jaksa-urip-2008,per-urip-tri-gunawan,Jaksa Penyelidik BLBI,divonis_inkrah,penerima_suap,terpidana,src-ma-urip-tri-gunawan-2009
+cp-damkar-hari-sabarno,cas-mobil-damkar-depdagri-2005,per-hari-sabarno,Menteri Dalam Negeri RI,divonis_inkrah,penyalahgunaan_wewenang,terpidana,src-ma-damkar-hari-sabarno-2012
+cp-tc-miranda-goeltom,cas-traveller-cheque-dgs-bi-2004,per-miranda-goeltom,Calon Terpilih DGS BI,divonis_inkrah,turut_serta_suap,terpidana,src-tipikor-dgs-miranda-2012
+cp-hambalang-anas,cas-hambalang-anas-2012,per-anas-urbaningrum,Anggota DPR RI,divonis_inkrah,penerima_gratifikasi,terpidana,src-ma-anas-urbaningrum-2020
+cp-wisma-atlet-nazar,cas-wisma-atlet-nazaruddin-2011,per-m-nazaruddin,Anggota DPR RI,divonis_inkrah,penerima_suap_fee,terpidana,src-ma-wisma-atlet-nazaruddin-2013
+cp-mk-akil-mochtar,cas-mk-akil-mochtar-2013,per-akil-mochtar,Ketua Mahkamah Konstitusi RI,divonis_inkrah,penerima_suap_tppu,terpidana,src-ma-akil-mochtar-2015
+cp-simulator-djoko-susilo,cas-simulator-sim-korlantas-2012,per-djoko-susilo,Kakorlantas Polri,divonis_inkrah,pelaku_utama_tppu,terpidana,src-ma-djoko-susilo-2014
+cp-impor-daging-luthfi,cas-impor-daging-sapi-2013,per-luthfi-hasan,Anggota DPR RI,divonis_inkrah,perantara_suap,terpidana,src-ma-luthfi-hasan-2014
+cp-skk-migas-rudi,cas-skk-migas-rudi-2013,per-rudi-rubiandini,Kepala SKK Migas,divonis_inkrah,penerima_suap,terpidana,src-tipikor-skk-migas-rudi-2014
+cp-century-budi-mulya,cas-bailout-bank-century-2008,per-budi-mulya,Deputi Gubernur BI,divonis_inkrah,pelaku_utama,terpidana,src-ma-bank-century-budi-mulya-2015
+cp-pajak-gayus,cas-pajak-gayus-tambunan-2010,per-gayus-tambunan,Pegawai Ditjen Pajak,divonis_inkrah,penerima_suap_tppu,terpidana,src-ma-gayus-tambunan-2013
+cp-e-ktp-setnov,cas-e-ktp-setnov-2017,per-setya-novanto,Ketua Fraksi Golkar DPR RI,divonis_inkrah,turut_serta_pengondisian,terpidana,src-ma-setya-novanto-2020
+cp-meikarta-neneng,cas-meikarta-neneng-2018,per-neneng-yasin,Bupati Bekasi,divonis_inkrah,penerima_suap_izin,terpidana,src-tipikor-meikarta-neneng-2019
+cp-pltu-riau-idrus,cas-pltu-riau-idrus-2018,per-idrus-marham,Menteri Sosial RI,divonis_inkrah,turut_serta_suap,terpidana,src-ma-pltu-riau-idrus-2019
+cp-kemenag-romy,cas-kemenag-romahurmuziy-2019,per-romahurmuziy,Anggota DPR RI,divonis_inkrah,penerima_suap_intervensi,terpidana,src-ma-romahurmuziy-2020
+cp-jiwasraya-benny,cas-jiwasraya-benny-tjokro-2020,per-benny-tjokro,Investor Saham PT Hanson,divonis_inkrah,pelaku_utama_tppu,terpidana,src-ma-jiwasraya-benny-tjokro-2021
+cp-asabri-sonny,cas-asabri-sonny-widjaja-2021,per-sonny-widjaja,Direktur Utama PT ASABRI,divonis_inkrah,pelaku_utama,terpidana,src-ma-asabri-sonny-widjaja-2023
+cp-cpo-wisnu,cas-cpo-migor-wisnu-2022,per-wisnu-wardhana,Dirjen Daglu Kemendag,divonis_inkrah,penerbit_izin_melawan_hukum,terpidana,src-ma-cpo-wisnu-wardhana-2023
+cp-timah-harvey,cas-timah-harvey-moeis-2024,per-harvey-moeis,Perwakilan Smelter PT RBT,terdakwa,pemufakatan_sewa_ilegal,terdakwa,src-tipikor-timah-harvey-moeis-2024
+cp-garuda-emir,cas-garuda-emirsyah-2017,per-emirsyah-satar,Direktur Utama PT Garuda Indonesia,divonis_inkrah,penerima_suap_pengadaan,terpidana,src-tipikor-garuda-emirsyah-2020
+cp-bansos-juliari,cas-bansos-covid-juliari-2020,per-juliari-batubara,Menteri Sosial RI,divonis_inkrah,penerima_suap_instruksi,terpidana,src-tipikor-juliari-batubara-2021
+cp-benih-edhy,cas-benih-lobster-edhy-prabowo-2020,per-edhy-prabowo,Menteri KKP RI,divonis_inkrah,penerima_suap_izin,terpidana,src-ma-edhy-prabowo-2022
+cp-bts-johnny,cas-bts-4g-kominfo-2023,per-johnny-plate,Menkominfo RI,divonis_inkrah,pelaku_utama,terpidana,src-tipikor-bts-johnny-plate-2023
+cp-kementan-syl,cas-kementan-pemerasan-syl-2024,per-syahrul-yasin-limpo,Menteri Pertanian RI,divonis_inkrah,pelaku_pemerasan_jabatan,terpidana,src-tipikor-syl-2024
+cp-duta-palma-surya,cas-duta-palma-surya-darmadi-2022,per-surya-darmadi,Pemilik Duta Palma Group,divonis_inkrah,pelaku_utama,terpidana,src-ma-surya-darmadi-2023
+cp-suap-tannur-zarof,cas-suap-ronald-tannur-zarof-ricar-2024,per-zarof-ricar,Eks Pejabat Balitbang MA,terdakwa,makelar_perkara_kasasi,terdakwa,src-kejagung-zarof-ricar-2024
+cp-impor-gula-tom,cas-impor-gula-tom-lembong-2024,per-thomas-lembong,Mantan Menteri Perdagangan RI,terdakwa,pemberi_izin_impor,terdakwa,src-kejagung-tom-lembong-2024
+cp-ott-kalsel-sahbirin,cas-ott-pupr-kalsel-sahbirin-2024,per-sahbirin-noor,Gubernur Kalimantan Selatan,tersangka,penerima_komitmen_fee,tersangka,src-kpk-ott-sahbirin-noor-2024

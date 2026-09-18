@@ -1,0 +1,11 @@
+case_company_id,case_id,company_id,company_role_in_case,transaction_value,contract_value,tender_value,transaction_date,company_case_status,source_id
+cc-de-unie-roeslan,cas-de-unie-roeslan-1956,comp-nv-de-unie,Percetakan Barter Luar Negeri,,,,1956-08-01,dilikuidasi,src-jaksa-agung-soeprapto-1956
+cc-bank-duta-dicky,cas-bank-duta-dicky-1990,comp-pt-bank-duta,Bank Pengendali Transaksi Valas Spekulatif,811000000000,,,1990-09-04,merger_bank_danmon,src-ma-bank-duta-dicky-1992
+cc-bapindo-golden-key,cas-bapindo-eddy-tansil-1994,comp-pt-golden-key-group,Debitur Kredit Macet dan Pembobol L/C,1300000000000,,,1994-02-14,dilikuidasi,src-pn-jakpus-eddy-tansil-1994
+cc-supersemar-yayasan,cas-yayasan-supersemar-soeharto,comp-yayasan-supersemar,Tergugat Badan Hukum Penyeleweng Dana Beasiswa,4448000000000,,,1998-05-21,sita_eksekusi,src-ma-yayasan-supersemar-2015
+cc-bank-bali-egp,cas-bank-bali-1999,comp-pt-era-giat-prima,Penerima Kuasa Pengalihan Hak Tagih Cessie,546468544738,904000000000,,1999-01-11,dana_dirampas_negara,src-ma-bank-bali-2009
+cc-mapala-hasan,cas-mapala-rabda-bob-hasan,comp-pt-mapala-rabda,Pelaksana Kontrak Pemetaan Udara Kehutanan,84400000000,,,1996-06-01,korporasi_disebut_dalam_dakwaan,src-ma-bob-hasan-2001
+cc-wisma-dgi,cas-wisma-atlet-nazaruddin-2011,comp-pt-duta-graha-indah,Pemenang Kontrak Proyek Wisma Atlet Jakabaring,4675000000,191000000000,,2010-10-12,terdakwa_korporasi,src-ma-wisma-atlet-nazaruddin-2013
+cc-duta-palma-surya,cas-duta-palma-surya-darmadi-2022,comp-duta-palma-group,Induk Korporasi Penguasa Kebun Sawit Hutan Ilegal,2238000000000,,,2004-05-10,aset_perkebunan_disita_eksekusi,src-ma-surya-darmadi-2023
+cc-jiwasraya-hanson,cas-jiwasraya-benny-tjokro-2020,comp-pt-hanson-international,Emiten Saham Manipulasi Investasi Jiwasraya,6078500000000,,,2018-10-01,pailit_sita_eksekusi,src-ma-jiwasraya-benny-tjokro-2021
+cc-timah-rbt,cas-timah-harvey-moeis-2024,comp-pt-refined-bangka-tin,Penyedia Jasa Sewa Smelter Peleburan Timah Ilegal,,,,2018-05-10,disita_penyidik,src-tipikor-timah-harvey-moeis-2024
