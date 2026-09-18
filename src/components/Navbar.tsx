@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { 
+  Home,
   MapPin, 
   Trophy, 
   BarChart3, 
@@ -15,8 +16,8 @@ import {
 import { sound } from '../utils/audio.js';
 
 interface NavbarProps {
-  activeTab: 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin';
-  setActiveTab: (tab: 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin') => void;
+  activeTab: 'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin';
+  setActiveTab: (tab: 'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin') => void;
   onOpenReport: () => void;
 }
 
@@ -36,7 +37,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
-  const handleNavClick = (tab: 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin') => {
+  const handleNavClick = (tab: 'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin') => {
     sound.playPop();
     setActiveTab(tab);
     setMobileMenuOpen(false);
@@ -50,28 +51,28 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Logo & Brand in Scrapbook Style */}
           <div 
             className="flex items-center gap-3 cursor-pointer group"
-            onClick={() => handleNavClick('peta')}
+            onClick={() => handleNavClick('beranda')}
           >
             <div className="relative">
               <div className="w-12 h-12 rounded-2xl bg-[#FDE047] border-2 border-[#EAB308] shadow-md flex items-center justify-center rotate-[-4deg] group-hover:rotate-0 transition-transform">
                 <BookOpen className="w-7 h-7 text-[#854D0E]" />
               </div>
-              <span className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-[#F43F5E] text-white text-[10px] font-bold rounded-full rotate-6 shadow-sm">
-                RI 🇮🇩
+              <span className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-[#DC2626] text-white text-[10px] font-bold rounded-full rotate-6 shadow-sm">
+                LKI 🇮🇩
               </span>
             </div>
             
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-marker text-2xl sm:text-3xl text-[#1E293B] tracking-wide">
-                  Peta Korupsi
+                  Liga Korupsi
                 </span>
                 <span className="px-2 py-0.5 bg-[#FEF08A] text-[#854D0E] font-hand font-bold text-xs rounded-md border border-[#EAB308] rotate-2">
-                  Wakil Rakyat
+                  Indonesia
                 </span>
               </div>
               <p className="text-xs text-[#64748B] font-medium hidden sm:block">
-                Buku Catatan Transparansi Publik Indonesia
+                Portal Transparansi Perkara &amp; Putusan Hukum Terbuka
               </p>
             </div>
           </div>
@@ -79,24 +80,24 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Desktop Nav Items */}
           <nav className="hidden lg:flex items-center gap-1.5">
             <button
-              id="nav-peta-btn"
-              onClick={() => handleNavClick('peta')}
-              className={`px-3.5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${
-                activeTab === 'peta'
-                  ? 'bg-[#38BDF8] text-white shadow-md rotate-[-1deg] border border-[#0284C7]'
+              id="nav-beranda-btn"
+              onClick={() => handleNavClick('beranda')}
+              className={`px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                activeTab === 'beranda'
+                  ? 'bg-[#FDE047] text-[#854D0E] shadow-sm border border-[#EAB308]'
                   : 'text-[#475569] hover:bg-[#F1EBD9] hover:text-[#0F172A]'
               }`}
             >
-              <MapPin className="w-4 h-4" />
-              <span>Peta Interaktif</span>
+              <Home className="w-4 h-4" />
+              <span>Beranda</span>
             </button>
 
             <button
               id="nav-klasemen-btn"
               onClick={() => handleNavClick('klasemen')}
-              className={`px-3.5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${
+              className={`px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 activeTab === 'klasemen'
-                  ? 'bg-[#FB923C] text-white shadow-md rotate-[1deg] border border-[#EA580C]'
+                  ? 'bg-[#FB923C] text-white shadow-md border border-[#EA580C]'
                   : 'text-[#475569] hover:bg-[#F1EBD9] hover:text-[#0F172A]'
               }`}
             >
@@ -105,11 +106,24 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             <button
+              id="nav-peta-btn"
+              onClick={() => handleNavClick('peta')}
+              className={`px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                activeTab === 'peta'
+                  ? 'bg-[#38BDF8] text-white shadow-md border border-[#0284C7]'
+                  : 'text-[#475569] hover:bg-[#F1EBD9] hover:text-[#0F172A]'
+              }`}
+            >
+              <MapPin className="w-4 h-4" />
+              <span>Peta Wilayah</span>
+            </button>
+
+            <button
               id="nav-statistik-btn"
               onClick={() => handleNavClick('statistik')}
-              className={`px-3.5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${
+              className={`px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 activeTab === 'statistik'
-                  ? 'bg-[#4ADE80] text-[#064E3B] shadow-md rotate-[-1deg] border border-[#16A34A]'
+                  ? 'bg-[#4ADE80] text-[#064E3B] shadow-md border border-[#16A34A]'
                   : 'text-[#475569] hover:bg-[#F1EBD9] hover:text-[#0F172A]'
               }`}
             >
@@ -120,9 +134,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               id="nav-cari-btn"
               onClick={() => handleNavClick('cari')}
-              className={`px-3.5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${
+              className={`px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 activeTab === 'cari'
-                  ? 'bg-[#C084FC] text-white shadow-md rotate-[1deg] border border-[#9333EA]'
+                  ? 'bg-[#C084FC] text-white shadow-md border border-[#9333EA]'
                   : 'text-[#475569] hover:bg-[#F1EBD9] hover:text-[#0F172A]'
               }`}
             >
@@ -133,14 +147,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               id="nav-admin-btn"
               onClick={() => handleNavClick('admin')}
-              className={`px-3.5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${
+              className={`px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 activeTab === 'admin'
-                  ? 'bg-[#F43F5E] text-white shadow-md rotate-[-1deg] border border-[#BE123C]'
+                  ? 'bg-[#DC2626] text-white shadow-md border border-[#991B1B]'
                   : 'text-[#475569] hover:bg-[#FDE2E4] hover:text-[#9F1239]'
               }`}
             >
               <Sparkles className="w-4 h-4 text-[#FDE047]" />
-              <span>Admin AI</span>
+              <span>Admin Kurasi</span>
             </button>
           </nav>
 

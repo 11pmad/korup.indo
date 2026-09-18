@@ -436,6 +436,41 @@ router.put('/reports/:id', async (req, res) => {
   }
 });
 
+// POST /api/admin/reports/:id/action (compatibility)
+router.post('/reports/:id/action', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const action = req.body.action; // 'disetujui' | 'ditolak' | 'approved' | 'rejected'
+    const status = action === 'disetujui' || action === 'approved' ? 'approved' : 'rejected';
+
+    const [updated] = await db
+      .update(schema.publicReports)
+      .set({
+        status,
+        reviewed_by: req.admin?.id,
+        reviewed_at: new Date()
+      })
+      .where(eq(schema.publicReports.id, id))
+      .returning();
+
+    if (!updated) return res.status(404).json({ error: 'Laporan tidak ditemukan' });
+
+    await db.insert(schema.auditLogs).values({
+      id: `audit-${Date.now()}`,
+      admin_user_id: req.admin?.id,
+      entity_type: 'public_reports',
+      entity_id: id,
+      action: status === 'approved' ? 'approve_report' : 'reject_report',
+      diff_snapshot: updated,
+      created_at: new Date()
+    });
+
+    res.json({ message: `Status laporan berhasil diperbarui menjadi ${status}`, data: updated });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/admin/audit-logs
 router.get('/audit-logs', async (req, res) => {
   try {

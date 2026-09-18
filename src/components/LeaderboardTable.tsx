@@ -18,8 +18,10 @@ import {
   ShieldAlert,
   Flame,
   Landmark,
-  Clock
+  Clock,
+  Download
 } from 'lucide-react';
+import { PresumptionOfInnocenceBanner } from './PresumptionOfInnocenceBanner.js';
 
 export interface HistoricalEra {
   id: string;
@@ -524,6 +526,18 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
     setCurrentPage(1);
   };
 
+  const handleExportCsv = () => {
+    sound.playPop();
+    const exportType = viewMode === 'partai' ? 'parties' : viewMode === 'wilayah' ? 'provinces' : 'officials';
+    const params = new URLSearchParams();
+    params.set('type', exportType);
+    if (selectedEra) params.set('era', selectedEra);
+    if (filterProvinsi) params.set('province', filterProvinsi);
+    if (filterPartai) params.set('party', filterPartai);
+    if (filterStatus) params.set('status', filterStatus);
+    window.open(`/api/export?${params.toString()}`, '_blank');
+  };
+
   const handleSort = (field: 'kerugian' | 'kasus' | 'tahun' | 'rank') => {
     sound.playPop();
     if (sortBy === field) {
@@ -592,54 +606,66 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
             </div>
           </div>
 
-          {/* View Mode Tabs (Tokoh, Partai, Wilayah) */}
-          <div className="flex items-center bg-[#F3EDE0] p-1.5 rounded-2xl border border-[#E0D4BE] self-start md:self-auto shadow-2xs">
-            <button
-              onClick={() => {
-                sound.playPop();
-                setViewMode('pejabat');
-                setCurrentPage(1);
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                viewMode === 'pejabat'
-                  ? 'bg-white text-[#1E293B] shadow-xs scale-102 border border-[#E2D6C0]'
-                  : 'text-[#64748B] hover:text-[#1E293B]'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5 text-[#E11D48]" />
-              <span>Pejabat</span>
-            </button>
+          {/* View Mode Tabs (Tokoh, Partai, Wilayah) & Ekspor CSV */}
+          <div className="flex items-center gap-2.5 flex-wrap self-start md:self-auto">
+            <div className="flex items-center bg-[#F3EDE0] p-1.5 rounded-2xl border border-[#E0D4BE] shadow-2xs">
+              <button
+                onClick={() => {
+                  sound.playPop();
+                  setViewMode('pejabat');
+                  setCurrentPage(1);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  viewMode === 'pejabat'
+                    ? 'bg-white text-[#1E293B] shadow-xs scale-102 border border-[#E2D6C0]'
+                    : 'text-[#64748B] hover:text-[#1E293B]'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5 text-[#E11D48]" />
+                <span>Pejabat</span>
+              </button>
 
-            <button
-              onClick={() => {
-                sound.playPop();
-                setViewMode('partai');
-                setCurrentPage(1);
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                viewMode === 'partai'
-                  ? 'bg-white text-[#1E293B] shadow-xs scale-102 border border-[#E2D6C0]'
-                  : 'text-[#64748B] hover:text-[#1E293B]'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5 text-[#D97706]" />
-              <span>Partai Politik</span>
-            </button>
+              <button
+                onClick={() => {
+                  sound.playPop();
+                  setViewMode('partai');
+                  setCurrentPage(1);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  viewMode === 'partai'
+                    ? 'bg-white text-[#1E293B] shadow-xs scale-102 border border-[#E2D6C0]'
+                    : 'text-[#64748B] hover:text-[#1E293B]'
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5 text-[#D97706]" />
+                <span>Partai Politik</span>
+              </button>
 
+              <button
+                onClick={() => {
+                  sound.playPop();
+                  setViewMode('wilayah');
+                  setCurrentPage(1);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  viewMode === 'wilayah'
+                    ? 'bg-white text-[#1E293B] shadow-xs scale-102 border border-[#E2D6C0]'
+                    : 'text-[#64748B] hover:text-[#1E293B]'
+                }`}
+              >
+                <MapPin className="w-3.5 h-3.5 text-[#0284C7]" />
+                <span>Wilayah / Pulau</span>
+              </button>
+            </div>
+
+            {/* Tombol Ekspor CSV */}
             <button
-              onClick={() => {
-                sound.playPop();
-                setViewMode('wilayah');
-                setCurrentPage(1);
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                viewMode === 'wilayah'
-                  ? 'bg-white text-[#1E293B] shadow-xs scale-102 border border-[#E2D6C0]'
-                  : 'text-[#64748B] hover:text-[#1E293B]'
-              }`}
+              onClick={handleExportCsv}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold bg-[#15803D] hover:bg-[#166534] text-white shadow-xs transition-all cursor-pointer border border-[#14532D]"
+              title="Ekspor data klasemen terfilter ke format CSV"
             >
-              <MapPin className="w-3.5 h-3.5 text-[#0284C7]" />
-              <span>Wilayah / Pulau</span>
+              <Download className="w-3.5 h-3.5" />
+              <span>Ekspor CSV</span>
             </button>
           </div>
         </div>
@@ -966,6 +992,11 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
         </div>
 
       </div>
+
+      {/* Asas Praduga Tak Bersalah Banner (Muncul bila filter atau entri berstatus Tersangka / Terdakwa) */}
+      {(filterStatus.toLowerCase().includes('tersangka') || filterStatus.toLowerCase().includes('terdakwa')) && (
+        <PresumptionOfInnocenceBanner status={filterStatus} />
+      )}
 
       {/* VIEW MODE 1: KLASEMEN PEJABAT / TOKOH */}
       {viewMode === 'pejabat' && (

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CorruptionCase } from '../types.js';
 import { formatRupiah, getStatusBadgeStyle } from '../utils/formatters.js';
 import { sound } from '../utils/audio.js';
-import { Search, Filter, Calendar, ExternalLink, Building2, Eye } from 'lucide-react';
+import { Search, Filter, Calendar, ExternalLink, Building2, Eye, Loader2 } from 'lucide-react';
 
 interface SearchProps {
   cases: CorruptionCase[];
@@ -15,17 +15,44 @@ export const SearchCasesView: React.FC<SearchProps> = ({
   provinces,
   onSelectCase
 }) => {
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [inputQuery, setInputQuery] = useState<string>('');
+  const [debouncedQuery, setDebouncedQuery] = useState<string>('');
+  const [isDebouncing, setIsDebouncing] = useState<boolean>(false);
   const [selectedProvince, setSelectedProvince] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [sortBy, setSortBy] = useState<'kerugian' | 'tahun' | 'nama'>('kerugian');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
+  // Debounce search query by 300ms
+  useEffect(() => {
+    setIsDebouncing(true);
+    const timer = setTimeout(() => {
+      setDebouncedQuery(inputQuery);
+      setIsDebouncing(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [inputQuery]);
+
+  const highlightKeyword = (text: string, query: string) => {
+    if (!query.trim()) return text;
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = text.split(regex);
+    return parts.map((part, i) =>
+      regex.test(part) ? (
+        <mark key={i} className="bg-[#FEF08A] text-[#854D0E] font-bold px-0.5 rounded-sm">
+          {part}
+        </mark>
+      ) : (
+        part
+      )
+    );
+  };
+
   const filtered = cases.filter(c => {
     if (selectedProvince && c.official?.provinsi !== selectedProvince) return false;
     if (selectedStatus && c.status_hukum !== selectedStatus) return false;
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
+    if (debouncedQuery) {
+      const q = debouncedQuery.toLowerCase();
       const match =
         c.official?.nama.toLowerCase().includes(q) ||
         c.official?.jabatan.toLowerCase().includes(q) ||
@@ -69,16 +96,19 @@ export const SearchCasesView: React.FC<SearchProps> = ({
           </p>
         </div>
 
-        {/* Search Input */}
+        {/* Search Input with debouncing */}
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
             placeholder="Cari nama pejabat, partai, daerah, perusahaan rekanan, atau kata kunci..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="w-full bg-[#FAF5E8] border-2 border-[#D5C9AB] rounded-2xl pl-12 pr-4 py-3 text-sm text-[#1F2937] focus:ring-2 focus:ring-[#C084FC] focus:outline-none shadow-inner"
+            value={inputQuery}
+            onChange={e => setInputQuery(e.target.value)}
+            className="w-full bg-[#FAF5E8] border-2 border-[#D5C9AB] rounded-2xl pl-12 pr-10 py-3 text-sm text-[#1F2937] focus:ring-2 focus:ring-[#C084FC] focus:outline-none shadow-inner"
           />
+          {isDebouncing && (
+            <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-500 animate-spin" />
+          )}
         </div>
 
         {/* Filter Controls Row */}
@@ -211,7 +241,7 @@ export const SearchCasesView: React.FC<SearchProps> = ({
                         </span>
                       </div>
                       <h4 className="font-bold text-base text-[#1E293B] truncate group-hover:text-[#0284C7] transition-colors mt-0.5">
-                        {item.official?.nama}
+                        {highlightKeyword(item.official?.nama || '', debouncedQuery)}
                       </h4>
                       <p className="text-xs text-[#64748B] truncate">
                         {item.official?.jabatan}
@@ -234,7 +264,7 @@ export const SearchCasesView: React.FC<SearchProps> = ({
 
                   {/* Summary */}
                   <p className="text-xs text-[#475569] line-clamp-2 leading-relaxed">
-                    {item.ringkasan_kasus}
+                    {highlightKeyword(item.ringkasan_kasus, debouncedQuery)}
                   </p>
 
                   {/* Companies if any */}

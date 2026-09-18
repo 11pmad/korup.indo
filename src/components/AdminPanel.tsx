@@ -32,10 +32,15 @@ interface ChatMessage {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData }) => {
-  // Simple auth gate
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  // Simple auth gate with JWT
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return Boolean(sessionStorage.getItem('lki_admin_token'));
+  });
+  const [authToken, setAuthToken] = useState<string>(() => {
+    return sessionStorage.getItem('lki_admin_token') || '';
+  });
   const [authUsername, setAuthUsername] = useState<string>('admin');
-  const [authPassword, setAuthPassword] = useState<string>('rakyat123');
+  const [authPassword, setAuthPassword] = useState<string>('admin123');
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Active view tab
@@ -46,7 +51,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData }) => {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
     {
       role: 'ai',
-      text: 'Halo Admin Verifikator! Saya asisten AI kurasi data "Peta Korupsi Wakil Rakyat Indonesia". Silakan ketik perintah dalam bahasa alami (misal: "Tambahkan kasus suap pengadaan proyek oleh Bupati X senilai 5 miliar..."). Sesuai SOP integritas hukum, saya akan meminta link sumber berita/putusan resmi dan status hukum yang tegas sebelum menyusun draft.'
+      text: 'Halo Admin Verifikator! Saya asisten AI kurasi data Liga Korupsi Indonesia (LKI). Silakan ketik perintah dalam bahasa alami (misal: "Tambahkan kasus suap pengadaan proyek oleh Bupati X senilai 5 miliar..."). Sesuai SOP integritas hukum, setiap data wajib menyertakan link sumber berita/putusan resmi dan status hukum yang tegas.'
     }
   ]);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -86,33 +91,53 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData }) => {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && authToken) {
       fetchAuditLogs();
       fetchReports();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authToken]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatHistory, isProcessing]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (authUsername === 'admin' && authPassword === 'rakyat123') {
+    setAuthError(null);
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: authUsername, password: authPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Kredensial salah');
+      }
       sound.playCheer();
+      sessionStorage.setItem('lki_admin_token', data.token);
+      setAuthToken(data.token);
       setIsAuthenticated(true);
-      setAuthError(null);
-    } else {
-      setAuthError('Kredensial salah. Gunakan username: "admin" dan password: "rakyat123"');
+    } catch (err: any) {
+      setAuthError(err.message || 'Login gagal.');
     }
+  };
+
+  const handleLogout = () => {
+    sound.playPop();
+    sessionStorage.removeItem('lki_admin_token');
+    setAuthToken('');
+    setIsAuthenticated(false);
   };
 
   const fetchAuditLogs = async () => {
     setLoadingLogs(true);
     try {
-      const res = await fetch('/api/admin/audit-logs');
+      const res = await fetch('/api/admin/audit-logs', {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+      });
       const data = await res.json();
-      setAuditLogs(data);
+      setAuditLogs(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching audit logs:', err);
     } finally {
@@ -123,9 +148,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData }) => {
   const fetchReports = async () => {
     setLoadingReports(true);
     try {
-      const res = await fetch('/api/admin/reports');
+      const res = await fetch('/api/admin/reports', {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+      });
       const data = await res.json();
-      setReports(data);
+      setReports(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching reports:', err);
     } finally {
@@ -443,7 +470,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData }) => {
                 activeTab === 'reports' ? 'bg-[#7C3AED] text-white shadow-xs' : 'text-[#57534E] hover:bg-[#EBE0C8]'
               }`}
             >
-              <ShieldCheck className="w-3.5 h-3.5" /> Moderasi Laporan ({reports.filter(r => r.status === 'menunggu_review').length})
+              <ShieldCheck className="w-3.5 h-3.5" /> Moderasi Laporan (
+              {reports.filter(r => (r.status as string) === 'menunggu_review' || (r.status as string) === 'pending_review').length})
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold text-[#DC2626] hover:bg-[#FEE2E2] transition-colors whitespace-nowrap border border-transparent hover:border-[#FECACA]"
+              title="Keluar dari sesi admin"
+            >
+              Keluar
             </button>
           </div>
         </div>

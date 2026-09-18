@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar.js';
 import { DisclaimerBanner } from './components/DisclaimerBanner.js';
+import { LandingPage } from './components/LandingPage.js';
 import { IndonesiaMap } from './components/IndonesiaMap.js';
 import { LeaderboardTable } from './components/LeaderboardTable.js';
 import { StatsDashboard } from './components/StatsDashboard.js';
@@ -19,7 +20,7 @@ import { sound } from './utils/audio.js';
 import { Loader2 } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin'>('peta');
+  const [activeTab, setActiveTab] = useState<'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin'>('beranda');
   
   // Data states
   const [cases, setCases] = useState<CorruptionCase[]>([]);
@@ -104,6 +105,20 @@ export default function App() {
           </div>
         ) : (
           <>
+            {/* TAB: BERANDA / LANDING PAGE */}
+            {activeTab === 'beranda' && (
+              <LandingPage
+                stats={stats}
+                cases={cases}
+                onNavigate={(tab) => {
+                  setActiveTab(tab);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onSelectCase={(id) => setSelectedCaseId(id)}
+                onOpenReport={() => handleOpenReport()}
+              />
+            )}
+
             {/* TAB: PETA INTERAKTIF */}
             {activeTab === 'peta' && (
               <IndonesiaMap

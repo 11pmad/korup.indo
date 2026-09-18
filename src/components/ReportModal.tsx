@@ -16,7 +16,9 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   cases
 }) => {
   const [selectedCaseId, setSelectedCaseId] = useState<string>(caseId || (cases[0]?.id || ''));
+  const [reportType, setReportType] = useState<'koreksi_data' | 'rujukan_putusan_baru'>('koreksi_data');
   const [description, setDescription] = useState<string>('');
+  const [referenceUrl, setReferenceUrl] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim()) {
-      setErrorMessage('Mohon berikan rincian koreksi data atau tautan putusan yang lebih tepat.');
+      setErrorMessage('Mohon berikan rincian koreksi data atau rujukan putusan.');
       return;
     }
 
@@ -40,8 +42,10 @@ export const ReportModal: React.FC<ReportModalProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           case_id: selectedCaseId || caseId,
-          deskripsi_kesalahan: description,
-          email_pelapor: email
+          report_type: reportType,
+          description: description,
+          reference_url: referenceUrl || undefined,
+          submitter_contact: email || undefined
         })
       });
 
@@ -51,8 +55,9 @@ export const ReportModal: React.FC<ReportModalProps> = ({
       }
 
       sound.playCheer();
-      setSuccessMessage('Terima kasih! Laporan koreksi data telah berhasil diajukan dan masuk ke antrean kurasi verifikator.');
+      setSuccessMessage('Terima kasih! Laporan Anda telah berhasil diajukan dan masuk ke antrean kurasi verifikator.');
       setDescription('');
+      setReferenceUrl('');
     } catch (err: any) {
       setErrorMessage(err.message);
     } finally {
@@ -120,7 +125,21 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-[#475569] mb-1">
-                Pilih Berkas Kasus yang Dikoreksi:
+                Jenis Laporan / Partisipasi:
+              </label>
+              <select
+                value={reportType}
+                onChange={e => setReportType(e.target.value as any)}
+                className="w-full bg-[#FAF5E8] border border-[#D5C9AB] rounded-xl px-3 py-2 text-xs font-semibold text-[#1F2937] focus:ring-2 focus:ring-[#FB923C] focus:outline-none"
+              >
+                <option value="koreksi_data">Koreksi Data (Nama, Jabatan, Nilai Kerugian, Typo)</option>
+                <option value="rujukan_putusan_baru">Rujukan Putusan Baru / Vonis Kasasi / Peninjauan Kembali</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[#475569] mb-1">
+                Pilih Berkas Kasus Terkait:
               </label>
               <select
                 value={selectedCaseId}
@@ -137,12 +156,12 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-[#475569] mb-1">
-                Rincian Koreksi &amp; Tautan Sumber Hukum Baru (Wajib):
+                Rincian Koreksi / Penjelasan (Wajib):
               </label>
               <textarea
-                rows={4}
+                rows={3}
                 required
-                placeholder="Contoh: Status hukum Sdr. X sudah divonis inkrah di Mahkamah Agung nomor perkara 123 K/Pid.Sus/2024 pada tanggal... Link direktori putusan: https://putusan3.mahkamahagung.go.id/..."
+                placeholder="Contoh: Status hukum Sdr. X telah berkekuatan hukum tetap (inkrah) berdasarkan putusan kasasi MA..."
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 className="w-full bg-[#FAF5E8] border border-[#D5C9AB] rounded-xl p-3 text-xs text-[#1F2937] focus:ring-2 focus:ring-[#FB923C] focus:outline-none"
@@ -151,7 +170,20 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-[#475569] mb-1">
-                Email Anda (Opsional, untuk konfirmasi perbaikan):
+                Tautan Sumber Resmi / Putusan Pengadilan (URL):
+              </label>
+              <input
+                type="url"
+                placeholder="https://putusan3.mahkamahagung.go.id/direktori/putusan/..."
+                value={referenceUrl}
+                onChange={e => setReferenceUrl(e.target.value)}
+                className="w-full bg-[#FAF5E8] border border-[#D5C9AB] rounded-xl px-3 py-2 text-xs text-[#1F2937] focus:ring-2 focus:ring-[#FB923C] focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[#475569] mb-1">
+                Kontak Anda (Opsional, untuk konfirmasi perbaikan):
               </label>
               <input
                 type="email"
