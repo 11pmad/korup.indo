@@ -1,0 +1,321 @@
+import { pgTable, text, integer, doublePrecision, timestamp, pgEnum, jsonb, index } from 'drizzle-orm/pg-core';
+import { sql, relations } from 'drizzle-orm';
+
+// Enums
+export const legalStatusEnum = pgEnum('legal_status', [
+  'tersangka',
+  'terdakwa',
+  'divonis_inkrah',
+  'bebas'
+]);
+
+export const sectorCategoryEnum = pgEnum('sector_category', [
+  'pengadaan_barang_jasa',
+  'bansos_bencana',
+  'suap_gratifikasi',
+  'perizinan_sda_tambang',
+  'mafia_peradilan'
+]);
+
+export const reportTypeEnum = pgEnum('report_type', [
+  'koreksi_data',
+  'rujukan_putusan_baru'
+]);
+
+export const reportStatusEnum = pgEnum('report_status', [
+  'pending_review',
+  'approved',
+  'rejected'
+]);
+
+export const adminRoleEnum = pgEnum('admin_role', [
+  'super_admin',
+  'editor',
+  'reviewer'
+]);
+
+export const auditActionEnum = pgEnum('audit_action', [
+  'create',
+  'update',
+  'delete',
+  'rollback',
+  'approve_report',
+  'reject_report'
+]);
+
+// 1. Provinces
+export const provinces = pgTable('provinces', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  island_cluster: text('island_cluster').notNull(),
+  geojson_code: text('geojson_code'),
+  total_loss_amount: doublePrecision('total_loss_amount').default(0).notNull(),
+  total_cases: integer('total_cases').default(0).notNull(),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  updated_at: timestamp('updated_at').defaultNow().notNull()
+});
+
+// 2. Presidential Eras
+export const presidentialEras = pgTable('presidential_eras', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  start_date: timestamp('start_date').notNull(),
+  end_date: timestamp('end_date'),
+  context_summary: text('context_summary'),
+  cabinet_name: text('cabinet_name')
+});
+
+// 3. Political Parties
+export const parties = pgTable('parties', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  logo_url: text('logo_url'),
+  total_loss_amount: doublePrecision('total_loss_amount').default(0).notNull(),
+  total_cases: integer('total_cases').default(0).notNull()
+});
+
+// 4. Admin Users
+export const adminUsers = pgTable('admin_users', {
+  id: text('id').primaryKey(),
+  username: text('username').unique().notNull(),
+  password_hash: text('password_hash').notNull(),
+  role: adminRoleEnum('role').default('editor').notNull(),
+  created_at: timestamp('created_at').defaultNow().notNull()
+});
+
+// 5. Officials
+export const officials = pgTable(
+  'officials',
+  {
+    id: text('id').primaryKey(),
+    full_name: text('full_name').notNull(),
+    photo_url: text('photo_url'),
+    position_title: text('position_title').notNull(),
+    province_id: text('province_id').references(() => provinces.id),
+    party_id: text('party_id').references(() => parties.id),
+    total_loss_amount: doublePrecision('total_loss_amount').default(0).notNull(),
+    current_legal_status: legalStatusEnum('current_legal_status').notNull(),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().notNull()
+  },
+  (table) => [
+    index('officials_full_name_trgm_idx').using('gin', sql`${table.full_name} gin_trgm_ops`)
+  ]
+);
+
+// 6. Companies
+export const companies = pgTable(
+  'companies',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    sector: text('sector').notNull(),
+    description: text('description')
+  },
+  (table) => [
+    index('companies_name_trgm_idx').using('gin', sql`${table.name} gin_trgm_ops`)
+  ]
+);
+
+// 7. Cases
+export const cases = pgTable(
+  'cases',
+  {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    primary_official_id: text('primary_official_id').references(() => officials.id),
+    province_id: text('province_id').references(() => provinces.id),
+    era_id: text('era_id').references(() => presidentialEras.id),
+    sector_category: sectorCategoryEnum('sector_category').notNull(),
+    loss_amount: doublePrecision('loss_amount').default(0).notNull(),
+    fine_amount: doublePrecision('fine_amount').default(0).notNull(),
+    restitution_amount: doublePrecision('restitution_amount').default(0).notNull(),
+    prison_sentence_months: integer('prison_sentence_months').default(0).notNull(),
+    legal_status: legalStatusEnum('legal_status').notNull(),
+    court_decision_number: text('court_decision_number'),
+    chronology: text('chronology').notNull(),
+    charges_articles: text('charges_articles'),
+    source_url: text('source_url').notNull(),
+    verified_by: text('verified_by').references(() => adminUsers.id),
+    verified_at: timestamp('verified_at'),
+    case_date: timestamp('case_date'),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().notNull()
+  },
+  (table) => [
+    index('cases_title_trgm_idx').using('gin', sql`${table.title} gin_trgm_ops`),
+    index('cases_chronology_trgm_idx').using('gin', sql`${table.chronology} gin_trgm_ops`)
+  ]
+);
+
+// 8. Case Officials (Many-to-Many)
+export const caseOfficials = pgTable('case_officials', {
+  case_id: text('case_id')
+    .references(() => cases.id, { onDelete: 'cascade' })
+    .notNull(),
+  official_id: text('official_id')
+    .references(() => officials.id, { onDelete: 'cascade' })
+    .notNull(),
+  role_in_case: text('role_in_case')
+});
+
+// 9. Case Companies (Many-to-Many)
+export const caseCompanies = pgTable('case_companies', {
+  case_id: text('case_id')
+    .references(() => cases.id, { onDelete: 'cascade' })
+    .notNull(),
+  company_id: text('company_id')
+    .references(() => companies.id, { onDelete: 'cascade' })
+    .notNull(),
+  transaction_date: timestamp('transaction_date'),
+  transaction_role: text('transaction_role')
+});
+
+// 10. Case Timeline Events
+export const caseTimelineEvents = pgTable('case_timeline_events', {
+  id: text('id').primaryKey(),
+  case_id: text('case_id')
+    .references(() => cases.id, { onDelete: 'cascade' })
+    .notNull(),
+  event_date: timestamp('event_date').notNull(),
+  event_description: text('event_description').notNull(),
+  event_type: text('event_type').notNull()
+});
+
+// 11. Case Documents
+export const caseDocuments = pgTable('case_documents', {
+  id: text('id').primaryKey(),
+  case_id: text('case_id')
+    .references(() => cases.id, { onDelete: 'cascade' })
+    .notNull(),
+  document_type: text('document_type').notNull(),
+  storage_url: text('storage_url').notNull(),
+  uploaded_at: timestamp('uploaded_at').defaultNow().notNull()
+});
+
+// 12. Public Reports
+export const publicReports = pgTable('public_reports', {
+  id: text('id').primaryKey(),
+  case_id: text('case_id').references(() => cases.id, { onDelete: 'set null' }),
+  report_type: reportTypeEnum('report_type').notNull(),
+  description: text('description').notNull(),
+  reference_url: text('reference_url'),
+  submitter_contact: text('submitter_contact'),
+  status: reportStatusEnum('status').default('pending_review').notNull(),
+  reviewed_by: text('reviewed_by').references(() => adminUsers.id),
+  created_at: timestamp('created_at').defaultNow().notNull(),
+  reviewed_at: timestamp('reviewed_at')
+});
+
+// 13. Audit Logs
+export const auditLogs = pgTable('audit_logs', {
+  id: text('id').primaryKey(),
+  admin_user_id: text('admin_user_id').references(() => adminUsers.id),
+  entity_type: text('entity_type').notNull(),
+  entity_id: text('entity_id').notNull(),
+  action: auditActionEnum('action').notNull(),
+  diff_snapshot: jsonb('diff_snapshot'),
+  created_at: timestamp('created_at').defaultNow().notNull()
+});
+
+// Relations
+export const provincesRelations = relations(provinces, ({ many }) => ({
+  officials: many(officials),
+  cases: many(cases)
+}));
+
+export const presidentialErasRelations = relations(presidentialEras, ({ many }) => ({
+  cases: many(cases)
+}));
+
+export const partiesRelations = relations(parties, ({ many }) => ({
+  officials: many(officials)
+}));
+
+export const officialsRelations = relations(officials, ({ one, many }) => ({
+  province: one(provinces, {
+    fields: [officials.province_id],
+    references: [provinces.id]
+  }),
+  party: one(parties, {
+    fields: [officials.party_id],
+    references: [parties.id]
+  }),
+  primaryCases: many(cases),
+  caseOfficials: many(caseOfficials)
+}));
+
+export const companiesRelations = relations(companies, ({ many }) => ({
+  caseCompanies: many(caseCompanies)
+}));
+
+export const casesRelations = relations(cases, ({ one, many }) => ({
+  primaryOfficial: one(officials, {
+    fields: [cases.primary_official_id],
+    references: [officials.id]
+  }),
+  province: one(provinces, {
+    fields: [cases.province_id],
+    references: [provinces.id]
+  }),
+  era: one(presidentialEras, {
+    fields: [cases.era_id],
+    references: [presidentialEras.id]
+  }),
+  verifiedByAdmin: one(adminUsers, {
+    fields: [cases.verified_by],
+    references: [adminUsers.id]
+  }),
+  caseOfficials: many(caseOfficials),
+  caseCompanies: many(caseCompanies),
+  timelineEvents: many(caseTimelineEvents),
+  documents: many(caseDocuments),
+  reports: many(publicReports)
+}));
+
+export const caseOfficialsRelations = relations(caseOfficials, ({ one }) => ({
+  case: one(cases, {
+    fields: [caseOfficials.case_id],
+    references: [cases.id]
+  }),
+  official: one(officials, {
+    fields: [caseOfficials.official_id],
+    references: [officials.id]
+  })
+}));
+
+export const caseCompaniesRelations = relations(caseCompanies, ({ one }) => ({
+  case: one(cases, {
+    fields: [caseCompanies.case_id],
+    references: [cases.id]
+  }),
+  company: one(companies, {
+    fields: [caseCompanies.company_id],
+    references: [companies.id]
+  })
+}));
+
+export const caseTimelineEventsRelations = relations(caseTimelineEvents, ({ one }) => ({
+  case: one(cases, {
+    fields: [caseTimelineEvents.case_id],
+    references: [cases.id]
+  })
+}));
+
+export const caseDocumentsRelations = relations(caseDocuments, ({ one }) => ({
+  case: one(cases, {
+    fields: [caseDocuments.case_id],
+    references: [cases.id]
+  })
+}));
+
+export const publicReportsRelations = relations(publicReports, ({ one }) => ({
+  case: one(cases, {
+    fields: [publicReports.case_id],
+    references: [cases.id]
+  }),
+  reviewedByAdmin: one(adminUsers, {
+    fields: [publicReports.reviewed_by],
+    references: [adminUsers.id]
+  })
+}));
