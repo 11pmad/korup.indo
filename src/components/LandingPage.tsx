@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { StatsOverview, CorruptionCase } from '../types.js';
 import { formatRupiah } from '../utils/formatters.js';
 import { sound } from '../utils/audio.js';
@@ -13,7 +13,9 @@ import {
   Scale, 
   Building2,
   ExternalLink,
-  BookOpen
+  BookOpen,
+  Sparkles,
+  Calendar
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -31,14 +33,45 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onSelectCase,
   onOpenReport
 }) => {
-  // Top 3 Hall of Shame
-  const top3 = cases
-    .slice()
-    .sort((a, b) => b.nilai_kerugian_negara - a.nilai_kerugian_negara)
-    .slice(0, 3);
+  type EraFilterMode = 'prabowo' | 'recent_years';
+  const [selectedEraFilter, setSelectedEraFilter] = useState<EraFilterMode>('prabowo');
 
-  const totalLoss = stats?.total_kerugian_akumulasi || cases.reduce((acc, c) => acc + c.nilai_kerugian_negara, 0);
-  const totalCases = stats?.total_kasus_nasional || cases.length;
+  // Filter cases strictly for the latest era / current years (data akurat terverifikasi)
+  const activeCases = useMemo(() => {
+    return cases.filter(c => {
+      const year = c.tahun_kejadian || (c.sources?.[0]?.tanggal_publikasi ? new Date(c.sources[0].tanggal_publikasi).getFullYear() : 0);
+      if (selectedEraFilter === 'prabowo') {
+        return c.era_id === 'era-prabowo' || (c as any).era_name?.toLowerCase().includes('prabowo');
+      }
+      // 'recent_years' -> Tahun 2024 - sekarang
+      return (c.era_id === 'era-prabowo') || (year >= 2024);
+    });
+  }, [cases, selectedEraFilter]);
+
+  // Dynamic calculations based on activeCases
+  const totalLoss = useMemo(() => {
+    return activeCases.reduce((acc, c) => acc + (c.nilai_kerugian_negara || 0), 0);
+  }, [activeCases]);
+
+  const totalCases = activeCases.length;
+
+  const affectedProvinces = useMemo(() => {
+    const provSet = new Set<string>();
+    activeCases.forEach(c => {
+      if (c.official?.provinsi && c.official.provinsi !== '-') {
+        provSet.add(c.official.provinsi);
+      }
+    });
+    return provSet.size;
+  }, [activeCases]);
+
+  // Top 3 Hall of Shame strictly from activeCases
+  const top3 = useMemo(() => {
+    return activeCases
+      .slice()
+      .sort((a, b) => b.nilai_kerugian_negara - a.nilai_kerugian_negara)
+      .slice(0, 3);
+  }, [activeCases]);
 
   return (
     <div className="space-y-10 animate-in fade-in duration-300">
@@ -102,7 +135,61 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* Ringkasan Angka Besar (Big Numbers Strip) */}
+      {/* Focused Era Selector & Accuracy Notice */}
+      <div className="bg-[#FFFDF8] border-2 border-[#E7DECB] rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-500/20">
+            <Sparkles className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-[#1E293B]">
+                Fokus Data Akurat Terverifikasi:
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                ✓ Era Terkini
+              </span>
+            </div>
+            <p className="text-[11px] text-[#78716C] leading-snug">
+              Halaman ini difokuskan hanya menampilkan data era terbaru yang telah terverifikasi berkasnya secara akurat.
+            </p>
+          </div>
+        </div>
+
+        {/* Filter Toggle Pills */}
+        <div className="flex items-center gap-1.5 bg-[#F5F0E6] p-1 rounded-xl border border-[#E7DECB] shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              sound.playPop();
+              setSelectedEraFilter('prabowo');
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              selectedEraFilter === 'prabowo'
+                ? 'bg-[#DC2626] text-white shadow-xs'
+                : 'text-[#78716C] hover:text-[#1E293B]'
+            }`}
+          >
+            🇮🇩 Era Terbaru (2024 - Sekarang)
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              sound.playPop();
+              setSelectedEraFilter('recent_years');
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              selectedEraFilter === 'recent_years'
+                ? 'bg-[#DC2626] text-white shadow-xs'
+                : 'text-[#78716C] hover:text-[#1E293B]'
+            }`}
+          >
+            📅 Tahun 2024 - 2025
+          </button>
+        </div>
+      </div>
+
+      {/* Ringkasan Angka Besar (Big Numbers Strip - Filtered Era) */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <div className="relative bg-[#FFFDF8] border-2 border-[#E7DECB] rounded-3xl p-6 text-center shadow-xs space-y-1">
           <div className="washi-tape washi-tape-purple -top-2 left-6"></div>
@@ -113,7 +200,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {formatRupiah(totalLoss)}
           </div>
           <span className="text-[11px] text-gray-500 font-mono block">
-            Tercatat pada database perkara
+            {selectedEraFilter === 'prabowo' ? 'Era Prabowo (2024 - Sekarang)' : 'Perkara Tahun 2024 - 2025'}
           </span>
         </div>
 
@@ -126,7 +213,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {totalCases} Perkara
           </div>
           <span className="text-[11px] text-gray-500 font-mono block">
-            Dengan rujukan dokumen resmi
+            Rujukan berkas resmi terverifikasi
           </span>
         </div>
 
@@ -136,36 +223,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             Provinsi Terdampak
           </span>
           <div className="font-marker text-3xl sm:text-4xl text-[#D97706]">
-            38 Provinsi
+            {affectedProvinces} Wilayah / Provinsi
           </div>
           <span className="text-[11px] text-gray-500 font-mono block">
-            Sebaran spasial nusantara
+            Sebaran wilayah perkara aktif
           </span>
         </div>
       </section>
 
-      {/* Preview Top 3 Hall of Shame */}
+      {/* Preview Top Hall of Shame Era Terkini */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Flame className="w-5 h-5 text-[#DC2626]" />
-            <h2 className="font-marker text-2xl text-[#1E293B]">
-              Top 3 Hall of Shame (Kerugian Terbesar)
-            </h2>
+            <div>
+              <h2 className="font-marker text-2xl text-[#1E293B]">
+                Top Perkara Era Terbaru (Kerugian Terbesar)
+              </h2>
+            </div>
           </div>
           <button
             onClick={() => {
               sound.playPop();
-              onNavigate('statistik');
+              onNavigate('klasemen');
             }}
             className="text-xs font-bold text-[#0284C7] hover:underline flex items-center gap-1 cursor-pointer"
           >
-            <span>Lihat Top 10 Lengkap</span>
+            <span>Buka Klasemen Lengkap</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+
           {top3.map((c, idx) => (
             <div
               key={c.id}
@@ -230,7 +320,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
           ))}
         </div>
+
+        {/* Historical eras exploration banner */}
+        <div className="pt-2 text-center">
+          <button
+            type="button"
+            onClick={() => {
+              sound.playPop();
+              onNavigate('klasemen');
+            }}
+            className="inline-flex items-center gap-2 text-xs font-semibold text-[#0284C7] hover:text-[#0369A1] hover:underline cursor-pointer bg-white/70 px-4 py-2 rounded-xl border border-slate-200 shadow-2xs transition-all"
+          >
+            <span>Ingin melihat data dari era sebelumnya (SBY, Jokowi, Reformasi, Orde Baru)? Buka Arsip Historis di Klasemen Liga</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </section>
+
 
       {/* Partisipasi Publik Call to Action */}
       <section className="bg-[#FAF5E8] border-2 border-dashed border-[#CA8A04] rounded-3xl p-6 sm:p-8 text-center space-y-3">
