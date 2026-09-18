@@ -147,15 +147,29 @@ Analisis kelengkapan data sesuai aturan ketat sistem.`
         }
       ];
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents,
-        config: {
-          systemInstruction: SYSTEM_PROMPT,
-          responseMimeType: 'application/json',
-          temperature: 0.2
-        }
-      });
+      let response;
+      try {
+        response = await ai.models.generateContent({
+          model: 'gemini-3.5-flash-lite',
+          contents,
+          config: {
+            systemInstruction: SYSTEM_PROMPT,
+            responseMimeType: 'application/json',
+            temperature: 0.2
+          }
+        });
+      } catch (e1) {
+        // Fallback to gemini-3.1-flash-lite if 3.5 has demand spikes
+        response = await ai.models.generateContent({
+          model: 'gemini-3.1-flash-lite',
+          contents,
+          config: {
+            systemInstruction: SYSTEM_PROMPT,
+            responseMimeType: 'application/json',
+            temperature: 0.2
+          }
+        });
+      }
 
       const responseText = response.text?.trim();
       if (responseText) {

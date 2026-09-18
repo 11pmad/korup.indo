@@ -385,15 +385,24 @@ router.get('/reports', async (req, res) => {
         description: schema.publicReports.description,
         reference_url: schema.publicReports.reference_url,
         submitter_contact: schema.publicReports.submitter_contact,
+        metadata: schema.publicReports.metadata,
         status: schema.publicReports.status,
         created_at: schema.publicReports.created_at,
-        reviewed_at: schema.publicReports.reviewed_at
+        reviewed_at: schema.publicReports.reviewed_at,
+        reviewed_by: schema.publicReports.reviewed_by
       })
       .from(schema.publicReports)
       .leftJoin(schema.cases, eq(schema.publicReports.case_id, schema.cases.id))
       .orderBy(desc(schema.publicReports.created_at));
 
-    res.json(reports);
+    const formatted = reports.map(r => ({
+      ...r,
+      deskripsi_kesalahan: r.description,
+      email_pelapor: r.submitter_contact,
+      url_rujukan: r.reference_url
+    }));
+
+    res.json(formatted);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -504,6 +513,119 @@ const mapLegalStatus = (val?: string): 'tersangka' | 'terdakwa' | 'divonis_inkra
   if (lower.includes('bebas') || lower.includes('praperadilan')) return 'bebas';
   return 'tersangka';
 };
+
+// POST /api/admin/reports/:id/convert-to-case (terbitkan usulan kasus baru warga jadi berkas perkara resmi)
+router.post('/reports/:id/convert-to-case', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const report = await db.query.publicReports.findFirst({
+      where: eq(schema.publicReports.id, id)
+    });
+
+    if (!report) {
+      return res.status(404).json({ error: 'Laporan tidak ditemukan' });
+    }
+
+    const meta = (report.metadata || {}) as any;
+    const title = meta.case_title || req.body.title || 'Kasus Usulan Warga Terverifikasi';
+    const suspectName = meta.suspect_name || req.body.suspect_name || 'Pejabat Terkait';
+    const position = meta.institution || req.body.institution || 'Instansi Terkait';
+    const provinceId = meta.province_id || req.body.province_id || 'dki-jakarta';
+    const lossAmount = Number(meta.loss_amount ?? req.body.loss_amount ?? 0);
+    const legalStatus = mapLegalStatus(meta.legal_status || req.body.legal_status);
+    const sectorCategory = mapSectorCategory(meta.sector_category || req.body.sector_category);
+    const chronology = meta.chronology || report.description;
+    const sourceUrl = report.reference_url || req.body.source_url || 'https://kpk.go.id';
+
+    // 1. Buat data tokoh/pejabat terdakwa baru
+    const officialId = `off-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`;
+    const [newOfficial] = await db
+      .insert(schema.officials)
+      .values({
+        id: officialId,
+        full_name: suspectName,
+        position_title: position,
+        province_id: provinceId,
+        party_id: 'pty-non-partisan',
+        total_loss_amount: lossAmount,
+        current_legal_status: legalStatus,
+        created_at: new Date(),
+        updated_at: new Date()
+      })
+      .returning();
+
+    // 2. Buat data berkas perkara baru
+    const caseId = `cas-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`;
+    const [newCase] = await db
+      .insert(schema.cases)
+      .values({
+        id: caseId,
+        title,
+        primary_official_id: officialId,
+        province_id: provinceId,
+        era_id: 'era-prabowo',
+        sector_category: sectorCategory,
+        loss_amount: lossAmount,
+        fine_amount: 0,
+        restitution_amount: 0,
+        prison_sentence_months: 0,
+        legal_status: legalStatus,
+        court_decision_number: meta.court_decision_number || null,
+        chronology,
+        source_url: sourceUrl,
+        verified_by: req.admin?.id,
+        verified_at: new Date(),
+        case_date: new Date(),
+        created_at: new Date(),
+        updated_at: new Date()
+      })
+      .returning();
+
+    // 3. Hubungkan ke relasi case_officials
+    await db.insert(schema.caseOfficials).values({
+      case_id: caseId,
+      official_id: officialId,
+      role_in_case: 'Terdakwa / Terduga Utama'
+    });
+
+    // 4. Update status laporan warga menjadi 'approved' dan tautkan case_id
+    const [updatedReport] = await db
+      .update(schema.publicReports)
+      .set({
+        status: 'approved',
+        case_id: caseId,
+        reviewed_by: req.admin?.id,
+        reviewed_at: new Date()
+      })
+      .where(eq(schema.publicReports.id, id))
+      .returning();
+
+    // 5. Catat ke audit log
+    await db.insert(schema.auditLogs).values({
+      id: `audit-${Date.now()}`,
+      admin_user_id: req.admin?.id,
+      entity_type: 'cases',
+      entity_id: caseId,
+      action: 'create',
+      diff_snapshot: {
+        source_report_id: id,
+        case: newCase,
+        official: newOfficial
+      },
+      created_at: new Date()
+    });
+
+    res.status(201).json({
+      message: 'Kasus berhasil diterbitkan langsung ke pangkalan data LKI!',
+      case: newCase,
+      official: newOfficial,
+      report: updatedReport
+    });
+  } catch (err: any) {
+    console.error('Error in POST /api/admin/reports/:id/convert-to-case:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // POST /api/admin/ai-command
 router.post('/ai-command', async (req, res) => {
@@ -1032,6 +1154,153 @@ router.put('/settings/donation', async (req, res) => {
   } catch (err: any) {
     console.error('Error in PUT /api/admin/settings/donation:', err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// 10. CITIZEN COMMENTS MODERATION
+// ==========================================
+
+// GET /api/admin/comments - Daftar komentar warga lintas perkara
+router.get('/comments', async (req, res) => {
+  try {
+    const filter = (req.query.filter as string) || 'all';
+
+    const comments = await db
+      .select({
+        id: schema.caseComments.id,
+        case_id: schema.caseComments.case_id,
+        case_title: schema.cases.title,
+        content: schema.caseComments.content,
+        reaction_type: schema.caseComments.reaction_type,
+        upvotes_count: schema.caseComments.upvotes_count,
+        is_hidden: schema.caseComments.is_hidden,
+        created_at: schema.caseComments.created_at,
+        user: {
+          id: schema.citizenUsers.id,
+          username: schema.citizenUsers.username,
+          display_name: schema.citizenUsers.display_name,
+          avatar_seed: schema.citizenUsers.avatar_seed
+        }
+      })
+      .from(schema.caseComments)
+      .innerJoin(schema.citizenUsers, eq(schema.caseComments.user_id, schema.citizenUsers.id))
+      .innerJoin(schema.cases, eq(schema.caseComments.case_id, schema.cases.id))
+      .orderBy(desc(schema.caseComments.created_at));
+
+    let filtered = comments;
+    if (filter === 'hidden') {
+      filtered = comments.filter(c => c.is_hidden === 1);
+    } else if (filter === 'visible') {
+      filtered = comments.filter(c => c.is_hidden === 0);
+    }
+
+    return res.json({
+      status: 'success',
+      total: filtered.length,
+      data: filtered
+    });
+  } catch (err: any) {
+    console.error('Error in GET /api/admin/comments:', err);
+    return res.status(500).json({ error: 'Gagal mengambil data komentar warga.' });
+  }
+});
+
+// PUT /api/admin/comments/:id/toggle-hide - Sembunyikan/Tampilkan komentar warga
+router.put('/comments/:id/toggle-hide', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const comment = await db.query.caseComments.findFirst({
+      where: eq(schema.caseComments.id, id)
+    });
+
+    if (!comment) {
+      return res.status(404).json({ error: 'Komentar tidak ditemukan.' });
+    }
+
+    const newHidden = comment.is_hidden === 1 ? 0 : 1;
+    await db
+      .update(schema.caseComments)
+      .set({ is_hidden: newHidden })
+      .where(eq(schema.caseComments.id, id));
+
+    // Audit Log
+    try {
+      await db.insert(schema.auditLogs).values({
+        id: `audit-${Date.now()}`,
+        admin_user_id: req.admin?.id,
+        entity_type: 'case_comment',
+        entity_id: id,
+        action: 'update',
+        diff_snapshot: {
+          perintah_asli: newHidden === 1 ? 'Menyembunyikan komentar warga (Moderasi)' : 'Memulihkan tampilan komentar warga',
+          diff_snapshot: {
+            comment_id: id,
+            is_hidden: newHidden,
+            content_preview: comment.content.substring(0, 80)
+          },
+          status: 'selesai'
+        },
+        created_at: new Date()
+      });
+    } catch (auditErr) {
+      console.warn('Gagal mencatat audit log komentar:', auditErr);
+    }
+
+    return res.json({
+      status: 'success',
+      message: newHidden === 1 ? 'Komentar berhasil disembunyikan dari publik.' : 'Komentar kembali ditampilkan ke publik.',
+      is_hidden: newHidden
+    });
+  } catch (err: any) {
+    console.error('Error in PUT /api/admin/comments/:id/toggle-hide:', err);
+    return res.status(500).json({ error: 'Gagal mengubah status moderasi komentar.' });
+  }
+});
+
+// DELETE /api/admin/comments/:id - Hapus komentar secara permanen
+router.delete('/comments/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const comment = await db.query.caseComments.findFirst({
+      where: eq(schema.caseComments.id, id)
+    });
+
+    if (!comment) {
+      return res.status(404).json({ error: 'Komentar tidak ditemukan.' });
+    }
+
+    await db.delete(schema.caseComments).where(eq(schema.caseComments.id, id));
+
+    // Audit Log
+    try {
+      await db.insert(schema.auditLogs).values({
+        id: `audit-${Date.now()}`,
+        admin_user_id: req.admin?.id,
+        entity_type: 'case_comment',
+        entity_id: id,
+        action: 'delete',
+        diff_snapshot: {
+          perintah_asli: 'Menghapus komentar warga secara permanen',
+          diff_snapshot: {
+            comment_id: id,
+            content_deleted: comment.content
+          },
+          status: 'selesai'
+        },
+        created_at: new Date()
+      });
+    } catch (auditErr) {
+      console.warn('Gagal mencatat audit log delete komentar:', auditErr);
+    }
+
+    return res.json({
+      status: 'success',
+      message: 'Komentar berhasil dihapus permanen.'
+    });
+  } catch (err: any) {
+    console.error('Error in DELETE /api/admin/comments/:id:', err);
+    return res.status(500).json({ error: 'Gagal menghapus komentar warga.' });
   }
 });
 

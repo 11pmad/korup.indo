@@ -10,15 +10,16 @@ import {
   ExternalLink,
   CheckCircle,
   AlertTriangle,
-  RotateCcw
+  RotateCcw,
+  Activity
 } from 'lucide-react';
-import { formatRupiah } from '../../utils/formatters.js';
+import { formatRupiah, formatRupiahFull } from '../../utils/formatters.js';
 
 interface DashboardOverviewProps {
   authToken: string;
   auditLogs: any[];
   reports: any[];
-  onNavigate: (tab: 'dashboard' | 'ai' | 'cases' | 'officials' | 'reports' | 'audit' | 'manual') => void;
+  onNavigate: (tab: any) => void;
   onRefresh: () => void;
 }
 
@@ -57,10 +58,30 @@ export const AdminDashboardOverview: React.FC<DashboardOverviewProps> = ({
       const casesData = await casesRes.json();
       const statsData = await statsRes.json();
 
+      const totalLoss = Number(
+        statsData.total_kerugian_negara ??
+        statsData.total_kerugian_akumulasi ??
+        statsData.total_kerugian ??
+        0
+      );
+
+      const totalCases = Number(
+        casesData.pagination?.total_items ??
+        statsData.total_kasus_nasional ??
+        statsData.total_kasus ??
+        0
+      );
+
+      const totalOfficials = Number(
+        statsData.total_pejabat ??
+        statsData.total_pejabat_terdata ??
+        0
+      );
+
       setStats({
-        totalCases: casesData.pagination?.total_items || statsData.total_kasus || 0,
-        totalLoss: statsData.total_kerugian_negara || 0,
-        totalOfficials: statsData.total_pejabat || 0,
+        totalCases,
+        totalLoss,
+        totalOfficials,
         loading: false
       });
     } catch (err) {
@@ -95,7 +116,7 @@ export const AdminDashboardOverview: React.FC<DashboardOverviewProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => onNavigate('ai')}
               className="px-4 py-2.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer"
@@ -109,6 +130,13 @@ export const AdminDashboardOverview: React.FC<DashboardOverviewProps> = ({
             >
               <FilePlus className="w-4 h-4 text-slate-300" />
               <span>Input Manual</span>
+            </button>
+            <button
+              onClick={() => onNavigate('monitoring')}
+              className="px-4 py-2.5 bg-blue-900/60 hover:bg-blue-800/80 text-blue-200 hover:text-white rounded-xl text-xs font-bold transition-all border border-blue-700/60 flex items-center gap-2 cursor-pointer"
+            >
+              <Activity className="w-4 h-4 text-blue-400" />
+              <span>Trafik & Monitoring</span>
             </button>
           </div>
         </div>
@@ -147,7 +175,7 @@ export const AdminDashboardOverview: React.FC<DashboardOverviewProps> = ({
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-lg sm:text-xl font-extrabold text-slate-900 truncate font-mono" title={formatRupiah(stats.totalLoss)}>
+            <div className="text-lg sm:text-xl font-extrabold text-slate-900 truncate font-mono" title={formatRupiahFull(stats.totalLoss)}>
               {stats.loading ? '...' : formatRupiah(stats.totalLoss)}
             </div>
             <p className="text-[11px] text-slate-500 mt-1">

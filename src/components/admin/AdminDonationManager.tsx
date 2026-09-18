@@ -16,7 +16,10 @@ import {
   Heart,
   ShieldCheck,
   Smartphone,
-  ExternalLink
+  ExternalLink,
+  X,
+  Maximize2,
+  Download
 } from 'lucide-react';
 import { sound } from '../../utils/audio.js';
 
@@ -54,6 +57,7 @@ export const AdminDonationManager: React.FC<AdminDonationManagerProps> = ({
   const [saving, setSaving] = useState<boolean>(false);
   const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [previewModalOpen, setPreviewModalOpen] = useState<boolean>(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -391,19 +395,23 @@ export const AdminDonationManager: React.FC<AdminDonationManagerProps> = ({
 
               {/* Image Preview / Remove Bar */}
               {formData.qris_image_url && (
-                <div className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-slate-200">
-                  <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center justify-between p-3 bg-white rounded-2xl border border-slate-200 shadow-xs">
+                  <div className="flex items-center gap-3.5 min-w-0">
                     <img 
                       src={formData.qris_image_url} 
                       alt="QRIS Preview Mini" 
-                      className="w-12 h-12 object-contain bg-slate-50 rounded-lg border border-slate-200 p-0.5"
+                      className="w-20 h-20 sm:w-24 sm:h-24 object-contain bg-slate-50 rounded-xl border border-slate-200 p-1 shadow-2xs shrink-0"
                     />
-                    <div className="min-w-0">
-                      <div className="text-xs font-semibold text-slate-800 truncate">
+                    <div className="min-w-0 space-y-1">
+                      <div className="text-xs font-bold text-slate-800 truncate">
                         Gambar QRIS Terpasang
                       </div>
-                      <div className="text-[10px] text-emerald-600 font-medium">
-                        ✓ Siap ditampilkan ke publik
+                      <div className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                        <span>✓</span>
+                        <span>Siap dipindai &amp; ditampilkan</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-mono truncate max-w-[220px]">
+                        {formData.qris_image_url.startsWith('data:') ? 'File Base64 Unggahan' : formData.qris_image_url}
                       </div>
                     </div>
                   </div>
@@ -411,7 +419,7 @@ export const AdminDonationManager: React.FC<AdminDonationManagerProps> = ({
                   <button
                     type="button"
                     onClick={handleRemoveImage}
-                    className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                    className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer shrink-0"
                     title="Hapus gambar ini"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -502,80 +510,81 @@ export const AdminDonationManager: React.FC<AdminDonationManagerProps> = ({
             </div>
 
             {/* Live Card Container */}
-            <div className="p-3 bg-[#F5F0E6] rounded-2xl border border-dashed border-[#E3D7BA]">
+            <div className="p-4 bg-[#F5F0E6] rounded-2xl border border-dashed border-[#E3D7BA] flex flex-col items-center justify-center">
               {formData.is_active ? (
-                <div className="bg-[#FFFDF8] border-2 border-dashed border-[#CA8A04] rounded-2xl p-5 shadow-sm space-y-4 text-[#57534E]">
-                  <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#FEF3C7] text-[#D97706] flex items-center justify-center font-bold shrink-0 shadow-inner">
-                      <Heart className="w-5 h-5 fill-amber-500 text-amber-500" />
-                    </div>
-                    <div className="space-y-1">
-                      <h4 className="font-bold text-sm text-[#1E293B] leading-tight">
-                        {formData.title || 'Dukung Independensi LKI'}
-                      </h4>
-                      <p className="text-xs text-[#64748B] leading-relaxed">
-                        {formData.description || 'Bantu operasional server & verifikasi berkas peradilan...'}
-                      </p>
-                    </div>
+                <div className="bg-[#FFFDF8] border-2 border-[#E2D8C3] hover:border-[#CA8A04] transition-colors rounded-2xl p-3.5 shadow-sm text-center space-y-2.5 w-full max-w-[215px] sm:max-w-[230px]">
+                  {/* Judul Sedikit */}
+                  <div className="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold text-[#78350F]">
+                    <QrCode className="w-4 h-4 text-[#CA8A04] shrink-0" />
+                    <span className="truncate" title={formData.title || 'Dukungan QRIS'}>
+                      {formData.title ? (formData.title.length > 20 ? 'Dukungan QRIS' : formData.title) : 'Dukungan QRIS'}
+                    </span>
                   </div>
 
-                  {/* QRIS Display Area */}
-                  <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center space-y-3 shadow-2xs">
-                    {formData.qris_image_url ? (
-                      <div className="space-y-2">
-                        <div className="inline-block p-2 bg-white border border-slate-200 rounded-xl shadow-xs">
-                          <img 
-                            src={formData.qris_image_url} 
-                            alt="QRIS Admin" 
-                            className="w-44 h-44 object-contain mx-auto"
-                          />
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-mono flex items-center justify-center gap-1">
-                          <span>🔍 Klik untuk memperbesar</span>
-                        </div>
+                  {/* QRIS Display Area Diperbesar */}
+                  {formData.qris_image_url ? (
+                    <div 
+                      onClick={() => setPreviewModalOpen(true)}
+                      className="group/img relative cursor-pointer bg-white p-2 border border-[#E7DECB] rounded-2xl inline-block shadow-xs hover:border-[#CA8A04] hover:shadow-md transition-all"
+                      title="Klik untuk membuka modal perbesar"
+                    >
+                      <img 
+                        src={formData.qris_image_url} 
+                        alt="QRIS Admin" 
+                        className="w-40 h-40 sm:w-44 sm:h-44 object-contain mx-auto rounded-xl transition-transform group-hover/img:scale-102"
+                      />
+                      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-2xs rounded-2xl opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold">
+                        <Maximize2 className="w-4 h-4" />
+                        <span>Perbesar</span>
                       </div>
-                    ) : (
-                      <div className="py-8 text-center space-y-2 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                        <QrCode className="w-12 h-12 mx-auto text-slate-300 stroke-1" />
-                        <p className="text-xs font-semibold text-slate-600">
-                          Foto QRIS Belum Diunggah
-                        </p>
-                        <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
-                          Unggah berkas foto QRIS pada formulir di sebelah kiri untuk menampilkannya di sini.
-                        </p>
-                      </div>
-                    )}
-
-                    {formData.account_name && (
-                      <div className="text-xs font-bold text-slate-800">
-                        A.N. {formData.account_name}
-                      </div>
-                    )}
-
-                    {formData.bank_info && (
-                      <div className="text-[11px] text-slate-500 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                        {formData.bank_info}
-                      </div>
-                    )}
-
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-center gap-1.5 text-[10px] text-slate-400">
-                      <Smartphone className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Mendukung seluruh Mobile Banking &amp; Dompet Digital (QRIS Standar BI)</span>
                     </div>
+                  ) : (
+                    <div className="w-40 h-40 sm:w-44 sm:h-44 text-center flex flex-col items-center justify-center space-y-1.5 text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-3 mx-auto">
+                      <QrCode className="w-8 h-8 mx-auto text-slate-300 stroke-1" />
+                      <p className="text-[10px] font-semibold text-slate-600 leading-tight">
+                        QRIS Belum Dipasang
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Info Sedikit di Bawah Gambar */}
+                  <div className="text-[11px] text-[#78716C] leading-tight space-y-1">
+                    {formData.account_name ? (
+                      <p className="font-bold text-[#44403C] truncate max-w-[190px] mx-auto" title={formData.account_name}>
+                        A.N. {formData.account_name}
+                      </p>
+                    ) : (
+                      <p className="font-medium text-[#78716C]">Scan donasi QRIS</p>
+                    )}
+                    <span className="text-[10px] text-[#854D0E] font-medium block">
+                      🔍 Klik gambar untuk perbesar
+                    </span>
                   </div>
                 </div>
               ) : (
                 <div className="p-8 text-center text-slate-400 space-y-2">
                   <Eye className="w-8 h-8 mx-auto text-slate-300" />
                   <p className="text-xs font-semibold text-slate-600">
-                    Kartu Donasi Sedang Disembunyikan
+                    Kotak QRIS Sedang Disembunyikan
                   </p>
                   <p className="text-[11px] text-slate-400">
-                    Bagian donasi tidak akan dimunculkan pada portal publik selama status dimatikan.
+                    Kotak QRIS tidak akan dimunculkan pada footer selama status dimatikan.
                   </p>
                 </div>
               )}
             </div>
+
+            {/* Action button to test full modal */}
+            {formData.is_active && formData.qris_image_url && (
+              <button
+                type="button"
+                onClick={() => setPreviewModalOpen(true)}
+                className="w-full py-2.5 px-4 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded-2xl text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+              >
+                <Maximize2 className="w-4 h-4 text-amber-700" />
+                <span>Uji Pratinjau Modal Layar Penuh</span>
+              </button>
+            )}
           </div>
 
           {/* Quick Guide Card */}
@@ -610,6 +619,86 @@ export const AdminDonationManager: React.FC<AdminDonationManagerProps> = ({
         </div>
 
       </div>
+
+      {/* Giant QRIS Preview Modal for Admin */}
+      {previewModalOpen && formData.qris_image_url && (
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+          onClick={() => setPreviewModalOpen(false)}
+        >
+          <div 
+            className="bg-white rounded-3xl p-5 sm:p-7 max-w-xl md:max-w-2xl lg:max-w-3xl w-full max-h-[96vh] shadow-2xl space-y-4 text-center relative animate-in fade-in zoom-in duration-200 flex flex-col justify-between overflow-y-auto my-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setPreviewModalOpen(false)}
+              className="absolute top-4 right-4 sm:top-5 sm:right-5 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 cursor-pointer transition-colors shadow-xs z-10"
+              title="Tutup (Esc)"
+            >
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+
+            {/* Modal Header */}
+            <div className="space-y-1 text-left pr-10">
+              <div className="flex items-center gap-2">
+                <Heart className="w-5 h-5 text-rose-500 fill-rose-500 shrink-0" />
+                <h4 className="font-bold text-base sm:text-lg md:text-xl text-slate-900 truncate">
+                  {formData.title || 'Dukungan QRIS Pengelola LKI'}
+                </h4>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-500">
+                Pindai kode QRIS di bawah melalui aplikasi m-banking atau dompet digital (GoPay, OVO, Dana, BCA, BRI, Mandiri, dll).
+              </p>
+            </div>
+
+            {/* Giant QRIS Image Container */}
+            <div className="w-full p-3 sm:p-6 bg-[#FFFDF8] border-2 border-[#E7DECB] rounded-3xl shadow-inner flex items-center justify-center overflow-hidden">
+              <img 
+                src={formData.qris_image_url} 
+                alt="QRIS Admin Full Preview" 
+                className="w-auto h-auto max-h-[58vh] sm:max-h-[64vh] md:max-h-[68vh] max-w-full object-contain mx-auto rounded-2xl drop-shadow-md transition-transform hover:scale-[1.01]"
+              />
+            </div>
+
+            {/* Account & Bank Info */}
+            <div className="space-y-1 text-center">
+              {formData.account_name && (
+                <div className="text-sm sm:text-base font-extrabold text-slate-900">
+                  A.N. {formData.account_name}
+                </div>
+              )}
+              {formData.bank_info && (
+                <div className="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
+                  {formData.bank_info}
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons: Download + Close */}
+            <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <a
+                href={formData.qris_image_url}
+                download="QRIS_Donasi_LKI.png"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs sm:text-sm transition-all shadow-xs inline-flex items-center justify-center gap-2 cursor-pointer"
+                title="Unduh file gambar QRIS ke perangkat Anda"
+              >
+                <Download className="w-4 h-4" />
+                <span>Simpan Gambar QRIS</span>
+              </a>
+              <button
+                onClick={() => setPreviewModalOpen(false)}
+                className="w-full sm:w-auto px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer shadow-xs"
+              >
+                Selesai / Tutup
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

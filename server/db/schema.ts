@@ -19,7 +19,8 @@ export const sectorCategoryEnum = pgEnum('sector_category', [
 
 export const reportTypeEnum = pgEnum('report_type', [
   'koreksi_data',
-  'rujukan_putusan_baru'
+  'rujukan_putusan_baru',
+  'usulan_kasus_baru'
 ]);
 
 export const reportStatusEnum = pgEnum('report_status', [
@@ -41,6 +42,17 @@ export const auditActionEnum = pgEnum('audit_action', [
   'rollback',
   'approve_report',
   'reject_report'
+]);
+
+export const reactionTypeEnum = pgEnum('reaction_type', [
+  'geram',
+  'rampok',
+  'memalukan',
+  'didukung',
+  'khilaf_administrasi',
+  'dimaklumi',
+  'tebang_pilih',
+  'kawal_sidang'
 ]);
 
 // 1. Provinces
@@ -201,6 +213,7 @@ export const publicReports = pgTable('public_reports', {
   description: text('description').notNull(),
   reference_url: text('reference_url'),
   submitter_contact: text('submitter_contact'),
+  metadata: jsonb('metadata'),
   status: reportStatusEnum('status').default('pending_review').notNull(),
   reviewed_by: text('reviewed_by').references(() => adminUsers.id),
   created_at: timestamp('created_at').defaultNow().notNull(),
@@ -217,6 +230,96 @@ export const auditLogs = pgTable('audit_logs', {
   diff_snapshot: jsonb('diff_snapshot'),
   created_at: timestamp('created_at').defaultNow().notNull()
 });
+
+// 14. Visitor & Traffic Logs (Monitoring Observability)
+export const visitorLogs = pgTable('visitor_logs', {
+  id: text('id').primaryKey(),
+  timestamp: timestamp('timestamp', { withTimezone: true }).defaultNow().notNull(),
+  method: text('method').notNull(),
+  path: text('path').notNull(),
+  status_code: integer('status_code').notNull(),
+  duration_ms: integer('duration_ms').default(0).notNull(),
+  ip_address: text('ip_address'),
+  user_agent: text('user_agent'),
+  device_type: text('device_type').default('desktop'),
+  browser: text('browser').default('unknown'),
+  os: text('os').default('unknown'),
+  referrer: text('referrer'),
+  session_id: text('session_id')
+});
+
+// 15. Citizen Users (Regular Public Users)
+export const citizenUsers = pgTable('citizen_users', {
+  id: text('id').primaryKey(),
+  username: text('username').unique().notNull(),
+  display_name: text('display_name').notNull(),
+  email: text('email'),
+  password_hash: text('password_hash'),
+  avatar_seed: text('avatar_seed').default('garuda'),
+  role: text('role').default('citizen').notNull(),
+  created_at: timestamp('created_at').defaultNow().notNull()
+});
+
+// 16. Case Reactions (Public Sentiment Emoji & Stance)
+export const caseReactions = pgTable(
+  'case_reactions',
+  {
+    id: text('id').primaryKey(),
+    case_id: text('case_id')
+      .references(() => cases.id, { onDelete: 'cascade' })
+      .notNull(),
+    user_id: text('user_id')
+      .references(() => citizenUsers.id, { onDelete: 'cascade' })
+      .notNull(),
+    reaction_type: reactionTypeEnum('reaction_type').notNull(),
+    created_at: timestamp('created_at').defaultNow().notNull()
+  },
+  (table) => [
+    index('case_reactions_case_id_idx').on(table.case_id),
+    index('case_reactions_user_id_idx').on(table.user_id)
+  ]
+);
+
+// 17. Case Comments (Citizen Discussion & Community Feedback)
+export const caseComments = pgTable(
+  'case_comments',
+  {
+    id: text('id').primaryKey(),
+    case_id: text('case_id')
+      .references(() => cases.id, { onDelete: 'cascade' })
+      .notNull(),
+    user_id: text('user_id')
+      .references(() => citizenUsers.id, { onDelete: 'cascade' })
+      .notNull(),
+    reaction_type: reactionTypeEnum('reaction_type'),
+    content: text('content').notNull(),
+    upvotes_count: integer('upvotes_count').default(0).notNull(),
+    is_hidden: integer('is_hidden').default(0).notNull(), // 0: visible, 1: hidden by admin
+    created_at: timestamp('created_at').defaultNow().notNull()
+  },
+  (table) => [
+    index('case_comments_case_id_idx').on(table.case_id),
+    index('case_comments_user_id_idx').on(table.user_id)
+  ]
+);
+
+// 18. Comment Upvotes
+export const commentUpvotes = pgTable(
+  'comment_upvotes',
+  {
+    id: text('id').primaryKey(),
+    comment_id: text('comment_id')
+      .references(() => caseComments.id, { onDelete: 'cascade' })
+      .notNull(),
+    user_id: text('user_id')
+      .references(() => citizenUsers.id, { onDelete: 'cascade' })
+      .notNull(),
+    created_at: timestamp('created_at').defaultNow().notNull()
+  },
+  (table) => [
+    index('comment_upvotes_comment_user_idx').on(table.comment_id, table.user_id)
+  ]
+);
 
 // Relations
 export const provincesRelations = relations(provinces, ({ many }) => ({
@@ -270,7 +373,9 @@ export const casesRelations = relations(cases, ({ one, many }) => ({
   caseCompanies: many(caseCompanies),
   timelineEvents: many(caseTimelineEvents),
   documents: many(caseDocuments),
-  reports: many(publicReports)
+  reports: many(publicReports),
+  reactions: many(caseReactions),
+  comments: many(caseComments)
 }));
 
 export const caseOfficialsRelations = relations(caseOfficials, ({ one }) => ({
@@ -317,5 +422,45 @@ export const publicReportsRelations = relations(publicReports, ({ one }) => ({
   reviewedByAdmin: one(adminUsers, {
     fields: [publicReports.reviewed_by],
     references: [adminUsers.id]
+  })
+}));
+
+export const citizenUsersRelations = relations(citizenUsers, ({ many }) => ({
+  reactions: many(caseReactions),
+  comments: many(caseComments),
+  upvotes: many(commentUpvotes)
+}));
+
+export const caseReactionsRelations = relations(caseReactions, ({ one }) => ({
+  case: one(cases, {
+    fields: [caseReactions.case_id],
+    references: [cases.id]
+  }),
+  user: one(citizenUsers, {
+    fields: [caseReactions.user_id],
+    references: [citizenUsers.id]
+  })
+}));
+
+export const caseCommentsRelations = relations(caseComments, ({ one, many }) => ({
+  case: one(cases, {
+    fields: [caseComments.case_id],
+    references: [cases.id]
+  }),
+  user: one(citizenUsers, {
+    fields: [caseComments.user_id],
+    references: [citizenUsers.id]
+  }),
+  upvotes: many(commentUpvotes)
+}));
+
+export const commentUpvotesRelations = relations(commentUpvotes, ({ one }) => ({
+  comment: one(caseComments, {
+    fields: [commentUpvotes.comment_id],
+    references: [caseComments.id]
+  }),
+  user: one(citizenUsers, {
+    fields: [commentUpvotes.user_id],
+    references: [citizenUsers.id]
   })
 }));

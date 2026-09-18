@@ -16,6 +16,10 @@ import exportRouter from './server/routes/export.js';
 import reportsRouter from './server/routes/reports.js';
 import adminRouter from './server/routes/admin.js';
 import erasRouter from './server/routes/eras.js';
+import monitoringRouter, { trafficLoggerMiddleware } from './server/routes/monitoring.js';
+import { citizenAuthRouter } from './server/routes/citizenAuth.js';
+import { reactionsRouter } from './server/routes/reactions.js';
+import { commentsRouter } from './server/routes/comments.js';
 
 import { db, schema } from './server/db/index.js';
 import { eq, desc, sql } from 'drizzle-orm';
@@ -26,6 +30,9 @@ const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Visitor traffic & monitoring interceptor
+app.use(trafficLoggerMiddleware);
 
 // General rate limiter for API routes
 app.use('/api/', generalApiLimiter);
@@ -39,8 +46,13 @@ app.use('/api/companies', companiesRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/export', exportRouter);
 app.use('/api/reports', reportsRouter);
+app.use('/api/admin/monitoring', monitoringRouter);
+app.use('/api/monitoring', monitoringRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/eras', erasRouter);
+app.use('/api/auth/citizen', citizenAuthRouter);
+app.use('/api/reactions', reactionsRouter);
+app.use('/api/comments', commentsRouter);
 
 // Public Settings: Announcement / Disclaimer Banner
 const DEFAULT_ANNOUNCEMENT = {

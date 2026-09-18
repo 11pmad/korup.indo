@@ -23,7 +23,7 @@ interface LandingPageProps {
   cases: CorruptionCase[];
   onNavigate: (tab: 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin') => void;
   onSelectCase: (caseId: string) => void;
-  onOpenReport: () => void;
+  onOpenReport: (mode?: 'new_case' | 'correction' | 'track') => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
@@ -339,26 +339,41 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
 
       {/* Partisipasi Publik Call to Action */}
-      <section className="bg-[#FAF5E8] border-2 border-dashed border-[#CA8A04] rounded-3xl p-6 sm:p-8 text-center space-y-3">
-        <div className="w-10 h-10 bg-[#FEF08A] text-[#854D0E] rounded-2xl mx-auto flex items-center justify-center border border-[#FACC15]">
-          <BookOpen className="w-5 h-5" />
+      <section className="bg-[#FAF5E8] border-2 border-dashed border-[#CA8A04] rounded-3xl p-6 sm:p-8 text-center space-y-4">
+        <div className="w-12 h-12 bg-[#FEF08A] text-[#854D0E] rounded-2xl mx-auto flex items-center justify-center border border-[#FACC15] rotate-[-2deg] shadow-2xs">
+          <BookOpen className="w-6 h-6" />
         </div>
-        <h3 className="font-marker text-xl sm:text-2xl text-[#1E293B]">
-          Menemukan Kekeliruan Data atau Memiliki Rujukan Putusan Baru?
-        </h3>
-        <p className="text-xs sm:text-sm text-[#57534E] max-w-xl mx-auto">
-          Integritas data adalah prioritas utama kami. Setiap warga dapat mengajukan permohonan koreksi atau
-          menyertakan tautan putusan kasasi/PK terbaru untuk diverifikasi oleh tim verifikator.
-        </p>
-        <div>
+        <div className="space-y-1">
+          <h3 className="font-marker text-xl sm:text-2xl text-[#1E293B]">
+            Mengetahui Perkara Korupsi Baru atau Menemukan Kekeliruan Data?
+          </h3>
+          <p className="text-xs sm:text-sm text-[#57534E] max-w-xl mx-auto">
+            Integritas dan transparansi data adalah komitmen utama kami. Setiap warga dapat mengusulkan kasus terbaru yang belum tercatat atau mengajukan koreksi berkas berdasarkan rujukan putusan pengadilan resmi.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
           <button
+            type="button"
             onClick={() => {
               sound.playPop();
-              onOpenReport();
+              onOpenReport('new_case');
             }}
-            className="px-5 py-2.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer inline-flex items-center gap-2"
+            className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer inline-flex items-center gap-2"
           >
-            <span>Laporkan Koreksi / Rujukan Baru</span>
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Usulkan Kasus Korupsi Baru</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              sound.playPop();
+              onOpenReport('correction');
+            }}
+            className="px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer inline-flex items-center gap-2"
+          >
+            <Scale className="w-3.5 h-3.5 text-slate-500" />
+            <span>Koreksi Berkas / Putusan Baru</span>
           </button>
         </div>
       </section>

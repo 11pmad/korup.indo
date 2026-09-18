@@ -149,6 +149,7 @@ router.get('/overview', async (req, res) => {
   try {
     const totalCasesCount = await db.select({ count: sql<number>`count(*)::int` }).from(schema.cases);
     const totalLossSum = await db.select({ sum: sql<number>`sum(${schema.cases.loss_amount})::double precision` }).from(schema.cases);
+    const totalOfficialsCount = await db.select({ count: sql<number>`count(*)::int` }).from(schema.officials);
 
     const topProvince = await db
       .select()
@@ -200,7 +201,12 @@ router.get('/overview', async (req, res) => {
 
     res.json({
       total_kasus_nasional: totalCasesCount[0]?.count || 0,
+      total_kasus: totalCasesCount[0]?.count || 0,
       total_kerugian_akumulasi: totalLossSum[0]?.sum || 0,
+      total_kerugian_negara: totalLossSum[0]?.sum || 0,
+      total_kerugian: totalLossSum[0]?.sum || 0,
+      total_pejabat: totalOfficialsCount[0]?.count || 0,
+      total_pejabat_terdata: totalOfficialsCount[0]?.count || 0,
       provinsi_terbanyak: topProvince[0]
         ? {
             provinsi: topProvince[0].name,

@@ -109,11 +109,20 @@ export const HISTORICAL_ERAS: HistoricalEra[] = [
   {
     id: 'orba',
     name: 'Era Orde Baru (1966 - 1998)',
-    shortName: 'Era Orde Baru (< 1998)',
+    shortName: 'Era Orde Baru (1966-1998)',
     president: 'Soeharto',
     startYear: 1966,
     endYear: 1998,
     description: 'Pemerintahan Orde Baru Presiden Soeharto'
+  },
+  {
+    id: 'orla',
+    name: 'Era Kemerdekaan & Orde Lama (1945 - 1966)',
+    shortName: 'Era Kemerdekaan & Orla (1945-1966)',
+    president: 'Ir. Soekarno',
+    startYear: 1945,
+    endYear: 1966,
+    description: 'Periode Kemerdekaan dan Demokrasi Terpimpin'
   }
 ];
 

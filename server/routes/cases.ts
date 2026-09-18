@@ -101,6 +101,7 @@ router.get('/', async (req, res) => {
         official_position: schema.officials.position_title,
         official_photo: schema.officials.photo_url,
         party_id: schema.officials.party_id,
+        party_name: schema.parties.name,
         // Province & Era
         province_id: schema.provinces.id,
         province_name: schema.provinces.name,
@@ -109,6 +110,7 @@ router.get('/', async (req, res) => {
       })
       .from(schema.cases)
       .leftJoin(schema.officials, eq(schema.cases.primary_official_id, schema.officials.id))
+      .leftJoin(schema.parties, eq(schema.officials.party_id, schema.parties.id))
       .leftJoin(schema.provinces, eq(schema.cases.province_id, schema.provinces.id))
       .leftJoin(schema.presidentialEras, eq(schema.cases.era_id, schema.presidentialEras.id))
       .where(whereClause)
@@ -146,7 +148,8 @@ router.get('/', async (req, res) => {
         id: r.official_id || '',
         nama: r.official_name || '',
         jabatan: r.official_position || '',
-        partai: r.party_id || 'non-partai',
+        partai: r.party_name || 'Non-Partai',
+        party_id: r.party_id || 'pty-non-partisan',
         provinsi: r.province_name || '',
         kota_kabupaten: r.province_name || '',
         daerah_pemilihan: r.province_name || '',

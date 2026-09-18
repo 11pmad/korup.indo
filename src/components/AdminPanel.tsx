@@ -27,6 +27,8 @@ import { AdminCasesManager } from './admin/AdminCasesManager.js';
 import { AdminOfficialsManager } from './admin/AdminOfficialsManager.js';
 import { AdminAnnouncementManager } from './admin/AdminAnnouncementManager.js';
 import { AdminDonationManager } from './admin/AdminDonationManager.js';
+import { AdminReportsManager } from './admin/AdminReportsManager.js';
+import { AdminMonitoringManager } from './admin/AdminMonitoringManager.js';
 
 interface AdminPanelProps {
   onRefreshData: () => void;
@@ -1032,75 +1034,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
 
       {/* TAB 4: USER REPORTS MODERATION */}
       {activeTab === 'reports' && (
-        <div className="bg-[#FFFDF8] border-2 border-[#E7DECB] rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#EDE9FE] text-[#7C3AED] rounded-xl">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-marker text-2xl text-[#1E293B]">
-                Antrean Moderasi Laporan Warga
-              </h3>
-              <p className="text-xs text-[#64748B]">
-                Tinjau masukan koreksi dari publik sebelum diaplikasikan ke database resmi.
-              </p>
-            </div>
-          </div>
+        <AdminReportsManager
+          authToken={authToken}
+          onRefreshGlobal={() => {
+            fetchReports();
+            onRefreshData();
+          }}
+        />
+      )}
 
-          <div className="divide-y divide-[#EFE5CF] border border-[#E7DECB] rounded-2xl overflow-hidden">
-            {reports.length === 0 ? (
-              <div className="p-6 text-center text-gray-500 text-xs">Belum ada laporan dari warga.</div>
-            ) : (
-              reports.map(rep => (
-                <div key={rep.id} className="p-4 bg-[#FAF6EC] space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="font-bold text-[#1E293B]">
-                      Perkara: <span className="text-[#0284C7]">{rep.case_title}</span>
-                    </div>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        rep.status === 'disetujui'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : rep.status === 'ditolak'
-                          ? 'bg-rose-100 text-rose-800'
-                          : 'bg-amber-100 text-amber-800'
-                      }`}
-                    >
-                      {rep.status}
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-gray-700 bg-white p-3 rounded-xl border border-[#E5DCC6] leading-relaxed">
-                    {rep.deskripsi_kesalahan}
-                  </p>
-
-                  <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1">
-                    <div>
-                      Pelapor: {rep.email_pelapor || 'Anonim'} • {new Date(rep.created_at).toLocaleString('id-ID')}
-                    </div>
-
-                    {rep.status === 'menunggu_review' && (
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleReportAction(rep.id, 'ditolak')}
-                          className="px-2.5 py-1 bg-gray-200 text-gray-700 text-xs font-bold rounded-lg hover:bg-gray-300"
-                        >
-                          Tolak
-                        </button>
-                        <button
-                          onClick={() => handleReportAction(rep.id, 'disetujui')}
-                          className="px-2.5 py-1 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700"
-                        >
-                          Setujui Koreksi
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+      {/* TAB: MONITORING & TRAFFIC LOGS */}
+      {activeTab === 'monitoring' && (
+        <AdminMonitoringManager
+          authToken={authToken}
+        />
       )}
 
     </AdminLayout>

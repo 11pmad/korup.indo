@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Home,
   MapPin, 
@@ -10,9 +10,13 @@ import {
   Flag,
   Menu,
   X,
-  BookOpen
+  BookOpen,
+  Sparkles,
+  UserCheck,
+  LogOut
 } from 'lucide-react';
 import { sound } from '../utils/audio.js';
+import { CitizenAuthModal, AVATAR_OPTIONS } from './CitizenAuthModal.js';
 
 interface NavbarProps {
   activeTab: 'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin';
@@ -27,6 +31,32 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [soundOn, setSoundOn] = useState(sound.isEnabled);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [citizenUser, setCitizenUser] = useState<any>(null);
+  const [citizenModalOpen, setCitizenModalOpen] = useState(false);
+  const [citizenDropdownOpen, setCitizenDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    loadCitizen();
+    const handler = () => loadCitizen();
+    window.addEventListener('lki_citizen_auth_change', handler);
+    return () => window.removeEventListener('lki_citizen_auth_change', handler);
+  }, []);
+
+  const loadCitizen = () => {
+    try {
+      const stored = localStorage.getItem('lki_citizen_user');
+      setCitizenUser(stored ? JSON.parse(stored) : null);
+    } catch {
+      setCitizenUser(null);
+    }
+  };
+
+  const handleLogoutCitizen = () => {
+    localStorage.removeItem('lki_citizen_token');
+    localStorage.removeItem('lki_citizen_user');
+    window.dispatchEvent(new Event('lki_citizen_auth_change'));
+    setCitizenDropdownOpen(false);
+  };
 
   const toggleSound = () => {
     sound.isEnabled = !sound.isEnabled;
@@ -156,17 +186,69 @@ export const Navbar: React.FC<NavbarProps> = ({
               {soundOn ? <Volume2 className="w-4 h-4 text-[#EA580C]" /> : <VolumeX className="w-4 h-4" />}
             </button>
 
-            {/* Laporkan Kesalahan Data */}
+            {/* Citizen Status / Login */}
+            {citizenUser ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setCitizenDropdownOpen(!citizenDropdownOpen)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#CBD5E1] hover:border-amber-400 rounded-xl text-xs font-bold text-slate-800 transition-all shadow-2xs cursor-pointer"
+                  title="Akun Warga LKI"
+                >
+                  <span>
+                    {AVATAR_OPTIONS.find(a => a.id === citizenUser.avatarSeed)?.emoji || '👤'}
+                  </span>
+                  <span className="max-w-[100px] truncate hidden md:inline">
+                    {citizenUser.displayName}
+                  </span>
+                  <span className="px-1.5 py-0.2 bg-amber-100 text-amber-900 rounded text-[9px] font-mono">
+                    Warga
+                  </span>
+                </button>
+
+                {citizenDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-2xl p-2 shadow-xl z-50 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="px-3 py-2 border-b border-slate-100 text-xs">
+                      <p className="font-bold text-slate-800 truncate">{citizenUser.displayName}</p>
+                      <p className="text-[10px] text-slate-400 font-mono">@{citizenUser.username}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleLogoutCitizen}
+                      className="w-full px-3 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Keluar Akun Warga</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playPop();
+                  setCitizenModalOpen(true);
+                }}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#CBD5E1] text-[#78350F] hover:bg-amber-50 hover:border-amber-400 text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                title="Masuk sebagai Warga untuk bereaksi dan berkomentar"
+              >
+                <UserCheck className="w-3.5 h-3.5 text-amber-600" />
+                <span>Suara Warga</span>
+              </button>
+            )}
+
+            {/* Lapor Kasus Baru */}
             <button
-              id="report-mistake-btn"
+              id="report-new-case-btn"
               onClick={() => {
                 sound.playPop();
                 onOpenReport();
               }}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-[#DC2626] hover:bg-[#FEE2E2] text-xs font-bold transition-all shadow-xs"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] hover:bg-[#FDE68A] text-xs font-bold transition-all shadow-2xs cursor-pointer"
             >
-              <Flag className="w-3.5 h-3.5" />
-              <span>Lapor Kesalahan</span>
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+              <span>Lapor Kasus Baru</span>
             </button>
 
             {/* Mobile Menu Toggle */}
@@ -221,9 +303,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               setMobileMenuOpen(false);
               onOpenReport();
             }}
-            className="w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm text-[#DC2626] bg-[#FEF2F2] flex items-center gap-3"
+            className="w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm text-[#92400E] bg-[#FEF3C7] flex items-center gap-3"
           >
-            <Flag className="w-4 h-4" /> Laporkan Kesalahan Data
+            <Sparkles className="w-4 h-4 text-amber-600" /> Laporkan Kasus Baru
           </button>
         </div>
       )}

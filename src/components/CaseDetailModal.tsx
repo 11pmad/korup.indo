@@ -12,6 +12,8 @@ import {
   ShieldAlert, 
   Share2 
 } from 'lucide-react';
+import { CaseReactionsSection } from './CaseReactionsSection.js';
+import { CaseCommentsSection } from './CaseCommentsSection.js';
 
 interface ModalProps {
   caseData: CorruptionCase | null;
@@ -199,6 +201,18 @@ export const CaseDetailModal: React.FC<ModalProps> = ({
             )}
           </div>
         </div>
+
+        {/* Reaksi & Sentimen Masyarakat (Emoji & Barometer Suara Warga) */}
+        <CaseReactionsSection 
+          caseId={caseData.id} 
+          caseTitle={caseData.official?.nama ? `${caseData.official.nama} - ${caseData.jenis_kasus}` : undefined} 
+        />
+
+        {/* Kolom Diskusi & Komentar Warga */}
+        <CaseCommentsSection 
+          caseId={caseData.id} 
+          caseTitle={caseData.official?.nama ? `${caseData.official.nama} - ${caseData.jenis_kasus}` : undefined} 
+        />
 
         {/* Permanent Legal Disclaimer */}
         <div className="p-3.5 bg-[#FEF9C3] border border-[#FACC15] rounded-xl text-xs text-[#713F12] flex items-start gap-2.5">

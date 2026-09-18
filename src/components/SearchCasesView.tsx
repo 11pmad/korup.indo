@@ -2,18 +2,20 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { CorruptionCase } from '../types.js';
 import { formatRupiah, getStatusBadgeStyle } from '../utils/formatters.js';
 import { sound } from '../utils/audio.js';
-import { Search, Filter, Calendar, ExternalLink, Building2, Eye, Loader2 } from 'lucide-react';
+import { Search, Filter, Calendar, ExternalLink, Building2, Eye, Loader2, Sparkles } from 'lucide-react';
 
 interface SearchProps {
   cases: CorruptionCase[];
   provinces: string[];
   onSelectCase: (caseId: string) => void;
+  onOpenReport?: (caseId?: string, mode?: 'new_case' | 'correction' | 'track') => void;
 }
 
 export const SearchCasesView: React.FC<SearchProps> = ({
   cases,
   provinces,
-  onSelectCase
+  onSelectCase,
+  onOpenReport
 }) => {
   const [inputQuery, setInputQuery] = useState<string>('');
   const [debouncedQuery, setDebouncedQuery] = useState<string>('');
@@ -193,8 +195,24 @@ export const SearchCasesView: React.FC<SearchProps> = ({
       {/* Grid of Polaroid Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filtered.length === 0 ? (
-          <div className="col-span-full p-12 text-center text-[#78716C] font-hand text-xl bg-[#FFFDF9] rounded-3xl border-2 border-dashed border-[#E3D6BC]">
-            Tidak ada perkara yang cocok dengan kata kunci atau filter yang dipilih.
+          <div className="col-span-full p-10 text-center bg-[#FFFDF9] rounded-3xl border-2 border-dashed border-[#E3D6BC] space-y-3">
+            <p className="font-marker text-xl text-[#1E293B]">Tidak ada perkara yang cocok dengan pencarian</p>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              Mengetahui adanya dugaan perkara korupsi baru ini dan memiliki tautan berita atau putusan resminya? Bantu keterbukaan data dengan mengusulkan kasus baru ke kurator LKI.
+            </p>
+            {onOpenReport && (
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playPop();
+                  onOpenReport(undefined, 'new_case');
+                }}
+                className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer inline-flex items-center gap-2"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Laporkan Kasus Baru Ini ke Kurator LKI</span>
+              </button>
+            )}
           </div>
         ) : (
           filtered.map((item, idx) => {

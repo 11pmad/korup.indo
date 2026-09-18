@@ -9,7 +9,6 @@ import { SearchCasesView } from './components/SearchCasesView.js';
 import { AdminPanel } from './components/AdminPanel.js';
 import { CaseDetailModal } from './components/CaseDetailModal.js';
 import { ReportModal } from './components/ReportModal.js';
-import { SupportDonationSection } from './components/SupportDonationSection.js';
 import { Footer } from './components/Footer.js';
 import { 
   CorruptionCase, 
@@ -40,6 +39,7 @@ export default function App() {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [reportModalOpen, setReportModalOpen] = useState<boolean>(false);
   const [reportTargetCaseId, setReportTargetCaseId] = useState<string | null>(null);
+  const [reportInitialMode, setReportInitialMode] = useState<'new_case' | 'correction' | 'track'>('new_case');
 
   // Sync browser back/forward history
   useEffect(() => {
@@ -109,8 +109,9 @@ export default function App() {
     document.title = titles[activeTab] || 'Liga Korupsi Indonesia (LKI)';
   }, [activeTab, activeCaseDetail]);
 
-  const handleOpenReport = (caseId?: string) => {
-    setReportTargetCaseId(caseId || (cases[0]?.id || null));
+  const handleOpenReport = (caseId?: string, mode?: 'new_case' | 'correction' | 'track') => {
+    setReportTargetCaseId(caseId || null);
+    setReportInitialMode(mode || (caseId ? 'correction' : 'new_case'));
     setReportModalOpen(true);
   };
 
@@ -209,6 +210,7 @@ export default function App() {
                 cases={cases}
                 provinces={provincesList}
                 onSelectCase={(id) => setSelectedCaseId(id)}
+                onOpenReport={(cId, mode) => handleOpenReport(cId, mode)}
               />
             )}
           </>
@@ -220,7 +222,7 @@ export default function App() {
       <CaseDetailModal
         caseData={activeCaseDetail}
         onClose={() => setSelectedCaseId(null)}
-        onOpenReport={(cId) => handleOpenReport(cId)}
+        onOpenReport={(cId) => handleOpenReport(cId, 'correction')}
       />
 
       {/* Report Mistake Modal */}
@@ -228,24 +230,31 @@ export default function App() {
         isOpen={reportModalOpen}
         onClose={() => setReportModalOpen(false)}
         caseId={reportTargetCaseId}
+        initialMode={reportInitialMode}
         cases={cases.map(c => ({
           id: c.id,
           title: `${c.official?.nama} (${c.official?.jabatan}) - ${c.official?.provinsi}`
         }))}
       />
 
-      {/* Support & Admin QRIS Donation Card */}
-      <SupportDonationSection />
-
-      {/* Scrapbook Footer */}
+      {/* Scrapbook Footer (Memuat Kartu QRIS & Info Landasan Sumber) */}
       <Footer 
-
+        onNavigate={(tab) => {
+          sound.playPop();
+          setActiveTab(tab);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onOpenReport={(mode) => {
+          sound.playPop();
+          handleOpenReport(undefined, typeof mode === 'string' ? mode as any : 'new_case');
+        }}
         onOpenAdmin={() => {
           sound.playPop();
           setActiveTab('admin');
           if (typeof window !== 'undefined') {
             window.history.pushState({}, '', '/admin');
           }
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }} 
       />
 
