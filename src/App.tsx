@@ -179,7 +179,10 @@ export default function App() {
 
             {/* TAB: ADMIN AI ASSISTANT */}
             {activeTab === 'admin' && (
-              <AdminPanel onRefreshData={loadAllData} />
+              <AdminPanel 
+                onRefreshData={loadAllData} 
+                onBackToHome={() => setActiveTab('beranda')}
+              />
             )}
           </>
         )}
@@ -205,7 +208,7 @@ export default function App() {
       />
 
       {/* Scrapbook Footer */}
-      <Footer />
+      <Footer onOpenAdmin={() => setActiveTab('admin')} />
 
     </div>
   );

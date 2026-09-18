@@ -5,7 +5,6 @@ import {
   Trophy, 
   BarChart3, 
   Search, 
-  Sparkles, 
   Volume2, 
   VolumeX, 
   Flag,
@@ -143,19 +142,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Search className="w-4 h-4" />
               <span>Cari Kasus</span>
             </button>
-
-            <button
-              id="nav-admin-btn"
-              onClick={() => handleNavClick('admin')}
-              className={`px-3 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                activeTab === 'admin'
-                  ? 'bg-[#DC2626] text-white shadow-md border border-[#991B1B]'
-                  : 'text-[#475569] hover:bg-[#FDE2E4] hover:text-[#9F1239]'
-              }`}
-            >
-              <Sparkles className="w-4 h-4 text-[#FDE047]" />
-              <span>Admin Kurasi</span>
-            </button>
           </nav>
 
           {/* Right Action Icons */}
@@ -229,14 +215,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <Search className="w-4 h-4" /> Cari Kasus Pejabat
-          </button>
-          <button
-            onClick={() => handleNavClick('admin')}
-            className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-3 ${
-              activeTab === 'admin' ? 'bg-[#F43F5E] text-white' : 'text-[#334155]'
-            }`}
-          >
-            <Sparkles className="w-4 h-4 text-[#FDE047]" /> Admin AI Assistant
           </button>
           <button
             onClick={() => {

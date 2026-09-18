@@ -24,6 +24,7 @@ import {
 
 interface AdminPanelProps {
   onRefreshData: () => void;
+  onBackToHome?: () => void;
 }
 
 interface ChatMessage {
@@ -31,7 +32,7 @@ interface ChatMessage {
   text: string;
 }
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData }) => {
+export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToHome }) => {
   // Simple auth gate with JWT
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return Boolean(sessionStorage.getItem('lki_admin_token'));
@@ -326,7 +327,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData }) => {
   // If not logged in, show scrapbook login gate
   if (!isAuthenticated) {
     return (
-      <div id="admin-login-screen" className="max-w-md mx-auto py-12 px-4">
+      <div id="admin-login-screen" className="max-w-md mx-auto py-12 px-4 space-y-4">
+        {onBackToHome && (
+          <button
+            onClick={onBackToHome}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#64748B] hover:text-[#1E293B] transition-colors cursor-pointer bg-[#FAF5E8] px-3 py-1.5 rounded-xl border border-[#D5C9AB]"
+          >
+            ← Kembali ke Beranda Publik
+          </button>
+        )}
         <div className="relative bg-[#FFFDF9] border-3 border-[#E7DECB] rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
           <div className="washi-tape washi-tape-yellow -top-3 left-12"></div>
           <div className="washi-tape washi-tape-pink -top-3 right-12"></div>
@@ -345,10 +354,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData }) => {
 
           <div className="p-3 bg-[#FEF9C3] border border-[#FACC15] rounded-2xl text-xs text-[#854D0E] space-y-1">
             <div className="font-bold flex items-center gap-1.5">
-              <span>🔑 Kredensial Demo Pengujian:</span>
+              <span>🔑 Kredensial Pengujian:</span>
             </div>
             <div>Username: <strong className="font-mono">admin</strong></div>
-            <div>Password: <strong className="font-mono">rakyat123</strong></div>
+            <div>Password: <strong className="font-mono">admin123</strong></div>
           </div>
 
           {authError && (
@@ -473,6 +482,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData }) => {
               <ShieldCheck className="w-3.5 h-3.5" /> Moderasi Laporan (
               {reports.filter(r => (r.status as string) === 'menunggu_review' || (r.status as string) === 'pending_review').length})
             </button>
+
+            {onBackToHome && (
+              <button
+                onClick={onBackToHome}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold text-[#475569] hover:bg-[#EBE0C8] hover:text-[#0F172A] transition-colors whitespace-nowrap"
+                title="Kembali ke tampilan utama portal"
+              >
+                ← Beranda Publik
+              </button>
+            )}
 
             <button
               onClick={handleLogout}

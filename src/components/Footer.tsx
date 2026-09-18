@@ -1,7 +1,11 @@
 import React from 'react';
-import { BookOpen, ShieldAlert, Heart } from 'lucide-react';
+import { BookOpen, ShieldAlert, Heart, Lock } from 'lucide-react';
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+  onOpenAdmin?: () => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
   return (
     <footer className="mt-16 bg-[#F4EDE0] border-t-2 border-[#E1D4B8] pt-12 pb-10 text-[#57534E]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
@@ -16,7 +20,7 @@ export const Footer: React.FC = () => {
                 <BookOpen className="w-5 h-5" />
               </div>
               <span className="font-marker text-2xl text-[#1E293B]">
-                Peta Korupsi Wakil Rakyat
+                Liga Korupsi Indonesia (LKI)
               </span>
             </div>
             <p className="text-xs leading-relaxed text-[#64748B]">
@@ -52,10 +56,29 @@ export const Footer: React.FC = () => {
 
         {/* Bottom Bar */}
         <div className="pt-6 border-t border-[#E3D7BA] flex flex-col sm:flex-row items-center justify-between text-xs text-[#78716C] gap-3">
-          <p>© {new Date().getFullYear()} Peta Korupsi Indonesia. Terbuka untuk kepentingan advokasi publik &amp; integritas bangsa.</p>
-          <div className="flex items-center gap-1">
-            <span>Dibuat demi Indonesia yang lebih bersih &amp; berintegritas</span>
-            <Heart className="w-3.5 h-3.5 text-rose-500 inline fill-rose-500" />
+          <p>© {new Date().getFullYear()} Liga Korupsi Indonesia (LKI). Terbuka untuk kepentingan advokasi publik &amp; integritas bangsa.</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1">
+              <span>Dibuat demi Indonesia yang lebih bersih &amp; berintegritas</span>
+              <Heart className="w-3.5 h-3.5 text-rose-500 inline fill-rose-500" />
+            </div>
+            {onOpenAdmin && (
+              <>
+                <span className="text-[#D5C9AB] hidden sm:inline">•</span>
+                <button
+                  id="footer-admin-login-btn"
+                  onClick={() => {
+                    onOpenAdmin();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="inline-flex items-center gap-1.5 text-[11px] text-[#8C827A] hover:text-[#DC2626] transition-colors py-0.5 px-2 rounded hover:bg-[#EBE0C8] cursor-pointer"
+                  title="Akses Masuk Khusus Tim Pengelola & Kurator"
+                >
+                  <Lock className="w-3 h-3 opacity-70" />
+                  <span>Login Pengelola</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
 
