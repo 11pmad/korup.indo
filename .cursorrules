@@ -1,0 +1,11 @@
+# Cursor Rules for Liga Korupsi Indonesia (LKI)
+
+You are working on the Liga Korupsi Indonesia codebase.
+Before making any changes, consult and strictly adhere to the master blueprint in `VIBE_CODING_CONTEXT.md`.
+
+Key rules:
+1. Preserve Presumption of Innocence (Pasal 8 ayat 1 UU Kekuasaan Kehakiman). Do not label suspects/defendants as convicts without inkrah verdicts.
+2. Anti Double-Counting: Never sum project value with state losses.
+3. Keep strict TypeScript compatibility (`npm run lint`).
+4. Maintain the investigative scrapbook UI design language (warm paper/dark investigation board, red judicial stamps, clean Recharts data viz).
+5. Ensure all code changes have zero hallucinations and include primary legal sources (`source_url`).

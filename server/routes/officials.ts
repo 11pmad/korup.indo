@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db, schema } from '../db/index.js';
-import { eq, and, sql, desc, asc, inArray } from 'drizzle-orm';
+import { eq, and, or, sql, desc, asc, inArray, ilike } from 'drizzle-orm';
 
 const router = Router();
 
@@ -17,7 +17,28 @@ router.get('/', async (req, res) => {
     const conditions = [];
 
     if (province) {
-      conditions.push(eq(schema.officials.province_id, String(province)));
+      const pStr = String(province).trim();
+      const norm = pStr.toLowerCase();
+      let aliasId: string | null = null;
+      if (norm.includes('yogyakarta') || norm.includes('jogja')) aliasId = 'diy';
+      else if (norm.includes('bangka')) aliasId = 'babel';
+      else if (norm.includes('jakarta')) aliasId = 'dki-jakarta';
+      else if (norm.includes('sumatera utara') || norm.includes('sumut')) aliasId = 'sumut';
+      else if (norm.includes('sumatera barat') || norm.includes('sumbar')) aliasId = 'sumbar';
+      else if (norm.includes('sumatera selatan') || norm.includes('sumsel')) aliasId = 'sumsel';
+      else if (norm.includes('jawa timur') || norm.includes('jatim')) aliasId = 'jatim';
+      else if (norm.includes('jawa barat') || norm.includes('jabar')) aliasId = 'jabar';
+      else if (norm.includes('jawa tengah') || norm.includes('jateng')) aliasId = 'jateng';
+
+      const provConditions = [
+        eq(schema.officials.province_id, pStr),
+        ilike(schema.provinces.name, pStr),
+        ilike(schema.provinces.name, `%${pStr}%`)
+      ];
+      if (aliasId) {
+        provConditions.push(eq(schema.officials.province_id, aliasId));
+      }
+      conditions.push(or(...provConditions));
     }
 
     if (party) {
@@ -51,6 +72,7 @@ router.get('/', async (req, res) => {
     const countResult = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(schema.officials)
+      .leftJoin(schema.provinces, eq(schema.officials.province_id, schema.provinces.id))
       .where(whereClause);
 
     const totalItems = countResult[0]?.count || 0;

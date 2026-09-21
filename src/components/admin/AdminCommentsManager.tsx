@@ -14,7 +14,9 @@ import {
   User,
   Sparkles,
   ExternalLink,
-  HelpCircle
+  HelpCircle,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { sound } from '../../utils/audio.js';
 import { REACTION_DEFINITIONS } from '../CaseReactionsSection.js';
@@ -52,12 +54,18 @@ export const AdminCommentsManager: React.FC<AdminCommentsManagerProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState<string>('');
   const [filter, setFilter] = useState<'all' | 'visible' | 'hidden'>('all');
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     fetchComments();
   }, [authToken, filter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, filter]);
 
   const fetchComments = async () => {
     setLoading(true);
@@ -164,6 +172,10 @@ export const AdminCommentsManager: React.FC<AdminCommentsManagerProps> = ({
       c.user.username.toLowerCase().includes(q)
     );
   });
+
+  const effectivePageSize = pageSize >= 9999 ? Math.max(filteredComments.length, 1) : pageSize;
+  const totalPages = Math.ceil(filteredComments.length / effectivePageSize) || 1;
+  const paginatedComments = filteredComments.slice((page - 1) * effectivePageSize, page * effectivePageSize);
 
   const getAvatarEmoji = (seed?: string) => {
     const found = AVATAR_OPTIONS.find(a => a.id === seed);
@@ -323,7 +335,7 @@ export const AdminCommentsManager: React.FC<AdminCommentsManagerProps> = ({
             </p>
           </div>
         ) : (
-          filteredComments.map((comment) => {
+          paginatedComments.map((comment) => {
             const isActionLoading = actionLoadingId === comment.id;
             const isHidden = comment.is_hidden === 1;
 
@@ -437,6 +449,62 @@ export const AdminCommentsManager: React.FC<AdminCommentsManagerProps> = ({
           })
         )}
       </div>
+
+      {/* Pagination Footer */}
+      {filteredComments.length > 0 && (
+        <div className="bg-white rounded-2xl p-4 border border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600 shadow-2xs">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-slate-500">Tampilkan:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                sound.playPop();
+                setPageSize(Number(e.target.value));
+                setPage(1);
+              }}
+              className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-700 shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value={10}>10 data (Default)</option>
+              <option value={25}>25 data</option>
+              <option value={50}>50 data</option>
+              <option value={100}>100 data</option>
+              <option value={9999}>Semua ({filteredComments.length})</option>
+            </select>
+            <span>
+              Menampilkan <strong>{(page - 1) * effectivePageSize + 1}</strong> -{' '}
+              <strong>{Math.min(filteredComments.length, page * effectivePageSize)}</strong> dari <strong>{filteredComments.length}</strong> komentar
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 ml-auto">
+            <button
+              onClick={() => {
+                sound.playPop();
+                setPage(p => Math.max(1, p - 1));
+              }}
+              disabled={page <= 1}
+              className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Halaman Sebelumnya"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="px-2 font-bold font-mono text-slate-700">
+              {page} / {totalPages}
+            </span>
+            <button
+              onClick={() => {
+                sound.playPop();
+                setPage(p => Math.min(totalPages, p + 1));
+              }}
+              disabled={page >= totalPages}
+              className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Halaman Selanjutnya"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

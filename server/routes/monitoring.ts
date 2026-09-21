@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { db, schema } from '../db/index.js';
-import { desc, sql, and, gte, eq, ilike } from 'drizzle-orm';
+import { desc, sql, and, gte, lt, eq, ilike } from 'drizzle-orm';
 import { verifyAdminJwt } from '../middleware/auth.js';
 
 const router = Router();
@@ -38,16 +38,19 @@ export function parseUserAgent(ua: string = '') {
   return { device_type, browser, os };
 }
 
-// Helper: Anonymize IP address (e.g. 192.168.1.50 -> 192.168.1.***)
-export function anonymizeIp(ip: string = ''): string {
+// Helper: Resolve full client IP address (no masking)
+export function resolveClientIp(ip: string = ''): string {
   if (!ip) return '127.0.0.1';
-  const clean = ip.replace(/^::ffff:/, '');
-  const parts = clean.split('.');
-  if (parts.length === 4) {
-    return `${parts[0]}.${parts[1]}.${parts[2]}.***`;
+  const firstIp = ip.split(',')[0].trim();
+  const clean = firstIp.replace(/^::ffff:/, '').trim();
+  if (clean === '::1' || clean === 'localhost') {
+    return '127.0.0.1';
   }
-  return clean.slice(0, 12) + '***';
+  return clean || '127.0.0.1';
 }
+
+// Backward compatibility
+export const anonymizeIp = resolveClientIp;
 
 // Middleware to capture server traffic
 export function trafficLoggerMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -63,26 +66,27 @@ export function trafficLoggerMiddleware(req: Request, res: Response, next: NextF
   }
 
   const startTime = Date.now();
-  const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+  const rawIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
   const ua = req.headers['user-agent'] || 'Unknown';
   const { device_type, browser, os } = parseUserAgent(ua);
-  const anonIp = anonymizeIp(ip);
+  const clientIp = resolveClientIp(rawIp);
 
   // Generate lightweight session hash
   const today = new Date().toISOString().slice(0, 10);
-  const sessionHash = `sess-${Buffer.from(`${anonIp}-${today}`).toString('base64').slice(0, 16)}`;
+  const sessionHash = `sess-${Buffer.from(`${clientIp}-${today}`).toString('base64').slice(0, 16)}`;
 
   res.on('finish', async () => {
     const duration_ms = Math.max(1, Date.now() - startTime);
     const status_code = res.statusCode;
 
     // Do not log the monitoring stats API itself to avoid feedback loops
-    if (p.startsWith('/api/admin/monitoring')) {
+    if (p.startsWith('/api/admin/monitoring') || p.startsWith('/api/monitoring')) {
       return;
     }
 
     try {
       const id = `log-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`;
+      const safeReferrer = String(req.headers['referer'] || req.headers['referrer'] || 'Direct').slice(0, 500);
       await db.insert(schema.visitorLogs).values({
         id,
         timestamp: new Date(),
@@ -90,12 +94,12 @@ export function trafficLoggerMiddleware(req: Request, res: Response, next: NextF
         path: p.slice(0, 255),
         status_code,
         duration_ms,
-        ip_address: anonIp,
+        ip_address: clientIp,
         user_agent: ua.slice(0, 500),
         device_type,
         browser,
         os,
-        referrer: (req.headers['referer'] || req.headers['referrer'] || 'Direct') as string,
+        referrer: safeReferrer,
         session_id: sessionHash
       });
     } catch (e) {
@@ -112,12 +116,12 @@ router.post('/track', async (req, res) => {
     const { path: pagePath, referrer } = req.body;
     if (!pagePath) return res.status(400).json({ error: 'Path required' });
 
-    const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+    const rawIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
     const ua = req.headers['user-agent'] || 'Unknown';
     const { device_type, browser, os } = parseUserAgent(ua);
-    const anonIp = anonymizeIp(ip);
+    const clientIp = resolveClientIp(rawIp);
     const today = new Date().toISOString().slice(0, 10);
-    const sessionHash = `sess-${Buffer.from(`${anonIp}-${today}`).toString('base64').slice(0, 16)}`;
+    const sessionHash = `sess-${Buffer.from(`${clientIp}-${today}`).toString('base64').slice(0, 16)}`;
 
     const id = `log-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`;
     await db.insert(schema.visitorLogs).values({
@@ -127,12 +131,12 @@ router.post('/track', async (req, res) => {
       path: String(pagePath).slice(0, 255),
       status_code: 200,
       duration_ms: 1,
-      ip_address: anonIp,
+      ip_address: clientIp,
       user_agent: ua.slice(0, 500),
       device_type,
       browser,
       os,
-      referrer: (referrer || 'Direct').slice(0, 255),
+      referrer: String(referrer || 'Direct').slice(0, 255),
       session_id: sessionHash
     });
 
@@ -234,11 +238,17 @@ router.get('/stats', verifyAdminJwt, async (req, res) => {
         error_count: errorCount,
         error_rate_pct: errorRate
       },
-      hourly_traffic: hourlyLogs.map(h => ({
-        time: new Date(h.hour_bucket).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-        hits: h.hits,
-        errors: h.errors
-      })),
+      hourly_traffic: hourlyLogs.map(h => {
+        const d = new Date(h.hour_bucket);
+        const timeLabel = hours > 24 
+          ? `${d.getDate()}/${d.getMonth() + 1} ${String(d.getHours()).padStart(2, '0')}:00`
+          : d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        return {
+          time: timeLabel,
+          hits: h.hits,
+          errors: h.errors
+        };
+      }),
       top_paths: topPaths,
       devices: devices.map(d => ({ name: d.name ? d.name.toUpperCase() : 'DESKTOP', value: d.count })),
       browsers: browsers.map(b => ({ name: b.name || 'Other', value: b.count })),
@@ -332,28 +342,44 @@ router.delete('/logs', verifyAdminJwt, async (req, res) => {
 
     const deleted = await db
       .delete(schema.visitorLogs)
-      .where(sql`${schema.visitorLogs.timestamp} < ${thresholdDate}`)
+      .where(lt(schema.visitorLogs.timestamp, thresholdDate))
       .returning();
 
-    // Log to audit
-    await db.insert(schema.auditLogs).values({
-      id: `audit-${Date.now()}`,
-      admin_user_id: (req as any).admin?.id,
-      entity_type: 'visitor_logs',
-      entity_id: 'purge',
-      action: 'delete',
-      diff_snapshot: {
-        purged_count: deleted.length,
-        days_retention: days
-      },
-      created_at: new Date()
-    });
+    // Log to audit if admin user exists
+    try {
+      let auditAdminId: string | null = (req as any).admin?.id || null;
+      if (auditAdminId) {
+        const exists = await db.query.adminUsers.findFirst({
+          where: eq(schema.adminUsers.id, auditAdminId)
+        });
+        if (!exists) {
+          const fallback = await db.query.adminUsers.findFirst();
+          auditAdminId = fallback ? (fallback.id as string) : null;
+        }
+      }
+
+      await db.insert(schema.auditLogs).values({
+        id: `audit-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        admin_user_id: auditAdminId,
+        entity_type: 'visitor_logs',
+        entity_id: 'purge',
+        action: 'delete',
+        diff_snapshot: {
+          purged_count: deleted.length,
+          days_retention: days
+        },
+        created_at: new Date()
+      });
+    } catch (auditErr) {
+      console.warn('Gagal mencatat audit log purge:', auditErr);
+    }
 
     res.json({
       message: `Berhasil membersihkan ${deleted.length} log trafik yang lebih lama dari ${days} hari.`,
       purged_count: deleted.length
     });
   } catch (err: any) {
+    console.error('Error in DELETE /api/admin/monitoring/logs:', err);
     res.status(500).json({ error: err.message });
   }
 });

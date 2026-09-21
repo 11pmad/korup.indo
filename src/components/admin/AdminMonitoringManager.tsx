@@ -66,6 +66,7 @@ export const AdminMonitoringManager: React.FC<AdminMonitoringManagerProps> = ({ 
   const [logs, setLogs] = useState<VisitorLogItem[]>([]);
   const [logsLoading, setLogsLoading] = useState<boolean>(true);
   const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalItems, setTotalItems] = useState<number>(0);
   const [methodFilter, setMethodFilter] = useState<string>('all');
@@ -105,7 +106,7 @@ export const AdminMonitoringManager: React.FC<AdminMonitoringManagerProps> = ({ 
     try {
       const queryParams = new URLSearchParams({
         page: String(targetPage),
-        limit: '25',
+        limit: String(pageSize),
         method: methodFilter,
         status: statusFilter,
         search: searchQuery
@@ -137,7 +138,7 @@ export const AdminMonitoringManager: React.FC<AdminMonitoringManagerProps> = ({ 
 
   useEffect(() => {
     fetchLogs(page);
-  }, [page, methodFilter, statusFilter, authToken]);
+  }, [page, pageSize, methodFilter, statusFilter, authToken]);
 
   // Auto-refresh polling effect (every 5 seconds)
   useEffect(() => {
@@ -559,12 +560,27 @@ export const AdminMonitoringManager: React.FC<AdminMonitoringManagerProps> = ({ 
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
+                    setPage(1);
                     fetchLogs(1);
                   }
                 }}
                 placeholder="Cari path atau IP..."
-                className="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:outline-hidden"
+                className="pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:outline-hidden"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setPage(1);
+                    fetchLogs(1);
+                  }}
+                  className="absolute right-2 top-2 text-slate-400 hover:text-slate-600 cursor-pointer p-0.5"
+                  title="Hapus pencarian"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             {/* Method Filter */}
@@ -612,7 +628,7 @@ export const AdminMonitoringManager: React.FC<AdminMonitoringManagerProps> = ({ 
                 <th className="pb-3">Status</th>
                 <th className="pb-3">Latensi</th>
                 <th className="pb-3">Perangkat / Browser</th>
-                <th className="pb-3">IP Samaran</th>
+                <th className="pb-3">IP Klien</th>
                 <th className="pb-3 pr-2 text-right">Aksi</th>
               </tr>
             </thead>
@@ -685,11 +701,29 @@ export const AdminMonitoringManager: React.FC<AdminMonitoringManagerProps> = ({ 
         </div>
 
         {/* Pagination Bar */}
-        <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs text-slate-500">
-          <div>
-            Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong> ({totalItems} total log)
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 text-xs text-slate-500">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-slate-500">Tampilkan:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                sound.playPop();
+                setPageSize(Number(e.target.value));
+                setPage(1);
+              }}
+              className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-700 shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value={10}>10 data (Default)</option>
+              <option value={25}>25 data</option>
+              <option value={50}>50 data</option>
+              <option value={100}>100 data</option>
+            </select>
+            <span>
+              Halaman <strong className="text-slate-800">{page}</strong> dari <strong className="text-slate-800">{totalPages}</strong> ({totalItems} total log)
+            </span>
           </div>
-          <div className="flex items-center gap-1.5">
+
+          <div className="flex items-center gap-1.5 ml-auto">
             <button
               onClick={() => {
                 sound.playPop();
@@ -697,10 +731,14 @@ export const AdminMonitoringManager: React.FC<AdminMonitoringManagerProps> = ({ 
               }}
               disabled={page <= 1 || logsLoading}
               className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+              title="Halaman Sebelumnya"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
               <span>Sebelumnya</span>
             </button>
+            <span className="px-2 font-bold font-mono text-slate-700">
+              {page} / {totalPages}
+            </span>
             <button
               onClick={() => {
                 sound.playPop();
@@ -708,6 +746,7 @@ export const AdminMonitoringManager: React.FC<AdminMonitoringManagerProps> = ({ 
               }}
               disabled={page >= totalPages || logsLoading}
               className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+              title="Halaman Selanjutnya"
             >
               <span>Berikutnya</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -757,7 +796,7 @@ export const AdminMonitoringManager: React.FC<AdminMonitoringManagerProps> = ({ 
                   <span className={getLatencyColor(selectedLog.duration_ms)}>{selectedLog.duration_ms} ms</span>
                 </div>
                 <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                  <span className="text-[10px] text-slate-400 block font-bold uppercase">IP Klien (Anonymized):</span>
+                  <span className="text-[10px] text-slate-400 block font-bold uppercase">IP Klien:</span>
                   <span className="font-mono text-slate-800">{selectedLog.ip_address}</span>
                 </div>
                 <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100">

@@ -44,34 +44,62 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
-  const navItems = [
-    { id: 'dashboard' as AdminSubtab, label: 'Dashboard Ringkasan', icon: LayoutDashboard },
-    { id: 'ai' as AdminSubtab, label: 'Kurasi AI Assistant', icon: Sparkles, badge: 'AI Flash' },
-    { id: 'cases' as AdminSubtab, label: 'Kelola Berkas Perkara', icon: Briefcase },
-    { id: 'officials' as AdminSubtab, label: 'Kelola Pejabat Publik', icon: Users },
-    { 
-      id: 'reports' as AdminSubtab, 
-      label: 'Moderasi Laporan Warga', 
-      icon: ShieldCheck, 
-      badge: pendingReportsCount > 0 ? String(pendingReportsCount) : undefined,
-      badgeColor: 'bg-amber-500 text-white'
+  interface NavItem {
+    id: AdminSubtab;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    badge?: string;
+    badgeColor?: string;
+  }
+
+  interface NavGroup {
+    title: string;
+    items: NavItem[];
+  }
+
+  const navGroups: NavGroup[] = [
+    {
+      title: 'Manajemen Kasus & Data',
+      items: [
+        { id: 'dashboard', label: 'Dashboard Ringkasan', icon: LayoutDashboard },
+        { id: 'cases', label: 'Kelola Berkas Perkara', icon: Briefcase },
+        { id: 'officials', label: 'Kelola Pejabat Publik', icon: Users },
+        { id: 'manual', label: 'Formulir Input Manual', icon: FileEdit },
+        { id: 'ai', label: 'Kurasi AI Assistant', icon: Sparkles, badge: 'AI Flash' },
+      ]
     },
-    { 
-      id: 'comments' as AdminSubtab, 
-      label: 'Moderasi Komentar Warga', 
-      icon: MessageSquare 
+    {
+      title: 'Partisipasi & Suara Warga',
+      items: [
+        { 
+          id: 'reports', 
+          label: 'Moderasi Laporan Warga', 
+          icon: ShieldCheck, 
+          badge: pendingReportsCount > 0 ? String(pendingReportsCount) : undefined,
+          badgeColor: 'bg-amber-500 text-white'
+        },
+        { 
+          id: 'comments', 
+          label: 'Moderasi Komentar Warga', 
+          icon: MessageSquare 
+        },
+      ]
     },
-    { 
-      id: 'monitoring' as AdminSubtab, 
-      label: 'Monitoring & Trafik Log', 
-      icon: Activity,
-      badge: 'Live',
-      badgeColor: 'bg-emerald-500 text-white'
-    },
-    { id: 'audit' as AdminSubtab, label: 'Log Audit & Rollback', icon: History },
-    { id: 'manual' as AdminSubtab, label: 'Formulir Input Manual', icon: FileEdit },
-    { id: 'announcement' as AdminSubtab, label: 'Teks Pemberitahuan', icon: Bell },
-    { id: 'donation' as AdminSubtab, label: 'Donasi & QRIS Admin', icon: QrCode }
+    {
+      title: 'Sistem & Pengaturan',
+      items: [
+        { 
+          id: 'monitoring', 
+          label: 'Monitoring & Trafik Log', 
+          icon: Activity,
+          badge: 'Live',
+          badgeColor: 'bg-emerald-500 text-white'
+        },
+        { id: 'audit', label: 'Log Audit & Rollback', icon: History },
+        { id: 'announcement', label: 'Teks Pemberitahuan', icon: Bell },
+        { id: 'donation', label: 'Donasi & QRIS Admin', icon: QrCode }
+      ]
+    }
   ];
 
   const handleNav = (tab: AdminSubtab) => {
@@ -151,39 +179,44 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         </div>
 
         {/* Navigation List */}
-        <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
-          <div className="px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-            Menu Utama
-          </div>
+        <nav className="flex-1 p-3 space-y-4 overflow-y-auto">
+          {navGroups.map((group) => (
+            <div key={group.title} className="space-y-1">
+              <div className="px-3 pt-1 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                {group.title}
+              </div>
+              <div className="space-y-0.5">
+                {group.items.map(item => {
+                  const Icon = item.icon;
+                  const isActive = activeSubtab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleNav(item.id)}
+                      className={`
+                        w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold
+                        transition-all cursor-pointer group
+                        ${isActive 
+                          ? 'bg-[#DC2626] text-white shadow-sm font-bold' 
+                          : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200'}
+                      `}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`} />
+                        <span>{item.label}</span>
+                      </div>
 
-          {navItems.map(item => {
-            const Icon = item.icon;
-            const isActive = activeSubtab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleNav(item.id)}
-                className={`
-                  w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold
-                  transition-all cursor-pointer group
-                  ${isActive 
-                    ? 'bg-[#DC2626] text-white shadow-sm font-bold' 
-                    : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200'}
-                `}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`} />
-                  <span>{item.label}</span>
-                </div>
-
-                {item.badge && (
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${item.badgeColor || 'bg-slate-800 text-slate-300 border border-slate-700'}`}>
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+                      {item.badge && (
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${item.badgeColor || 'bg-slate-800 text-slate-300 border border-slate-700'}`}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* Bottom User Profile & Actions */}

@@ -48,12 +48,26 @@ interface StatsProps {
   onSelectCase: (caseId: string) => void;
 }
 
+const SECTOR_ICONS: Record<string, string> = {
+  'Pengadaan Barang & Jasa': '🏗️',
+  'Bansos & Bencana Alam': '📦',
+  'Suap & Gratifikasi Jabatan': '🤝',
+  'Perizinan Lahan & SDA': '🌲',
+  'Pengelolaan Anggaran Daerah': '🏛️',
+  'Mafia Peradilan': '⚖️',
+  'Korupsi Lainnya': '💼'
+};
+
 export const StatsDashboard: React.FC<StatsProps> = ({ stats, cases = [], onSelectCase }) => {
   // Drill-down Modal State
   const [drilldownTarget, setDrilldownTarget] = useState<DrilldownTarget | null>(null);
 
   // Time-series Chart metric toggle
   const [timelineMetric, setTimelineMetric] = useState<'loss' | 'cases' | 'combined'>('combined');
+
+  // Donut Chart Metric & Hover State
+  const [donutMetric, setDonutMetric] = useState<'loss' | 'count'>('loss');
+  const [donutHoverIndex, setDonutHoverIndex] = useState<number | null>(null);
 
   // Dismissable notice states
   const [noticeDismissed, setNoticeDismissed] = useState<boolean>(false);
@@ -124,6 +138,14 @@ export const StatsDashboard: React.FC<StatsProps> = ({ stats, cases = [], onSele
         color: palette[idx % palette.length]
       }));
   }, [cases]);
+
+  const totalLossAll = useMemo(() => {
+    return categoryData.reduce((acc, c) => acc + c.total_loss, 0);
+  }, [categoryData]);
+
+  const totalCasesAll = useMemo(() => {
+    return categoryData.reduce((acc, c) => acc + c.count, 0);
+  }, [categoryData]);
 
   // 3. Process Corporate / Private Partners with Linked Defendants and Cases
   const corporateList = useMemo(() => {
@@ -669,75 +691,205 @@ export const StatsDashboard: React.FC<StatsProps> = ({ stats, cases = [], onSele
         {/* Komposisi Modus Tipikor (Donut / Pie Chart) */}
         <div className="relative bg-[#FFFDF8] border-2 border-[#E7DECB] rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
           <div className="washi-tape washi-tape-purple -top-3 left-8"></div>
-          <div className="flex items-center gap-2.5">
-            <span className="p-2 bg-[#F3E8FF] text-[#9333EA] rounded-xl">
-              <PieChartIcon className="w-5 h-5" />
-            </span>
-            <div>
-              <h3 className="font-marker text-xl text-[#1E293B]">
-                Komposisi Sektor &amp; Modus Tipikor
-              </h3>
-              <p className="text-xs text-[#64748B]">
-                Sebaran kategori perkara korupsi. Klik sektor untuk melihat kasus di dalamnya.
-              </p>
+          
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-[#EAE0CD]">
+            <div className="flex items-center gap-2.5">
+              <span className="p-2.5 bg-[#F3E8FF] text-[#9333EA] rounded-2xl shadow-2xs border border-[#E9D5FF]">
+                <PieChartIcon className="w-5 h-5" />
+              </span>
+              <div>
+                <h3 className="font-marker text-xl text-[#1E293B]">
+                  Komposisi Sektor &amp; Modus Tipikor
+                </h3>
+                <p className="text-xs text-[#64748B]">
+                  Sebaran kategori perkara korupsi di Indonesia
+                </p>
+              </div>
+            </div>
+
+            {/* Metric Toggle: Nilai Kerugian vs Jumlah Perkara */}
+            <div className="inline-flex p-1 bg-[#FAF4E5] border border-[#E7DECB] rounded-2xl text-xs font-bold gap-1 shadow-2xs self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setDonutMetric('loss')}
+                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                  donutMetric === 'loss'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-[#F3EBD8]'
+                }`}
+              >
+                <span>💸 Kerugian (Rp)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDonutMetric('count')}
+                className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                  donutMetric === 'count'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-[#F3EBD8]'
+                }`}
+              >
+                <span>📂 Jumlah Kasus</span>
+              </button>
             </div>
           </div>
 
-          {/* Donut Chart Visual */}
-          <div className="h-60 w-full flex items-center justify-center">
+          {/* Donut Chart Visual with Dedicated Center Hub (Diameter Approaching Column Width) */}
+          <div className="relative h-[360px] xs:h-[400px] sm:h-[440px] md:h-[480px] w-full flex items-center justify-center my-2">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={categoryData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={55}
-                  outerRadius={85}
+                  innerRadius="58%"
+                  outerRadius="92%"
                   paddingAngle={3}
-                  dataKey="total_loss"
+                  cornerRadius={7}
+                  dataKey={donutMetric === 'loss' ? 'total_loss' : 'count'}
+                  onMouseEnter={(_, index) => setDonutHoverIndex(index)}
+                  onMouseLeave={() => setDonutHoverIndex(null)}
                   onClick={(data) => {
                     if (data && data.payload) {
                       handleOpenCategoryDrilldown(data.payload);
                     }
                   }}
                   cursor="pointer"
+                  stroke="#FFFDF8"
+                  strokeWidth={3.5}
                 >
                   {categoryData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.color}
+                      opacity={donutHoverIndex === null || donutHoverIndex === index ? 1 : 0.35}
+                      className="transition-all duration-200"
+                    />
                   ))}
                 </Pie>
-                <Tooltip
-                  formatter={(value: any) => [formatRupiah(Number(value)), 'Total Kerugian']}
-                  contentStyle={{
-                    backgroundColor: '#FFFDF9',
-                    borderColor: '#D5C9AB',
-                    borderRadius: '12px',
-                    fontSize: '12px'
-                  }}
-                />
               </PieChart>
             </ResponsiveContainer>
+
+            {/* Dedicated Center Stat Hub (Spacious & Zero Overlap) */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4 select-none">
+              {donutHoverIndex !== null && categoryData[donutHoverIndex] ? (
+                <div className="animate-in fade-in zoom-in-95 duration-150 flex flex-col items-center max-w-[210px] sm:max-w-[260px]">
+                  <span className="text-3xl sm:text-4xl leading-none mb-1.5 drop-shadow-xs">
+                    {SECTOR_ICONS[categoryData[donutHoverIndex].name] || '💼'}
+                  </span>
+                  <span className="text-xs sm:text-sm font-extrabold text-slate-800 uppercase tracking-tight line-clamp-2 px-1">
+                    {categoryData[donutHoverIndex].name}
+                  </span>
+                  <span className="font-marker text-lg sm:text-2xl text-[#B45309] font-bold leading-tight mt-1">
+                    {donutMetric === 'loss' 
+                      ? formatRupiah(categoryData[donutHoverIndex].total_loss)
+                      : `${categoryData[donutHoverIndex].count} Kasus`}
+                  </span>
+                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap justify-center">
+                    <span 
+                      className="text-xs font-bold px-3 py-0.5 rounded-full text-white shadow-2xs font-mono"
+                      style={{ backgroundColor: categoryData[donutHoverIndex].color }}
+                    >
+                      {donutMetric === 'loss'
+                        ? `${totalLossAll > 0 ? ((categoryData[donutHoverIndex].total_loss / totalLossAll) * 100).toFixed(1) : 0}%`
+                        : `${totalCasesAll > 0 ? ((categoryData[donutHoverIndex].count / totalCasesAll) * 100).toFixed(1) : 0}%`}
+                    </span>
+                    <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-mono">
+                      {categoryData[donutHoverIndex].count} Kasus
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-amber-700 font-medium mt-2 flex items-center gap-1">
+                    <span>👆 Klik sektor untuk telaah berkas perkara</span>
+                  </span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center max-w-[210px] sm:max-w-[260px]">
+                  <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">
+                    {donutMetric === 'loss' ? 'Akumulasi Kerugian Negara' : 'Total Berkas Perkara'}
+                  </span>
+                  <span className="font-marker text-xl sm:text-3xl text-slate-900 font-bold leading-tight mt-1">
+                    {donutMetric === 'loss' ? formatRupiah(totalLossAll) : `${totalCasesAll} Kasus`}
+                  </span>
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <span className="text-xs font-semibold text-amber-800 bg-amber-100/90 border border-amber-300 px-3 py-1 rounded-full font-mono shadow-2xs">
+                      {categoryData.length} Kategori Sektor
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 mt-2">
+                    Sorot irisan untuk melihat rincian sektor
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Category Rows with Click Interaction */}
-          <div className="space-y-2 pt-1 border-t border-[#EAE0CD]">
-            {categoryData.map(cat => (
-              <div
-                key={cat.name}
-                onClick={() => handleOpenCategoryDrilldown(cat)}
-                className="p-2.5 bg-[#FAF6EC] hover:bg-[#F2ECD9] border border-[#E9E0CE] hover:border-[#FB923C] rounded-xl flex items-center justify-between cursor-pointer transition-all text-xs"
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cat.color }}></span>
-                  <span className="font-bold text-[#1E293B]">{cat.name}</span>
+          <div className="text-[11px] text-slate-400 text-center flex items-center justify-center gap-1.5">
+            <span>💡 Sorot diagram untuk melihat rincian • Klik sektor untuk membuka berkas perkara</span>
+          </div>
+
+          {/* Interactive Category Rows with Progress Indicators */}
+          <div className="space-y-2 pt-2 border-t border-[#EAE0CD]">
+            {categoryData.map((cat, idx) => {
+              const isHovered = donutHoverIndex === idx;
+              const pct = donutMetric === 'loss'
+                ? (totalLossAll > 0 ? (cat.total_loss / totalLossAll) * 100 : 0)
+                : (totalCasesAll > 0 ? (cat.count / totalCasesAll) * 100 : 0);
+              const icon = SECTOR_ICONS[cat.name] || '💼';
+
+              return (
+                <div
+                  key={cat.name}
+                  onClick={() => handleOpenCategoryDrilldown(cat)}
+                  onMouseEnter={() => setDonutHoverIndex(idx)}
+                  onMouseLeave={() => setDonutHoverIndex(null)}
+                  className={`group p-3 rounded-2xl border transition-all cursor-pointer relative overflow-hidden ${
+                    isHovered
+                      ? 'bg-[#F2ECD9] border-[#FB923C] shadow-sm -translate-y-0.5'
+                      : 'bg-[#FAF6EC] hover:bg-[#F2ECD9] border-[#E9E0CE] hover:border-[#FB923C]'
+                  }`}
+                >
+                  {/* Visual background fill indicating proportional share */}
+                  <div 
+                    className="absolute left-0 top-0 bottom-0 opacity-15 transition-all duration-300 pointer-events-none rounded-r-xl"
+                    style={{ width: `${pct}%`, backgroundColor: cat.color }}
+                  />
+
+                  <div className="relative flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="text-base shrink-0 p-1 bg-white rounded-lg border border-slate-200/70 shadow-2xs">
+                        {icon}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-[#1E293B] truncate">{cat.name}</span>
+                          <span 
+                            className="px-1.5 py-0.2 rounded-md text-[10px] font-bold font-mono text-white shrink-0 shadow-2xs"
+                            style={{ backgroundColor: cat.color }}
+                          >
+                            {pct.toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1 mt-0.5">
+                          <span>{cat.count} Berkas Perkara</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="text-right">
+                        <div className="font-marker text-[#B45309] text-xs sm:text-sm font-bold">
+                          {formatRupiah(cat.total_loss)}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono">
+                          Rata-rata: {formatRupiah(cat.count > 0 ? cat.total_loss / cat.count : 0)}
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-amber-600 transition-colors" />
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[11px] text-gray-500 font-semibold">{cat.count} Kasus</span>
-                  <span className="font-marker text-[#B45309] text-xs sm:text-sm">{formatRupiah(cat.total_loss)}</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

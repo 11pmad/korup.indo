@@ -33,6 +33,7 @@ import { AdminDonationManager } from './admin/AdminDonationManager.js';
 import { AdminReportsManager } from './admin/AdminReportsManager.js';
 import { AdminMonitoringManager } from './admin/AdminMonitoringManager.js';
 import { AdminCommentsManager } from './admin/AdminCommentsManager.js';
+import { PROVINCES_LIST } from './ReportModal.js';
 
 interface AdminPanelProps {
   onRefreshData: () => void;
@@ -82,6 +83,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
 
   // Manual Form state
   const [manualForm, setManualForm] = useState({
+    tingkat_wilayah: 'daerah' as 'nasional' | 'daerah',
     nama: '',
     jabatan: '',
     partai: 'Non-Partai',
@@ -293,7 +295,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
     try {
       const res = await fetch(`/api/admin/reports/${reportId}/action`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+        },
         body: JSON.stringify({ action })
       });
       if (res.ok) {
@@ -330,6 +335,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
       sound.playCheer();
       setManualSuccess('Data kasus dan pejabat publik berhasil disimpan dan dipublikasikan!');
       setManualForm({
+        tingkat_wilayah: 'daerah',
         nama: '',
         jabatan: '',
         partai: 'Non-Partai',
@@ -863,6 +869,107 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
               </div>
             </div>
 
+            {/* Selector Tingkat Yurisdiksi / Cakupan Wilayah (Nasional vs Daerah) */}
+            <div className="bg-[#FAF5E8] border border-[#D5C9AB] rounded-2xl p-4 space-y-3 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-2 border-b border-[#E7DECB]">
+                <label className="text-xs font-black text-[#1E293B] flex items-center gap-2">
+                  <span className="text-base">⚖️</span>
+                  <span>Tingkat Yurisdiksi Perkara:</span>
+                </label>
+                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                  manualForm.tingkat_wilayah === 'nasional'
+                    ? 'bg-amber-100 text-amber-900 border-amber-300'
+                    : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                }`}>
+                  {manualForm.tingkat_wilayah === 'nasional' 
+                    ? '🏛️ Skala Nasional (Instansi Pusat / APBN / BUMN)' 
+                    : '📍 Skala Daerah (Pemerintah Daerah / APBD / BUMD)'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Opsi 1: Tingkat Nasional */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playPop();
+                    setManualForm({
+                      ...manualForm,
+                      tingkat_wilayah: 'nasional',
+                      provinsi: 'Pusat / Nasional (Kementerian / Lembaga RI)'
+                    });
+                  }}
+                  className={`p-3.5 rounded-2xl border-2 text-xs font-bold transition-all text-left flex items-start gap-3 cursor-pointer ${
+                    manualForm.tingkat_wilayah === 'nasional'
+                      ? 'bg-amber-50/90 border-amber-500 text-amber-950 shadow-sm ring-2 ring-amber-400/40'
+                      : 'bg-white border-[#E2D8C0] text-[#57534E] hover:bg-[#F7F1E1]'
+                  }`}
+                >
+                  <span className="text-2xl p-1 bg-amber-100/70 rounded-xl border border-amber-300/60 shrink-0">🏛️</span>
+                  <div className="min-w-0">
+                    <div className="font-black text-[13px] text-[#1E293B] flex items-center gap-1.5">
+                      <span>Tingkat Nasional / Pemerintah Pusat</span>
+                      {manualForm.tingkat_wilayah === 'nasional' && (
+                        <span className="text-emerald-600 text-xs">✓ Aktif</span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-600 font-normal leading-relaxed mt-1">
+                      Kementerian, DPR/DPD RI, Direksi BUMN Holding, Hakim MA/MK, Mabes TNI/Polri, dan Lembaga Tinggi Negara.
+                    </p>
+                  </div>
+                </button>
+
+                {/* Opsi 2: Tingkat Daerah */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playPop();
+                    setManualForm({
+                      ...manualForm,
+                      tingkat_wilayah: 'daerah',
+                      provinsi: manualForm.provinsi.includes('Nasional') || manualForm.provinsi.includes('Pusat')
+                        ? 'Jawa Timur'
+                        : manualForm.provinsi
+                    });
+                  }}
+                  className={`p-3.5 rounded-2xl border-2 text-xs font-bold transition-all text-left flex items-start gap-3 cursor-pointer ${
+                    manualForm.tingkat_wilayah === 'daerah'
+                      ? 'bg-emerald-50/90 border-emerald-500 text-emerald-950 shadow-sm ring-2 ring-emerald-400/40'
+                      : 'bg-white border-[#E2D8C0] text-[#57534E] hover:bg-[#F7F1E1]'
+                  }`}
+                >
+                  <span className="text-2xl p-1 bg-emerald-100/70 rounded-xl border border-emerald-300/60 shrink-0">📍</span>
+                  <div className="min-w-0">
+                    <div className="font-black text-[13px] text-[#1E293B] flex items-center gap-1.5">
+                      <span>Tingkat Daerah / 38 Provinsi</span>
+                      {manualForm.tingkat_wilayah === 'daerah' && (
+                        <span className="text-emerald-600 text-xs">✓ Aktif</span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-600 font-normal leading-relaxed mt-1">
+                      Pemerintah Provinsi, Pemkab / Pemkot, Anggota DPRD Daerah, Kepala Dinas, serta BUMD Provinsi/Kabupaten.
+                    </p>
+                  </div>
+                </button>
+              </div>
+
+              {manualForm.tingkat_wilayah === 'nasional' ? (
+                <div className="p-2.5 bg-amber-100/50 border border-amber-300/80 rounded-xl text-[11px] text-amber-900 flex items-start gap-2 leading-relaxed">
+                  <span className="text-sm shrink-0">💡</span>
+                  <span>
+                    <strong>Pemberitahuan Sistem:</strong> Perkara korupsi skala nasional dicatat sebagai kewenangan <strong>Instansi Pusat (APBN / BUMN)</strong>. Perkara ini tidak akan membebani kuota statistik daerah DKI Jakarta atau provinsi daerah lainnya.
+                  </span>
+                </div>
+              ) : (
+                <div className="p-2.5 bg-emerald-100/50 border border-emerald-300/80 rounded-xl text-[11px] text-emerald-900 flex items-start gap-2 leading-relaxed">
+                  <span className="text-sm shrink-0">📌</span>
+                  <span>
+                    <strong>Pemberitahuan Sistem:</strong> Perkara akan dihubungkan secara spasial dengan peta provinsi dan klasemen liga daerah terkait.
+                  </span>
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-bold text-[#475569] mb-1">
@@ -870,7 +977,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
                 </label>
                 <input
                   type="text"
-                  placeholder="Misal: Partai Golkar / PDI-P"
+                  placeholder="Misal: Partai Golkar / PDI-P / Non-Partai"
                   value={manualForm.partai}
                   onChange={e => setManualForm({ ...manualForm, partai: e.target.value })}
                   className="w-full bg-[#FAF5E8] border border-[#D5C9AB] rounded-xl px-3 py-2 text-xs text-[#1F2937] focus:ring-2 focus:ring-[#EA580C] focus:outline-none"
@@ -878,17 +985,43 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#475569] mb-1">
-                  Provinsi (Wajib)
+                <label className="block text-xs font-bold text-[#475569] mb-1 flex items-center justify-between">
+                  <span>{manualForm.tingkat_wilayah === 'nasional' ? 'Cakupan Wilayah / Instansi' : 'Provinsi Wilayah (Wajib)'}</span>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                    manualForm.tingkat_wilayah === 'nasional' 
+                      ? 'bg-amber-100 text-amber-800' 
+                      : 'bg-emerald-100 text-emerald-800'
+                  }`}>
+                    {manualForm.tingkat_wilayah === 'nasional' ? 'Nasional' : 'Daerah'}
+                  </span>
                 </label>
-                <input
-                  type="text"
+                <select
                   required
-                  placeholder="Misal: Jawa Timur"
                   value={manualForm.provinsi}
-                  onChange={e => setManualForm({ ...manualForm, provinsi: e.target.value })}
-                  className="w-full bg-[#FAF5E8] border border-[#D5C9AB] rounded-xl px-3 py-2 text-xs text-[#1F2937] focus:ring-2 focus:ring-[#EA580C] focus:outline-none"
-                />
+                  onChange={e => {
+                    const val = e.target.value;
+                    const isNasional = val.includes('Nasional') || val.includes('Pusat');
+                    setManualForm({
+                      ...manualForm,
+                      provinsi: val,
+                      tingkat_wilayah: isNasional ? 'nasional' : 'daerah'
+                    });
+                  }}
+                  className="w-full bg-[#FAF5E8] border border-[#D5C9AB] rounded-xl px-3 py-2 text-xs font-bold text-[#1F2937] focus:ring-2 focus:ring-[#EA580C] focus:outline-none cursor-pointer"
+                >
+                  <optgroup label="🏛️ Tingkat Nasional / Pemerintah Pusat">
+                    <option value="Pusat / Nasional (Kementerian / Lembaga RI)">
+                      🏛️ Pusat / Nasional (Kementerian / Lembaga RI / BUMN)
+                    </option>
+                  </optgroup>
+                  <optgroup label="📍 Tingkat Daerah (38 Provinsi Nusantara)">
+                    {PROVINCES_LIST.filter(p => p.id !== 'pusat').map(p => (
+                      <option key={p.id} value={p.name}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
               </div>
 
               <div>
@@ -898,13 +1031,58 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
                 <select
                   value={manualForm.status_hukum}
                   onChange={e => setManualForm({ ...manualForm, status_hukum: e.target.value as any })}
-                  className="w-full bg-[#FAF5E8] border border-[#D5C9AB] rounded-xl px-3 py-2 text-xs font-bold text-[#1F2937] focus:ring-2 focus:ring-[#EA580C] focus:outline-none"
+                  className="w-full bg-[#FAF5E8] border border-[#D5C9AB] rounded-xl px-3 py-2 text-xs font-bold text-[#1F2937] focus:ring-2 focus:ring-[#EA580C] focus:outline-none cursor-pointer"
                 >
                   <option value="Tersangka">Tersangka</option>
                   <option value="Terdakwa">Terdakwa</option>
                   <option value="Divonis Inkrah">Divonis Inkrah</option>
                   <option value="Bebas/Praperadilan">Bebas/Praperadilan</option>
                 </select>
+              </div>
+            </div>
+
+            {/* Kolom Spesifikasi Instansi Pusat / Kota Kabupaten */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-[#475569] mb-1 flex items-center justify-between">
+                  <span>
+                    {manualForm.tingkat_wilayah === 'nasional'
+                      ? 'Kementerian / Lembaga / BUMN Pusat'
+                      : 'Kabupaten / Kota Asal (Opsional)'}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {manualForm.tingkat_wilayah === 'nasional' ? 'Identifikasi Lembaga' : 'Lokasi Spesifik'}
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  placeholder={
+                    manualForm.tingkat_wilayah === 'nasional'
+                      ? 'Misal: Kementerian Kominfo / Komisi I DPR RI / PT Timah Tbk / Mahkamah Agung'
+                      : 'Misal: Kota Surabaya / Kab. Bogor / Kota Medan'
+                  }
+                  value={manualForm.kota_kabupaten}
+                  onChange={e => setManualForm({ ...manualForm, kota_kabupaten: e.target.value })}
+                  className="w-full bg-[#FAF5E8] border border-[#D5C9AB] rounded-xl px-3 py-2 text-xs text-[#1F2937] focus:ring-2 focus:ring-[#EA580C] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#475569] mb-1 flex items-center justify-between">
+                  <span>Daerah Pemilihan / Unit Kerja (Opsional)</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Konteks Pejabat</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder={
+                    manualForm.tingkat_wilayah === 'nasional'
+                      ? 'Misal: Seluruh Indonesia / Dapil Jabar I / Direktorat Jenderal Pajak'
+                      : 'Misal: Dapil 1 Kab. Bogor / Fraksi Partai'
+                  }
+                  value={manualForm.daerah_pemilihan}
+                  onChange={e => setManualForm({ ...manualForm, daerah_pemilihan: e.target.value })}
+                  className="w-full bg-[#FAF5E8] border border-[#D5C9AB] rounded-xl px-3 py-2 text-xs text-[#1F2937] focus:ring-2 focus:ring-[#EA580C] focus:outline-none"
+                />
               </div>
             </div>
 

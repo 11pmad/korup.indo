@@ -255,7 +255,16 @@ export const citizenUsers = pgTable('citizen_users', {
   display_name: text('display_name').notNull(),
   email: text('email'),
   password_hash: text('password_hash'),
+  photo_url: text('photo_url'),
+  origin_province: text('origin_province'),
+  origin_city: text('origin_city'),
+  bio: text('bio'),
   avatar_seed: text('avatar_seed').default('garuda'),
+  is_email_verified: integer('is_email_verified').default(0).notNull(),
+  email_verification_code: text('email_verification_code'),
+  email_verification_expires: timestamp('email_verification_expires'),
+  google_id: text('google_id'),
+  auth_provider: text('auth_provider').default('local').notNull(),
   role: text('role').default('citizen').notNull(),
   created_at: timestamp('created_at').defaultNow().notNull()
 });

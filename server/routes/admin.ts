@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db, schema } from '../db/index.js';
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc, asc, sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { generateToken, verifyAdminJwt } from '../middleware/auth.js';
 import { z } from 'zod';
@@ -70,7 +70,7 @@ router.use(verifyAdminJwt);
 // GET /api/admin/cases
 router.get('/cases', async (req, res) => {
   try {
-    const { page = '1', limit = '20' } = req.query;
+    const { page = '1', limit = '20', sort_by = 'created_at', order = 'desc' } = req.query;
     const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(String(limit), 10) || 20));
     const offset = (pageNum - 1) * limitNum;
@@ -78,13 +78,37 @@ router.get('/cases', async (req, res) => {
     const countRes = await db.select({ count: sql<number>`count(*)::int` }).from(schema.cases);
     const totalItems = countRes[0]?.count || 0;
 
+    let orderClause = order === 'asc' ? asc(schema.cases.created_at) : desc(schema.cases.created_at);
+    if (sort_by === 'loss_amount') {
+      orderClause = order === 'asc' ? asc(schema.cases.loss_amount) : desc(schema.cases.loss_amount);
+    } else if (sort_by === 'title') {
+      orderClause = order === 'asc' ? asc(schema.cases.title) : desc(schema.cases.title);
+    } else if (sort_by === 'legal_status') {
+      orderClause = order === 'asc' ? asc(schema.cases.legal_status) : desc(schema.cases.legal_status);
+    } else if (sort_by === 'official_name') {
+      orderClause = order === 'asc' ? asc(schema.officials.full_name) : desc(schema.officials.full_name);
+    } else if (sort_by === 'province_name') {
+      orderClause = order === 'asc' ? asc(schema.provinces.name) : desc(schema.provinces.name);
+    } else if (sort_by === 'created_at') {
+      orderClause = order === 'asc' ? asc(schema.cases.created_at) : desc(schema.cases.created_at);
+    }
+
     const casesList = await db
       .select({
         id: schema.cases.id,
         title: schema.cases.title,
+        primary_official_id: schema.cases.primary_official_id,
+        province_id: schema.cases.province_id,
+        era_id: schema.cases.era_id,
         loss_amount: schema.cases.loss_amount,
+        fine_amount: schema.cases.fine_amount,
+        restitution_amount: schema.cases.restitution_amount,
+        prison_sentence_months: schema.cases.prison_sentence_months,
         legal_status: schema.cases.legal_status,
         sector_category: schema.cases.sector_category,
+        court_decision_number: schema.cases.court_decision_number,
+        chronology: schema.cases.chronology,
+        charges_articles: schema.cases.charges_articles,
         source_url: schema.cases.source_url,
         official_name: schema.officials.full_name,
         official_photo: schema.officials.photo_url,
@@ -94,7 +118,7 @@ router.get('/cases', async (req, res) => {
       .from(schema.cases)
       .leftJoin(schema.officials, eq(schema.cases.primary_official_id, schema.officials.id))
       .leftJoin(schema.provinces, eq(schema.cases.province_id, schema.provinces.id))
-      .orderBy(desc(schema.cases.created_at))
+      .orderBy(orderClause)
       .limit(limitNum)
       .offset(offset);
 
@@ -128,10 +152,10 @@ const caseInputSchema = z.object({
   restitution_amount: z.number().default(0),
   prison_sentence_months: z.number().default(0),
   legal_status: z.enum(['tersangka', 'terdakwa', 'divonis_inkrah', 'bebas']),
-  court_decision_number: z.string().optional(),
-  chronology: z.string().min(10),
-  charges_articles: z.string().optional(),
-  source_url: z.string().url('source_url wajib berupa URL rujukan resmi valid')
+  court_decision_number: z.string().nullable().optional(),
+  chronology: z.string().min(5),
+  charges_articles: z.string().nullable().optional(),
+  source_url: z.string().default('')
 });
 
 // POST /api/admin/cases
@@ -204,6 +228,9 @@ router.put('/cases/:id', async (req, res) => {
 
     res.json({ message: 'Berkas kasus berhasil diperbarui', data: updated });
   } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ error: err.issues.map(i => i.message).join(', ') });
+    }
     res.status(500).json({ error: err.message });
   }
 });
@@ -239,7 +266,7 @@ router.delete('/cases/:id', async (req, res) => {
 // GET /api/admin/officials
 router.get('/officials', async (req, res) => {
   try {
-    const { page = '1', limit = '20' } = req.query;
+    const { page = '1', limit = '20', sort_by = 'total_loss_amount', order = 'desc' } = req.query;
     const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(String(limit), 10) || 20));
     const offset = (pageNum - 1) * limitNum;
@@ -247,12 +274,27 @@ router.get('/officials', async (req, res) => {
     const countRes = await db.select({ count: sql<number>`count(*)::int` }).from(schema.officials);
     const totalItems = countRes[0]?.count || 0;
 
+    let orderClause = order === 'asc' ? asc(schema.officials.total_loss_amount) : desc(schema.officials.total_loss_amount);
+    if (sort_by === 'total_loss_amount') {
+      orderClause = order === 'asc' ? asc(schema.officials.total_loss_amount) : desc(schema.officials.total_loss_amount);
+    } else if (sort_by === 'full_name') {
+      orderClause = order === 'asc' ? asc(schema.officials.full_name) : desc(schema.officials.full_name);
+    } else if (sort_by === 'current_legal_status') {
+      orderClause = order === 'asc' ? asc(schema.officials.current_legal_status) : desc(schema.officials.current_legal_status);
+    } else if (sort_by === 'party_name') {
+      orderClause = order === 'asc' ? asc(schema.parties.name) : desc(schema.parties.name);
+    } else if (sort_by === 'province_name') {
+      orderClause = order === 'asc' ? asc(schema.provinces.name) : desc(schema.provinces.name);
+    }
+
     const list = await db
       .select({
         id: schema.officials.id,
         full_name: schema.officials.full_name,
         photo_url: schema.officials.photo_url,
         position_title: schema.officials.position_title,
+        province_id: schema.officials.province_id,
+        party_id: schema.officials.party_id,
         province_name: schema.provinces.name,
         party_name: schema.parties.name,
         total_loss_amount: schema.officials.total_loss_amount,
@@ -261,7 +303,7 @@ router.get('/officials', async (req, res) => {
       .from(schema.officials)
       .leftJoin(schema.provinces, eq(schema.officials.province_id, schema.provinces.id))
       .leftJoin(schema.parties, eq(schema.officials.party_id, schema.parties.id))
-      .orderBy(desc(schema.officials.total_loss_amount))
+      .orderBy(orderClause)
       .limit(limitNum)
       .offset(offset);
 
@@ -697,13 +739,29 @@ router.post('/cases/manual', async (req, res) => {
       return res.status(400).json({ error: 'Nama pejabat/pelaku, jabatan, dan URL sumber rujukan resmi wajib diisi.' });
     }
 
-    // Resolve province
-    const provList = await db
-      .select()
-      .from(schema.provinces)
-      .where(sql`lower(${schema.provinces.name}) = lower(${provinsi || 'DKI Jakarta'})`);
-    const prov = provList[0] || (await db.select().from(schema.provinces).limit(1))[0];
-    const provinceId = prov ? prov.id : 'dki-jakarta';
+    // Resolve province & jurisdiction level
+    const tingkatWilayah = req.body.tingkat_wilayah || 'daerah';
+    let prov = null;
+
+    if (tingkatWilayah === 'nasional' || String(provinsi).toLowerCase().includes('pusat') || String(provinsi).toLowerCase().includes('nasional')) {
+      prov = await db.query.provinces.findFirst({ where: eq(schema.provinces.id, 'nasional') });
+    } else if (provinsi) {
+      const pStr = String(provinsi).trim();
+      const provList = await db
+        .select()
+        .from(schema.provinces)
+        .where(sql`lower(${schema.provinces.name}) = lower(${pStr})`);
+      prov = provList[0];
+      if (!prov) {
+        prov = await db.query.provinces.findFirst({
+          where: sql`lower(${schema.provinces.name}) LIKE lower(${'%' + pStr + '%'})`
+        });
+      }
+    }
+    if (!prov) {
+      prov = await db.query.provinces.findFirst({ where: eq(schema.provinces.id, 'nasional') });
+    }
+    const provinceId = prov ? prov.id : 'nasional';
 
     // Resolve loss
     const cleanLoss = typeof nilai_kerugian_negara === 'string' 

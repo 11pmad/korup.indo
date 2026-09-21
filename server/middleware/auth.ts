@@ -15,6 +15,10 @@ export interface CitizenTokenPayload {
   displayName: string;
   role: 'citizen';
   avatarSeed?: string;
+  photoUrl?: string | null;
+  originProvince?: string | null;
+  originCity?: string | null;
+  isEmailVerified?: boolean;
 }
 
 declare global {

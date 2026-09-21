@@ -11,7 +11,8 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "db:push": "drizzle-kit push",
-    "db:seed": "bun run server/db/seed.ts"
+    "db:seed": "bun run server/db/seed.ts",
+    "db:fresh": "bun run scripts/migrate-fresh.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

@@ -117,6 +117,14 @@ class ScrapbookSound {
       osc.stop(this.ctx.currentTime + 0.18);
     } catch {}
   }
+
+  public click() {
+    this.playPop();
+  }
+
+  public stamp() {
+    this.playSticker();
+  }
 }
 
 export const sound = new ScrapbookSound();

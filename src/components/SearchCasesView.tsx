@@ -3,7 +3,7 @@ import { CorruptionCase } from '../types.js';
 import { formatRupiah, getStatusBadgeStyle } from '../utils/formatters.js';
 import { sound } from '../utils/audio.js';
 import { getOfficialPhoto, handleImageError } from '../utils/photo.js';
-import { Search, Filter, Calendar, ExternalLink, Building2, Eye, Loader2, Sparkles } from 'lucide-react';
+import { Search, Filter, Calendar, ExternalLink, Building2, Eye, Loader2, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SearchProps {
   cases: CorruptionCase[];
@@ -25,6 +25,8 @@ export const SearchCasesView: React.FC<SearchProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [sortBy, setSortBy] = useState<'kerugian' | 'tahun' | 'nama'>('kerugian');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
 
   // Debounce search query by 300ms
   useEffect(() => {
@@ -35,6 +37,11 @@ export const SearchCasesView: React.FC<SearchProps> = ({
     }, 300);
     return () => clearTimeout(timer);
   }, [inputQuery]);
+
+  // Reset pagination when query or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedQuery, selectedProvince, selectedStatus, sortBy, sortOrder]);
 
   const highlightKeyword = (text: string, query: string) => {
     if (!query.trim()) return text;
@@ -81,6 +88,10 @@ export const SearchCasesView: React.FC<SearchProps> = ({
     }
     return sortOrder === 'asc' ? diff : -diff;
   });
+
+  const effectivePageSize = pageSize >= 9999 ? Math.max(filtered.length, 1) : pageSize;
+  const totalPages = Math.ceil(filtered.length / effectivePageSize) || 1;
+  const paginatedCases = filtered.slice((currentPage - 1) * effectivePageSize, currentPage * effectivePageSize);
 
   return (
     <div id="search-cases-section" className="space-y-6">
@@ -216,7 +227,7 @@ export const SearchCasesView: React.FC<SearchProps> = ({
             )}
           </div>
         ) : (
-          filtered.map((item, idx) => {
+          paginatedCases.map((item, idx) => {
             const statusStyle = getStatusBadgeStyle(item.status_hukum);
             const rotationClass =
               idx % 4 === 0
@@ -309,6 +320,65 @@ export const SearchCasesView: React.FC<SearchProps> = ({
           })
         )}
       </div>
+
+      {/* Pagination Footer */}
+      {filtered.length > 0 && (
+        <div className="bg-[#FFFDF9] border-2 border-[#E7DECB] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 text-xs text-[#57534E] shadow-2xs">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="font-semibold text-[#78716C]">Tampilkan:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                sound.playPop();
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="bg-white border border-[#D5C9A9] rounded-lg px-2.5 py-1 text-xs font-bold text-[#1E293B] shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#D97706]"
+            >
+              <option value={10}>10 data (Default)</option>
+              <option value={25}>25 data</option>
+              <option value={50}>50 data</option>
+              <option value={100}>100 data</option>
+              <option value={9999}>Semua ({filtered.length})</option>
+            </select>
+
+            <span className="text-xs text-[#78716C]">
+              Menampilkan <strong>{filtered.length === 0 ? 0 : (currentPage - 1) * effectivePageSize + 1}</strong> -{' '}
+              <strong>{Math.min(filtered.length, currentPage * effectivePageSize)}</strong> dari <strong>{filtered.length}</strong> berkas perkara
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 ml-auto">
+            <button
+              disabled={currentPage <= 1}
+              onClick={() => {
+                sound.playPop();
+                setCurrentPage(p => p - 1);
+                document.getElementById('search-cases-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="p-1.5 rounded-lg bg-white border border-[#D5C9A9] disabled:opacity-40 hover:bg-[#F4EEDC] cursor-pointer transition-colors"
+              title="Halaman Sebelumnya"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="px-2 font-bold font-mono">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              disabled={currentPage >= totalPages}
+              onClick={() => {
+                sound.playPop();
+                setCurrentPage(p => p + 1);
+                document.getElementById('search-cases-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="p-1.5 rounded-lg bg-white border border-[#D5C9A9] disabled:opacity-40 hover:bg-[#F4EEDC] cursor-pointer transition-colors"
+              title="Halaman Selanjutnya"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );

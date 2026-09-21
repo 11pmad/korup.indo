@@ -54,6 +54,21 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Track SPA pageview in monitoring
+  useEffect(() => {
+    try {
+      const pagePath = activeTab === 'beranda' ? '/' : `/${activeTab}`;
+      fetch('/api/admin/monitoring/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          path: pagePath,
+          referrer: document.referrer || 'Direct'
+        })
+      }).catch(() => {});
+    } catch (e) {}
+  }, [activeTab]);
+
   const loadAllData = async () => {
     setIsLoading(true);
     try {
@@ -69,10 +84,10 @@ export default function App() {
       const leaderData = await leaderRes.json();
       const statsData = await statsRes.json();
 
-      setCases(casesData.cases || []);
-      setRegions(regionsData || []);
-      setLeaderboard(leaderData || []);
-      setStats(statsData || null);
+      setCases(Array.isArray(casesData?.cases) ? casesData.cases : []);
+      setRegions(Array.isArray(regionsData) ? regionsData : []);
+      setLeaderboard(Array.isArray(leaderData) ? leaderData : []);
+      setStats(statsData && !statsData.error ? statsData : null);
     } catch (err) {
       console.error('Error fetching data:', err);
     } finally {

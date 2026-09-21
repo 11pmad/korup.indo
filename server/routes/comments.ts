@@ -40,6 +40,9 @@ commentsRouter.get('/case/:caseId', optionalCitizenJwt, async (req, res) => {
           id: schema.citizenUsers.id,
           username: schema.citizenUsers.username,
           display_name: schema.citizenUsers.display_name,
+          photo_url: schema.citizenUsers.photo_url,
+          origin_province: schema.citizenUsers.origin_province,
+          origin_city: schema.citizenUsers.origin_city,
           avatar_seed: schema.citizenUsers.avatar_seed,
           role: schema.citizenUsers.role
         }

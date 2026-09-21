@@ -7,6 +7,7 @@ const router = Router();
 // Helper to normalize province name / alias
 function matchProvinceAlias(cleanId: string): string | null {
   const norm = cleanId.toLowerCase().trim();
+  if (norm.includes('nasional') || norm.includes('pusat') || norm.includes('kementerian') || norm.includes('lembaga ri')) return 'nasional';
   if (norm.includes('yogyakarta') || norm.includes('jogja')) return 'diy';
   if (norm.includes('bangka')) return 'babel';
   if (norm.includes('jakarta')) return 'dki-jakarta';

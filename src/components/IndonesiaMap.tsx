@@ -34,6 +34,7 @@ interface IndonesiaMapProps {
 
 function normalizeName(name: string): string {
   const n = name.trim().toLowerCase();
+  if (n.includes('nasional') || n.includes('pusat') || n.includes('kementerian')) return 'Pusat / Nasional (Kementerian / Lembaga RI)';
   if (n.includes('yogyakarta') || n.includes('jogja')) return 'Daerah Istimewa Yogyakarta';
   if (n.includes('bangka')) return 'Kepulauan Bangka Belitung';
   if (n.includes('jakarta')) return 'DKI Jakarta';
@@ -348,11 +349,29 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
           </div>
         </div>
 
-        {/* Province Quick Jump */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-3 pt-2 border-t border-[#F1EBD9]">
+        {/* Province Quick Jump & National Shortcut */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-[#F1EBD9]">
           
+          {/* National Shortcut Button */}
+          <button
+            type="button"
+            onClick={() => {
+              sound.playPop();
+              onSelectProvince('Pusat / Nasional (Kementerian / Lembaga RI)');
+            }}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              selectedProvince?.includes('Nasional') || selectedProvince?.includes('Pusat')
+                ? 'bg-amber-600 text-white shadow-xs ring-2 ring-amber-400'
+                : 'bg-amber-50/90 text-amber-900 border border-amber-300 hover:bg-amber-100'
+            }`}
+            title="Tampilkan daftar berkas perkara korupsi berskala Nasional / Instansi Pusat"
+          >
+            <span className="text-base">🏛️</span>
+            <span>Perkara Skala Nasional / Instansi Pusat</span>
+          </button>
+
           {/* Search Dropdown */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-bold text-[#57534E] flex items-center gap-1">
               <Search className="w-3.5 h-3.5 text-[#DC2626]" /> Cari / Sorot Provinsi:
             </span>
@@ -362,14 +381,21 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
                 sound.playPop();
                 onSelectProvince(e.target.value || null);
               }}
-              className="bg-[#FAF5E8] border border-[#D5C9AB] rounded-xl px-3 py-1.5 text-xs font-bold text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#DC2626]"
+              className="bg-[#FAF5E8] border border-[#D5C9AB] rounded-xl px-3 py-1.5 text-xs font-bold text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#DC2626] cursor-pointer"
             >
               <option value="">-- Sorot Provinsi --</option>
-              {INDONESIA_PROVINCES_GEO.map(p => (
-                <option key={p.name} value={p.name}>
-                  {p.name} ({regionMap.get(normalizeName(p.name).toLowerCase())?.total_kasus || 0} kasus)
+              <optgroup label="🏛️ Yurisdiksi Nasional">
+                <option value="Pusat / Nasional (Kementerian / Lembaga RI)">
+                  🏛️ Pusat / Nasional (Kementerian / BUMN / DPR RI)
                 </option>
-              ))}
+              </optgroup>
+              <optgroup label="📍 Wilayah 38 Provinsi Nusantara">
+                {INDONESIA_PROVINCES_GEO.map(p => (
+                  <option key={p.name} value={p.name}>
+                    {p.name} ({regionMap.get(normalizeName(p.name).toLowerCase())?.total_kasus || 0} kasus)
+                  </option>
+                ))}
+              </optgroup>
             </select>
             {selectedProvince && (
               <button

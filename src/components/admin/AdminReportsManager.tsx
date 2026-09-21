@@ -16,7 +16,9 @@ import {
   Sparkles,
   Building2,
   MapPin,
-  Send
+  Send,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { sound } from '../../utils/audio.js';
 import { formatRupiah } from '../../utils/formatters.js';
@@ -62,6 +64,8 @@ export const AdminReportsManager: React.FC<AdminReportsManagerProps> = ({
   const [search, setSearch] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
   const [typeFilter, setTypeFilter] = useState<'all' | 'usulan' | 'koreksi'>('all');
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -69,6 +73,10 @@ export const AdminReportsManager: React.FC<AdminReportsManagerProps> = ({
   useEffect(() => {
     fetchReports();
   }, [authToken]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, typeFilter, search]);
 
   const fetchReports = async () => {
     setLoading(true);
@@ -223,6 +231,10 @@ export const AdminReportsManager: React.FC<AdminReportsManagerProps> = ({
 
     return true;
   });
+
+  const effectivePageSize = pageSize >= 9999 ? Math.max(filteredReports.length, 1) : pageSize;
+  const totalPages = Math.ceil(filteredReports.length / effectivePageSize) || 1;
+  const paginatedReports = filteredReports.slice((page - 1) * effectivePageSize, page * effectivePageSize);
 
   return (
     <div className="space-y-6">
@@ -425,7 +437,7 @@ export const AdminReportsManager: React.FC<AdminReportsManagerProps> = ({
             </p>
           </div>
         ) : (
-          filteredReports.map(rep => {
+          paginatedReports.map(rep => {
             const pending = isPending(rep.status);
             const approved = isApproved(rep.status);
             const rejected = isRejected(rep.status);
@@ -664,6 +676,62 @@ export const AdminReportsManager: React.FC<AdminReportsManagerProps> = ({
           })
         )}
       </div>
+
+      {/* Pagination Footer */}
+      {filteredReports.length > 0 && (
+        <div className="bg-white rounded-2xl p-4 border border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600 shadow-2xs">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-slate-500">Tampilkan:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                sound.playPop();
+                setPageSize(Number(e.target.value));
+                setPage(1);
+              }}
+              className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-700 shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value={10}>10 data (Default)</option>
+              <option value={25}>25 data</option>
+              <option value={50}>50 data</option>
+              <option value={100}>100 data</option>
+              <option value={9999}>Semua ({filteredReports.length})</option>
+            </select>
+            <span>
+              Menampilkan <strong>{(page - 1) * effectivePageSize + 1}</strong> -{' '}
+              <strong>{Math.min(filteredReports.length, page * effectivePageSize)}</strong> dari <strong>{filteredReports.length}</strong> laporan
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 ml-auto">
+            <button
+              onClick={() => {
+                sound.playPop();
+                setPage(p => Math.max(1, p - 1));
+              }}
+              disabled={page <= 1}
+              className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Halaman Sebelumnya"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="px-2 font-bold font-mono text-slate-700">
+              {page} / {totalPages}
+            </span>
+            <button
+              onClick={() => {
+                sound.playPop();
+                setPage(p => Math.min(totalPages, p + 1));
+              }}
+              disabled={page >= totalPages}
+              className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Halaman Selanjutnya"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );

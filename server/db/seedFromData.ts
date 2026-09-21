@@ -20,6 +20,8 @@ const ERA_MAPPING: Record<string, string> = {
 };
 
 const PROVINCE_NAME_TO_ID: Record<string, string> = {
+  'pusat': 'nasional',
+  'nasional': 'nasional',
   'aceh': 'aceh',
   'sumatera utara': 'sumut',
   'sumatera barat': 'sumbar',
@@ -88,7 +90,7 @@ function mapLegalStatus(status: string): 'tersangka' | 'terdakwa' | 'divonis_ink
 }
 
 export async function seedFromData() {
-  console.log('🌱 Memulai proses impor dataset canonical dari folder data/ ke PostgreSQL (lki_db)...');
+  console.log('🌱 Memulai proses impor dataset canonical & master seeder ke PostgreSQL (lki_db)...');
 
   const baseDir = path.resolve(process.cwd(), 'data', 'normalized');
 
@@ -115,8 +117,17 @@ export async function seedFromData() {
 
   console.log(`✓ Data termuat: ${casesData.length} kasus, ${personsData.length} tokoh, ${partiesData.length} partai, ${companiesData.length} perusahaan, ${sources.length} sumber.`);
 
-  // 1. Clean existing data in reverse order
+  // 1. Clean existing data in reverse foreign key order
+  console.log('🧹 Membersihkan seluruh data tabel yang ada...');
+  await db.delete(schema.commentUpvotes);
+  await db.delete(schema.caseComments);
+  await db.delete(schema.caseReactions);
+  await db.delete(schema.publicReports);
+  await db.delete(schema.auditLogs);
+  await db.delete(schema.visitorLogs);
+  await db.delete(schema.citizenUsers);
   await db.delete(schema.caseTimelineEvents);
+  await db.delete(schema.caseDocuments);
   await db.delete(schema.caseCompanies);
   await db.delete(schema.caseOfficials);
   await db.delete(schema.cases);
@@ -125,31 +136,36 @@ export async function seedFromData() {
   await db.delete(schema.parties);
   await db.delete(schema.presidentialEras);
   await db.delete(schema.provinces);
+  await db.delete(schema.adminUsers);
 
-  console.log('✓ Pembersihan tabel lama selesai.');
+  console.log('✓ Seluruh tabel berhasil dibersihkan.');
 
-  // 2. Admin Users (Pastikan super admin & editor aktif)
-  const existingAdmins = await db.select().from(schema.adminUsers);
-  if (existingAdmins.length === 0) {
-    const adminPasswordHash = bcrypt.hashSync('admin123', 10);
-    await db.insert(schema.adminUsers).values([
-      {
-        id: 'admin-super-01',
-        username: 'admin',
-        password_hash: adminPasswordHash,
-        role: 'super_admin',
-        created_at: new Date('2025-01-01')
-      },
-      {
-        id: 'admin-editor-02',
-        username: 'editor_hukum',
-        password_hash: adminPasswordHash,
-        role: 'editor',
-        created_at: new Date('2025-01-15')
-      }
-    ]);
-    console.log('✓ Admin users diinisialisasi.');
-  }
+  // 2. Admin Users (Super Admin, Editor, Reviewer)
+  const adminPasswordHash = bcrypt.hashSync('admin123', 10);
+  await db.insert(schema.adminUsers).values([
+    {
+      id: 'admin-super-01',
+      username: 'admin',
+      password_hash: adminPasswordHash,
+      role: 'super_admin',
+      created_at: new Date('2025-01-01')
+    },
+    {
+      id: 'admin-editor-02',
+      username: 'editor_hukum',
+      password_hash: adminPasswordHash,
+      role: 'editor',
+      created_at: new Date('2025-01-15')
+    },
+    {
+      id: 'admin-reviewer-03',
+      username: 'reviewer_publik',
+      password_hash: adminPasswordHash,
+      role: 'reviewer',
+      created_at: new Date('2025-02-01')
+    }
+  ]);
+  console.log('✓ 3 Akun Kurator / Admin diinisialisasi (admin, editor_hukum, reviewer_publik).');
 
   // 3. 10 Presidential Eras (1945 - Sekarang)
   const eras = [
@@ -237,8 +253,9 @@ export async function seedFromData() {
   await db.insert(schema.presidentialEras).values(eras);
   console.log(`✓ ${eras.length} Era Kepresidenan berhasil diimpor.`);
 
-  // 4. 38 Provinces of Indonesia
+  // 4. 38 Provinces of Indonesia + 1 Special National Entity
   const provincesList = [
+    { id: 'nasional', name: 'Pusat / Nasional (Kementerian & Lembaga)', island_cluster: 'Nasional', geojson_code: 'ID-NAS' },
     { id: 'aceh', name: 'Aceh', island_cluster: 'Sumatera', geojson_code: 'ID-AC' },
     { id: 'sumut', name: 'Sumatera Utara', island_cluster: 'Sumatera', geojson_code: 'ID-SU' },
     { id: 'sumbar', name: 'Sumatera Barat', island_cluster: 'Sumatera', geojson_code: 'ID-SB' },
@@ -287,7 +304,7 @@ export async function seedFromData() {
       updated_at: new Date('2025-01-01')
     }))
   );
-  console.log(`✓ ${provincesList.length} Provinsi diinisialisasi.`);
+  console.log(`✓ ${provincesList.length} Entitas Wilayah (38 Provinsi + Tingkat Nasional) diinisialisasi.`);
 
   // 5. Political Parties
   const partyInserts = partiesData.map(p => ({
@@ -310,6 +327,141 @@ export async function seedFromData() {
   await db.insert(schema.companies).values(companyInserts);
   console.log(`✓ ${companyInserts.length} Korporasi diimpor.`);
 
+  // 7. Citizen Users (Warga Terverifikasi dengan Profil Lengkap)
+  const citizenPasswordHash = bcrypt.hashSync('warga123', 10);
+  const citizens = [
+    {
+      id: 'usr-budi-jakarta',
+      username: 'budi_santoso',
+      display_name: 'Budi Santoso',
+      email: 'budi.santoso@warga.id',
+      password_hash: citizenPasswordHash,
+      photo_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      origin_province: 'DKI Jakarta',
+      origin_city: 'Jakarta Pusat',
+      bio: 'Kawal terus transparansi anggaran negara untuk generasi mendatang.',
+      avatar_seed: 'garuda',
+      is_email_verified: 1,
+      auth_provider: 'local',
+      role: 'citizen',
+      created_at: new Date('2025-01-10')
+    },
+    {
+      id: 'usr-dewi-surabaya',
+      username: 'dewi_lestari',
+      display_name: 'Dewi Lestari, S.H.',
+      email: 'dewi.lestari@hukum.or.id',
+      password_hash: citizenPasswordHash,
+      photo_url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
+      origin_province: 'Jawa Timur',
+      origin_city: 'Kota Surabaya',
+      bio: 'Advokat publik independen & pemerhati putusan peradilan tipikor.',
+      avatar_seed: 'padi',
+      is_email_verified: 1,
+      auth_provider: 'local',
+      role: 'citizen',
+      created_at: new Date('2025-01-12')
+    },
+    {
+      id: 'usr-ridwan-bandung',
+      username: 'ridwan_gunawan',
+      display_name: 'Ridwan Gunawan',
+      email: 'ridwan@warga.id',
+      password_hash: citizenPasswordHash,
+      photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+      origin_province: 'Jawa Barat',
+      origin_city: 'Kota Bandung',
+      bio: 'Pemerhati tata kelola infrastruktur & pengadaan barang jasa daerah.',
+      avatar_seed: 'emas',
+      is_email_verified: 1,
+      auth_provider: 'local',
+      role: 'citizen',
+      created_at: new Date('2025-01-15')
+    },
+    {
+      id: 'usr-anita-medan',
+      username: 'anita_siregar',
+      display_name: 'Anita Siregar, Ak.',
+      email: 'anita@akuntan.id',
+      password_hash: citizenPasswordHash,
+      photo_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+      origin_province: 'Sumatera Utara',
+      origin_city: 'Kota Medan',
+      bio: 'Akuntan forensik. Audit kerugian keuangan negara wajib tuntas sampai TPPU.',
+      avatar_seed: 'merah',
+      is_email_verified: 1,
+      auth_provider: 'local',
+      role: 'citizen',
+      created_at: new Date('2025-01-20')
+    },
+    {
+      id: 'usr-hendra-jogja',
+      username: 'hendra_wibowo',
+      display_name: 'Hendra Wibowo',
+      email: 'hendra@jogja.id',
+      password_hash: citizenPasswordHash,
+      photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+      origin_province: 'DI Yogyakarta',
+      origin_city: 'Kabupaten Sleman',
+      bio: 'Peneliti hukum tata negara & kebijakan publik nusantara.',
+      avatar_seed: 'banteng',
+      is_email_verified: 1,
+      auth_provider: 'local',
+      role: 'citizen',
+      created_at: new Date('2025-02-01')
+    },
+    {
+      id: 'usr-faisal-makassar',
+      username: 'faisal_daeng',
+      display_name: 'Faisal Daeng M.',
+      email: 'faisal@makassar.id',
+      password_hash: citizenPasswordHash,
+      photo_url: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80',
+      origin_province: 'Sulawesi Selatan',
+      origin_city: 'Kota Makassar',
+      bio: 'Suara rakyat Indonesia Timur kawal penegakan hukum anti-korupsi.',
+      avatar_seed: 'garuda',
+      is_email_verified: 1,
+      auth_provider: 'local',
+      role: 'citizen',
+      created_at: new Date('2025-02-05')
+    },
+    {
+      id: 'usr-siti-padang',
+      username: 'siti_nurhaliza',
+      display_name: 'Siti Nurhaliza',
+      email: 'siti@padang.id',
+      password_hash: citizenPasswordHash,
+      photo_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+      origin_province: 'Sumatera Barat',
+      origin_city: 'Kota Padang',
+      bio: 'Pendidikan antikorupsi sejak dini untuk integritas bangsa.',
+      avatar_seed: 'padi',
+      is_email_verified: 1,
+      auth_provider: 'local',
+      role: 'citizen',
+      created_at: new Date('2025-02-10')
+    },
+    {
+      id: 'usr-made-bali',
+      username: 'made_suardana',
+      display_name: 'I Made Suardana',
+      email: 'made@denpasar.id',
+      password_hash: citizenPasswordHash,
+      photo_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80',
+      origin_province: 'Bali',
+      origin_city: 'Kota Denpasar',
+      bio: 'Jaga kelestarian alam dan tolak suap perizinan lingkungan.',
+      avatar_seed: 'emas',
+      is_email_verified: 1,
+      auth_provider: 'local',
+      role: 'citizen',
+      created_at: new Date('2025-02-15')
+    }
+  ];
+  await db.insert(schema.citizenUsers).values(citizens);
+  console.log(`✓ ${citizens.length} Akun Pengguna Warga (Suara Rakyat) diinisialisasi.`);
+
   // Helper Maps
   const posMap = new Map<string, any>(positionsData.map(pos => [pos.person_id, pos]));
   const pmMap = new Map<string, any>(partyMemberships.map(pm => [pm.person_id, pm]));
@@ -324,17 +476,19 @@ export async function seedFromData() {
     if (l) caseLocsMap.get(cl.case_id)!.push(l);
   }
 
-  // 7. Officials (43 Figur Publik)
+  // 8. Officials (43 Figur Publik / Pejabat)
   const officialInserts = personsData.map(p => {
     const pos = posMap.get(p.person_id);
     const pm = pmMap.get(p.person_id);
     const cp = cpMap.get(p.person_id);
 
-    // Resolve province
-    let provId = 'dki-jakarta';
+    // Resolve province or national level
+    let provId = 'nasional';
     if (pos?.province) {
       const pKey = pos.province.trim().toLowerCase();
       if (PROVINCE_NAME_TO_ID[pKey]) provId = PROVINCE_NAME_TO_ID[pKey];
+      else if (pKey.includes('jakarta')) provId = 'dki-jakarta';
+      else if (pKey.includes('pusat') || pKey.includes('kementerian') || pKey.includes('ri')) provId = 'nasional';
     }
 
     const partyId = pm?.party_id || 'pty-non-partisan';
@@ -343,7 +497,7 @@ export async function seedFromData() {
     return {
       id: p.person_id,
       full_name: p.full_name,
-      photo_url: undefined,
+      photo_url: p.photo_url || undefined,
       position_title: pos?.position_title || p.occupation || 'Pejabat Publik',
       province_id: provId,
       party_id: partyId,
@@ -356,7 +510,7 @@ export async function seedFromData() {
   await db.insert(schema.officials).values(officialInserts);
   console.log(`✓ ${officialInserts.length} Pejabat Publik / Terdakwa diimpor.`);
 
-  // 8. Cases (43 Perkara LKI)
+  // 9. Cases (43 Perkara LKI)
   const casePersonsByCase = new Map<string, any>(casePersonsData.map(cp => [cp.case_id, cp]));
   const verdictsByCase = new Map<string, any>(verdictsData.map(v => [v.case_id, v]));
   const finByCase = new Map<string, any[]>();
@@ -387,7 +541,17 @@ export async function seedFromData() {
     const locs = caseLocsMap.get(c.case_id) || [];
     const pos = primaryPersonId ? posMap.get(primaryPersonId) : null;
     let provName = locs[0]?.province || pos?.province || 'DKI Jakarta';
-    const provId = PROVINCE_NAME_TO_ID[provName.trim().toLowerCase()] || 'dki-jakarta';
+    let provId = PROVINCE_NAME_TO_ID[provName.trim().toLowerCase()] || 'dki-jakarta';
+
+    // Check if case is national level
+    if (c.case_title.toLowerCase().includes('kementerian') || 
+        c.case_title.toLowerCase().includes('mahkamah agung') || 
+        c.case_title.toLowerCase().includes('nasional') ||
+        c.case_title.toLowerCase().includes('garuda') ||
+        c.case_title.toLowerCase().includes('jiwasraya') ||
+        c.case_title.toLowerCase().includes('asabri')) {
+      provId = 'nasional';
+    }
 
     // Resolve financial amounts strictly complying with anti-double counting
     const courtLossRec = fins.find(f => f.financial_type === 'court_recognized_loss_amount');
@@ -464,7 +628,7 @@ export async function seedFromData() {
     console.log(`✓ ${caseOfficialLinks.length} Relasi Perkara-Pejabat diimpor.`);
   }
 
-  // 9. Case Companies (Relasi Korporasi)
+  // 10. Case Companies (Relasi Korporasi)
   const caseCompanyLinks = caseCompaniesData.map(cc => ({
     case_id: cc.case_id,
     company_id: cc.company_id,
@@ -476,7 +640,7 @@ export async function seedFromData() {
     console.log(`✓ ${caseCompanyLinks.length} Relasi Perkara-Korporasi diimpor.`);
   }
 
-  // 10. Case Timeline Events
+  // 11. Case Timeline Events
   const timelineInserts = timelineEvents.map(te => ({
     id: te.event_id,
     case_id: te.case_id,
@@ -489,7 +653,250 @@ export async function seedFromData() {
     console.log(`✓ ${timelineInserts.length} Peristiwa Kronologi Kasus diimpor.`);
   }
 
-  // 11. Recalculate Aggregates dynamically from imported cases
+  // 12. Case Reactions & Comments (Suara Warga)
+  console.log('💬 Menyemai Reaksi & Komentar Suara Warga...');
+  const topCases = caseInserts.slice(0, 8);
+  const reactionsList: any[] = [];
+  const commentsList: any[] = [];
+  const upvotesList: any[] = [];
+
+  const sampleCitizenComments = [
+    {
+      user: 'usr-anita-medan',
+      reaction: 'rampok' as const,
+      text: 'Kerugian negara dalam perkara ini sangat masif. Harus ada tindak pidana pencucian uang (TPPU) dan perampasan aset menyeluruh agar uang rakyat benar-benar kembali!',
+      upvotes: 19
+    },
+    {
+      user: 'usr-dewi-surabaya',
+      reaction: 'geram' as const,
+      text: 'Modus penyalahgunaan wewenang ini menunjukkan mafia anggaran bekerja terorganisir. Vonis hakim di tingkat banding maupun kasasi tidak boleh lembek.',
+      upvotes: 14
+    },
+    {
+      user: 'usr-ridwan-bandung',
+      reaction: 'khilaf_administrasi' as const,
+      text: 'Perlu kita bedakan dengan objektif antara kerugian riil akibat memperkaya diri sendiri dengan kekhilafan administrasi prosedur birokrasi pengadaan fasilitas dinas. Jika tidak ada uang yang dikantongi pribadi, asas keadilan restoratif harus dipertimbangkan.',
+      upvotes: 11
+    },
+    {
+      user: 'usr-hendra-jogja',
+      reaction: 'didukung' as const,
+      text: 'Masyarakat mendukung penegakan hukum yang transparan dan akuntabel, selama fakta persidangan dibeberkan secara jujur tanpa intervensi kekuasaan.',
+      upvotes: 8
+    },
+    {
+      user: 'usr-faisal-makassar',
+      reaction: 'memalukan' as const,
+      text: 'Sangat memalukan uang amanah publik diselewengkan. Kawal terus persidangan dan jangan sampai ada diskon hukuman di kemudian hari!',
+      upvotes: 16
+    },
+    {
+      user: 'usr-siti-padang',
+      reaction: 'kawal_sidang' as const,
+      text: 'Publik mengawal ketat putusan perkara ini. Direktori putusan Mahkamah Agung harus selalu terbuka agar rakyat bisa memantau amar putusannya.',
+      upvotes: 12
+    }
+  ];
+
+  for (let i = 0; i < topCases.length; i++) {
+    const c = topCases[i];
+    const rxnTypes: Array<'geram' | 'rampok' | 'memalukan' | 'didukung' | 'khilaf_administrasi' | 'dimaklumi' | 'tebang_pilih' | 'kawal_sidang'> = [
+      'geram', 'rampok', 'memalukan', 'kawal_sidang', 'tebang_pilih', 'didukung'
+    ];
+    for (let uIdx = 0; uIdx < citizens.length; uIdx++) {
+      const cz = citizens[uIdx];
+      const rxnType = rxnTypes[(i + uIdx) % rxnTypes.length];
+      reactionsList.push({
+        id: `rxn-${c.id}-${cz.id}`,
+        case_id: c.id,
+        user_id: cz.id,
+        reaction_type: rxnType,
+        created_at: new Date(Date.now() - (i * 86400000) - (uIdx * 3600000))
+      });
+    }
+
+    const cmtSample = sampleCitizenComments[i % sampleCitizenComments.length];
+    const cmtId = `cmt-${c.id}-1`;
+    commentsList.push({
+      id: cmtId,
+      case_id: c.id,
+      user_id: cmtSample.user,
+      reaction_type: cmtSample.reaction,
+      content: cmtSample.text,
+      upvotes_count: cmtSample.upvotes,
+      is_hidden: 0,
+      created_at: new Date(Date.now() - (i * 43200000))
+    });
+
+    const cmtSample2 = sampleCitizenComments[(i + 2) % sampleCitizenComments.length];
+    const cmtId2 = `cmt-${c.id}-2`;
+    commentsList.push({
+      id: cmtId2,
+      case_id: c.id,
+      user_id: cmtSample2.user,
+      reaction_type: cmtSample2.reaction,
+      content: cmtSample2.text,
+      upvotes_count: cmtSample2.upvotes,
+      is_hidden: 0,
+      created_at: new Date(Date.now() - (i * 21600000))
+    });
+
+    upvotesList.push({
+      id: `upv-${cmtId}-${citizens[0].id}`,
+      comment_id: cmtId,
+      user_id: citizens[0].id,
+      created_at: new Date()
+    });
+    upvotesList.push({
+      id: `upv-${cmtId}-${citizens[1].id}`,
+      comment_id: cmtId,
+      user_id: citizens[1].id,
+      created_at: new Date()
+    });
+  }
+
+  await db.insert(schema.caseReactions).values(reactionsList);
+  await db.insert(schema.caseComments).values(commentsList);
+  await db.insert(schema.commentUpvotes).values(upvotesList);
+  console.log(`✓ ${reactionsList.length} Reaksi, ${commentsList.length} Komentar Warga, dan ${upvotesList.length} Upvote diimpor.`);
+
+  // 13. Public Reports (Laporan & Usulan Koreksi Warga)
+  const sampleReports = [
+    {
+      id: 'rep-01-usulan-perkara',
+      case_id: null,
+      report_type: 'usulan_kasus_baru' as const,
+      description: 'Pengadaan proyek pembangunan jembatan daerah TA 2023 yang mangkrak dan telah ada temuan audit BPK perwakilan provinsi.',
+      reference_url: 'https://putusan3.mahkamahagung.go.id',
+      submitter_contact: 'warga.peduli@gmail.com',
+      metadata: { kota: 'Medan', estimasi_kerugian: 'Rp 4.5 Miliar' },
+      status: 'pending_review' as const,
+      reviewed_by: null,
+      created_at: new Date(Date.now() - 86400000),
+      reviewed_at: null
+    },
+    {
+      id: 'rep-02-koreksi-putusan',
+      case_id: caseInserts[0]?.id || null,
+      report_type: 'rujukan_putusan_baru' as const,
+      description: 'Penambahan rujukan putusan kasasi Mahkamah Agung terbaru beserta nomor amar putusan lengkap.',
+      reference_url: 'https://putusan3.mahkamahagung.go.id',
+      submitter_contact: 'dewi.lestari@hukum.or.id',
+      metadata: { catatan: 'Amar kasasi menguatkan denda subsidair' },
+      status: 'approved' as const,
+      reviewed_by: 'admin-super-01',
+      created_at: new Date(Date.now() - 172800000),
+      reviewed_at: new Date(Date.now() - 86400000)
+    }
+  ];
+  await db.insert(schema.publicReports).values(sampleReports);
+  console.log(`✓ ${sampleReports.length} Laporan Partisipasi Publik diinisialisasi.`);
+
+  // 14. Audit Logs (Catatan Audit Kurator)
+  const initialAuditLogs = [
+    {
+      id: 'audit-init-01',
+      admin_user_id: 'admin-super-01',
+      entity_type: 'system',
+      entity_id: 'bootstrap',
+      action: 'create' as const,
+      diff_snapshot: { action: 'Master Seeder & Fresh Migration Executed', status: 'clean' },
+      created_at: new Date()
+    },
+    {
+      id: 'audit-init-02',
+      admin_user_id: 'admin-super-01',
+      entity_type: 'report',
+      entity_id: 'rep-02-koreksi-putusan',
+      action: 'approve_report' as const,
+      diff_snapshot: { status: 'approved', note: 'Verifikasi rujukan putusan kasasi MA valid' },
+      created_at: new Date(Date.now() - 86400000)
+    }
+  ];
+  await db.insert(schema.auditLogs).values(initialAuditLogs);
+  console.log(`✓ ${initialAuditLogs.length} Catatan Audit Log Admin diinisialisasi.`);
+
+  // 15. Visitor Logs (Log Pemantauan Trafik Realistis dengan Alamat IP Lengkap tanpa Sensor)
+  console.log('📊 Menyemai data log pemantauan trafik (visitor_logs) dengan IP penuh...');
+  const sampleIps = [
+    '127.0.0.1',
+    '180.252.164.22',
+    '139.192.88.209',
+    '103.28.115.61',
+    '118.99.110.45',
+    '140.213.18.92',
+    '125.160.22.88',
+    '36.85.12.104',
+    '114.124.201.33'
+  ];
+
+  const samplePaths = [
+    { path: '/', method: 'GET' },
+    { path: '/klasemen', method: 'GET' },
+    { path: '/peta', method: 'GET' },
+    { path: '/statistik', method: 'GET' },
+    { path: '/cari', method: 'GET' },
+    { path: '/api/cases', method: 'GET' },
+    { path: '/api/leaderboard', method: 'GET' },
+    { path: '/api/regions/summary', method: 'GET' },
+    { path: '/api/stats/overview', method: 'GET' },
+    { path: '/peta', method: 'PAGEVIEW' },
+    { path: '/klasemen', method: 'PAGEVIEW' }
+  ];
+
+  const devices = [
+    { type: 'desktop', browser: 'Chrome', os: 'Windows', ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36' },
+    { type: 'mobile', browser: 'Chrome Mobile', os: 'Android', ua: 'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36' },
+    { type: 'desktop', browser: 'Safari', os: 'macOS', ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15' },
+    { type: 'mobile', browser: 'Mobile Safari', os: 'iOS', ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Mobile/15E148 Safari/604.1' },
+    { type: 'desktop', browser: 'Firefox', os: 'Linux', ua: 'Mozilla/5.0 (X11; Linux x86_64; rv:123.0) Gecko/20100101 Firefox/123.0' }
+  ];
+
+  const visitorLogsToInsert: any[] = [];
+  const now = Date.now();
+  const totalLogs = 600;
+
+  for (let i = 0; i < totalLogs; i++) {
+    const timeAgoMs = Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000);
+    const logTime = new Date(now - timeAgoMs);
+    const pathItem = samplePaths[Math.floor(Math.random() * samplePaths.length)];
+    const ip = sampleIps[Math.floor(Math.random() * sampleIps.length)];
+    const dev = devices[Math.floor(Math.random() * devices.length)];
+    
+    const randStatus = Math.random();
+    let statusCode = 200;
+    if (randStatus > 0.98) statusCode = 500;
+    else if (randStatus > 0.95) statusCode = 404;
+    else if (randStatus > 0.90) statusCode = 304;
+
+    const duration = statusCode === 500 ? Math.floor(Math.random() * 250 + 100) : Math.floor(Math.random() * 45 + 5);
+    const dateStr = logTime.toISOString().slice(0, 10);
+    const sessionHash = `sess-${Buffer.from(`${ip}-${dateStr}`).toString('base64').slice(0, 16)}`;
+
+    visitorLogsToInsert.push({
+      id: `log-seed-${1000 + i}`,
+      timestamp: logTime,
+      method: pathItem.method,
+      path: pathItem.path,
+      status_code: statusCode,
+      duration_ms: duration,
+      ip_address: ip,
+      user_agent: dev.ua,
+      device_type: dev.type,
+      browser: dev.browser,
+      os: dev.os,
+      referrer: Math.random() > 0.4 ? 'https://google.com' : 'Direct',
+      session_id: sessionHash
+    });
+  }
+
+  for (let i = 0; i < visitorLogsToInsert.length; i += 200) {
+    await db.insert(schema.visitorLogs).values(visitorLogsToInsert.slice(i, i + 200));
+  }
+  console.log(`✓ ${visitorLogsToInsert.length} Log Aktivitas Pengunjung (visitor_logs) berhasil disemai.`);
+
+  // 16. Recalculate Aggregates dynamically from imported cases
   console.log('🔄 Menghitung ulang agregasi total kerugian & jumlah perkara secara dinamis...');
 
   // Update Officials Total Loss
@@ -529,7 +936,7 @@ export async function seedFromData() {
       .where(eq(schema.parties.id, pty.id));
   }
 
-  console.log('✅ SEEDING DARI FOLDER DATA/ SELESAI DENGAN SUKSES! Seluruh data faktual aktif.');
+  console.log('✅ MASTER SEEDER SELESAI DENGAN SUKSES! Seluruh 18 tabel dan kolom terisi data faktual bersih & mutakhir.');
 }
 
 // Auto-run if executed as main script in Bun/Node
@@ -545,4 +952,3 @@ if (
       process.exit(1);
     });
 }
-

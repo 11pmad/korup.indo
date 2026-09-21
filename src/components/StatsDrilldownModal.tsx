@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { CorruptionCase } from '../types.js';
 import { formatRupiah } from '../utils/formatters.js';
 import { sound } from '../utils/audio.js';
@@ -11,6 +11,7 @@ import {
   Flame, 
   ShieldAlert, 
   ExternalLink, 
+  ChevronLeft,
   ChevronRight,
   FileText,
   MapPin,
@@ -39,7 +40,19 @@ export const StatsDrilldownModal: React.FC<StatsDrilldownModalProps> = ({
   onClose,
   onSelectCase
 }) => {
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+
+  useEffect(() => {
+    setPage(1);
+  }, [target?.title]);
+
   if (!target) return null;
+
+  const totalCases = target.cases.length;
+  const effectivePageSize = pageSize >= 9999 ? Math.max(totalCases, 1) : pageSize;
+  const totalPages = Math.ceil(totalCases / effectivePageSize) || 1;
+  const paginatedCases = target.cases.slice((page - 1) * effectivePageSize, page * effectivePageSize);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -132,7 +145,7 @@ export const StatsDrilldownModal: React.FC<StatsDrilldownModalProps> = ({
               Tidak ada data perkara spesifik yang terhubung.
             </div>
           ) : (
-            target.cases.map((c, index) => {
+            paginatedCases.map((c, index) => {
               const off = c.official;
               return (
                 <div
@@ -235,6 +248,49 @@ export const StatsDrilldownModal: React.FC<StatsDrilldownModalProps> = ({
             })
           )}
         </div>
+
+        {/* Pagination Bar */}
+        {totalCases > 0 && (
+          <div className="px-5 sm:px-6 py-3 bg-[#FAF5E8] border-t border-[#EAE0CD] flex flex-wrap items-center justify-between gap-2 text-xs text-[#57534E]">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-[#78716C]">Tampilkan:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  sound.playPop();
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="bg-white border border-[#D5C9A9] rounded-lg px-2 py-0.5 text-xs font-bold text-[#1E293B] shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#D97706]"
+              >
+                <option value={10}>10 data</option>
+                <option value={25}>25 data</option>
+                <option value={50}>50 data</option>
+                <option value={9999}>Semua ({totalCases})</option>
+              </select>
+              <span className="text-[#78716C]">
+                <strong>{(page - 1) * effectivePageSize + 1}</strong> – <strong>{Math.min(totalCases, page * effectivePageSize)}</strong> dari <strong>{totalCases}</strong>
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                disabled={page <= 1}
+                onClick={() => { sound.playPop(); setPage(p => p - 1); }}
+                className="p-1 rounded-lg bg-white border border-[#D5C9A9] disabled:opacity-40 hover:bg-[#F4EEDC] cursor-pointer transition-colors"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <span className="px-1.5 font-bold font-mono">{page}/{totalPages}</span>
+              <button
+                disabled={page >= totalPages}
+                onClick={() => { sound.playPop(); setPage(p => p + 1); }}
+                className="p-1 rounded-lg bg-white border border-[#D5C9A9] disabled:opacity-40 hover:bg-[#F4EEDC] cursor-pointer transition-colors"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Modal Footer */}
         <div className="p-4 bg-[#FAF5E8] border-t border-[#EAE0CD] flex items-center justify-between flex-wrap gap-2 text-xs">

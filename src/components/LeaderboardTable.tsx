@@ -142,14 +142,22 @@ const PROVINCE_TO_ISLAND: Record<string, string> = {
   'Kepulauan Riau': 'Sumatera',
   'Jambi': 'Sumatera',
   'Sumatera Selatan': 'Sumatera',
+  'Kepulauan Bangka Belitung': 'Sumatera',
   'Bangka Belitung': 'Sumatera',
   'Bengkulu': 'Sumatera',
   'Lampung': 'Sumatera',
+  'Pusat / Nasional (Kementerian / Lembaga RI)': 'Nasional / Pusat',
+  'Pusat / Nasional (Kementerian & Lembaga)': 'Nasional / Pusat',
+  'Pusat / Nasional': 'Nasional / Pusat',
+  'Nasional': 'Nasional / Pusat',
+  'pusat': 'Nasional / Pusat',
+  'nasional': 'Nasional / Pusat',
   'DKI Jakarta': 'Jawa',
   'Jawa Barat': 'Jawa',
   'Banten': 'Jawa',
   'Jawa Tengah': 'Jawa',
   'DI Yogyakarta': 'Jawa',
+  'Daerah Istimewa Yogyakarta': 'Jawa',
   'Jawa Timur': 'Jawa',
   'Bali': 'Bali & Nusa Tenggara',
   'Nusa Tenggara Barat': 'Bali & Nusa Tenggara',
@@ -175,8 +183,30 @@ const PROVINCE_TO_ISLAND: Record<string, string> = {
   'Papua Barat Daya': 'Maluku & Papua'
 };
 
+export const getProvinceIsland = (prov: string | undefined | null): string => {
+  if (!prov) return 'Lainnya';
+  if (PROVINCE_TO_ISLAND[prov]) return PROVINCE_TO_ISLAND[prov];
+  const pLower = prov.toLowerCase();
+  if (pLower.includes('nasional') || pLower.includes('pusat')) return 'Nasional / Pusat';
+  return 'Lainnya';
+};
+
+export const matchProvince = (itemProv: string | undefined | null, filterProv: string): boolean => {
+  if (!itemProv || !filterProv) return false;
+  const p1 = itemProv.trim().toLowerCase();
+  const p2 = filterProv.trim().toLowerCase();
+  if (p1 === p2) return true;
+  
+  const isFilterNational = p2.includes('nasional') || p2.includes('pusat');
+  const isItemNational = p1.includes('nasional') || p1.includes('pusat');
+  if (isFilterNational && isItemNational) return true;
+
+  return false;
+};
+
 const ISLAND_CLUSTERS = [
   'Semua Pulau',
+  'Nasional / Pusat',
   'Jawa',
   'Sumatera',
   'Kalimantan',
@@ -221,7 +251,7 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
   const [sortBy, setSortBy] = useState<'kerugian' | 'kasus' | 'rank' | 'tahun'>('kerugian');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const pageSize = 8;
+  const [pageSize, setPageSize] = useState<number>(10);
 
   const activeEraObj = useMemo(() => {
     return HISTORICAL_ERAS.find(e => e.id === selectedEra);
@@ -286,7 +316,7 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
       if (filterPulau && filterPulau !== 'Semua Pulau') {
         relevantCases = relevantCases.filter(c => {
           const prov = c.official?.provinsi;
-          const island = prov ? PROVINCE_TO_ISLAND[prov] : undefined;
+          const island = getProvinceIsland(prov);
           return island === filterPulau;
         });
       }
@@ -294,7 +324,7 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
       // Specific Province Filter
       if (filterProvinsi) {
         relevantCases = relevantCases.filter(
-          c => c.official?.provinsi.toLowerCase() === filterProvinsi.toLowerCase()
+          c => matchProvince(c.official?.provinsi, filterProvinsi)
         );
       }
 
@@ -381,10 +411,10 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
         }
       }
       if (filterPulau && filterPulau !== 'Semua Pulau') {
-        const island = PROVINCE_TO_ISLAND[it.provinsi];
+        const island = getProvinceIsland(it.provinsi);
         if (island !== filterPulau) return false;
       }
-      if (filterProvinsi && it.provinsi !== filterProvinsi) return false;
+      if (filterProvinsi && !matchProvince(it.provinsi, filterProvinsi)) return false;
       if (filterPartai && !it.partai.toLowerCase().includes(filterPartai.toLowerCase())) return false;
       if (filterStatus && it.status_hukum_terkini !== filterStatus) return false;
       return true;
@@ -494,13 +524,13 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
     if (filterPulau && filterPulau !== 'Semua Pulau') {
       relevantCases = relevantCases.filter(c => {
         const prov = c.official?.provinsi;
-        const island = prov ? PROVINCE_TO_ISLAND[prov] : undefined;
+        const island = getProvinceIsland(prov);
         return island === filterPulau;
       });
     }
     if (filterProvinsi) {
       relevantCases = relevantCases.filter(
-        c => c.official?.provinsi?.toLowerCase() === filterProvinsi.toLowerCase()
+        c => matchProvince(c.official?.provinsi, filterProvinsi)
       );
     }
     if (filterPartai) {
@@ -551,8 +581,9 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
   }, [cases, selectedPeriod, selectedEra, filterPulau, filterProvinsi, filterPartai, filterStatus]);
 
   // Pagination for Officials view
-  const totalPages = Math.ceil(sortedOfficials.length / pageSize) || 1;
-  const paginatedOfficials = sortedOfficials.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const effectivePageSize = pageSize >= 9999 ? Math.max(sortedOfficials.length, 1) : pageSize;
+  const totalPages = Math.ceil(sortedOfficials.length / effectivePageSize) || 1;
+  const paginatedOfficials = sortedOfficials.slice((currentPage - 1) * effectivePageSize, currentPage * effectivePageSize);
 
   // Overall Filter Metrics
   const totalFilteredLoss = useMemo(() => {
@@ -854,7 +885,7 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
             {/* 3. Filter Spesifik Provinsi */}
             <div>
               <label className="block text-xs font-bold text-[#57534E] mb-1 flex items-center gap-1">
-                <Filter className="w-3.5 h-3.5 text-[#0284C7]" /> Spesifik Provinsi
+                <Filter className="w-3.5 h-3.5 text-[#0284C7]" /> Spesifik Wilayah / Provinsi
               </label>
               <select
                 value={filterProvinsi}
@@ -863,14 +894,31 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
                   setFilterProvinsi(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full bg-white border border-[#D5C9AB] rounded-xl px-3 py-2 text-xs font-semibold text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#FB923C]"
+                className="w-full bg-white border border-[#D5C9AB] rounded-xl px-3 py-2 text-xs font-semibold text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#FB923C] cursor-pointer"
               >
-                <option value="">Semua Provinsi ({provinces.length})</option>
-                {provinces
-                  .filter(p => filterPulau === 'Semua Pulau' || PROVINCE_TO_ISLAND[p] === filterPulau)
-                  .map(p => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
+                <option value="">Semua Wilayah &amp; Provinsi</option>
+                
+                {(filterPulau === 'Semua Pulau' || filterPulau === 'Nasional / Pusat') && (
+                  <optgroup label="🏛️ Tingkat Nasional / Pemerintah Pusat">
+                    <option value="Pusat / Nasional (Kementerian / Lembaga RI)">
+                      🏛️ Pusat / Nasional (Kementerian / Lembaga RI / BUMN)
+                    </option>
+                  </optgroup>
+                )}
+
+                {filterPulau !== 'Nasional / Pusat' && (
+                  <optgroup label="📍 Tingkat Daerah (38 Provinsi Nusantara)">
+                    {provinces
+                      .filter(p => {
+                        const isNat = p.toLowerCase().includes('nasional') || p.toLowerCase().includes('pusat');
+                        if (isNat) return false;
+                        return filterPulau === 'Semua Pulau' || getProvinceIsland(p) === filterPulau;
+                      })
+                      .map(p => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                  </optgroup>
+                )}
               </select>
             </div>
 
@@ -980,7 +1028,9 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
 
               {filterProvinsi && (
                 <span className="px-2 py-0.5 rounded-md bg-[#E0F2FE] border border-[#BAE6FD] text-[#0284C7] font-bold">
-                  📍 Prov: {filterProvinsi}
+                  {filterProvinsi.toLowerCase().includes('nasional') || filterProvinsi.toLowerCase().includes('pusat') 
+                    ? '🏛️ Nasional / Pusat' 
+                    : `📍 Prov: ${filterProvinsi}`}
                 </span>
               )}
 
@@ -1123,7 +1173,7 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
                           {item.provinsi}
                         </span>
                         <div className="text-[10px] text-gray-500 mt-0.5">
-                          {PROVINCE_TO_ISLAND[item.provinsi] || 'Lainnya'}
+                          {getProvinceIsland(item.provinsi)}
                         </div>
                       </div>
 
@@ -1210,20 +1260,40 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
           </div>
 
           {/* Pagination Footer */}
-          <div className="px-6 py-3 bg-[#F6F0DF] border-t border-[#E4D7BC] flex items-center justify-between text-xs text-[#57534E]">
-            <div>
-              Menampilkan <strong>{Math.min(sortedOfficials.length, (currentPage - 1) * pageSize + 1)}</strong> -{' '}
-              <strong>{Math.min(sortedOfficials.length, currentPage * pageSize)}</strong> dari <strong>{sortedOfficials.length}</strong> tokoh
+          <div className="px-6 py-3.5 bg-[#F6F0DF] border-t border-[#E4D7BC] flex flex-wrap items-center justify-between gap-3 text-xs text-[#57534E]">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="font-semibold text-[#78716C]">Tampilkan:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  sound.playPop();
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-white border border-[#D5C9A9] rounded-lg px-2.5 py-1 text-xs font-bold text-[#1E293B] shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#D97706]"
+              >
+                <option value={10}>10 data (Default)</option>
+                <option value={25}>25 data</option>
+                <option value={50}>50 data</option>
+                <option value={100}>100 data</option>
+                <option value={9999}>Semua ({sortedOfficials.length})</option>
+              </select>
+
+              <span className="text-xs text-[#78716C]">
+                Menampilkan <strong>{sortedOfficials.length === 0 ? 0 : (currentPage - 1) * effectivePageSize + 1}</strong> -{' '}
+                <strong>{Math.min(sortedOfficials.length, currentPage * effectivePageSize)}</strong> dari <strong>{sortedOfficials.length}</strong> tokoh
+              </span>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 ml-auto">
               <button
                 disabled={currentPage <= 1}
                 onClick={() => {
                   sound.playPop();
                   setCurrentPage(p => p - 1);
                 }}
-                className="p-1.5 rounded-lg bg-white border border-[#D5C9A9] disabled:opacity-40 cursor-pointer"
+                className="p-1.5 rounded-lg bg-white border border-[#D5C9A9] disabled:opacity-40 hover:bg-[#F4EEDC] cursor-pointer transition-colors"
+                title="Halaman Sebelumnya"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -1236,7 +1306,8 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
                   sound.playPop();
                   setCurrentPage(p => p + 1);
                 }}
-                className="p-1.5 rounded-lg bg-white border border-[#D5C9A9] disabled:opacity-40 cursor-pointer"
+                className="p-1.5 rounded-lg bg-white border border-[#D5C9A9] disabled:opacity-40 hover:bg-[#F4EEDC] cursor-pointer transition-colors"
+                title="Halaman Selanjutnya"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
