@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { formatRupiah, getStatusBadgeStyle } from '../../utils/formatters.js';
 import { getOfficialPhoto, handleImageError } from '../../utils/photo.js';
-import { PROVINCES_LIST } from '../ReportModal.js';
+import { PROVINCES_LIST } from '../../constants/provinces.js';
 import { sound } from '../../utils/audio.js';
 
 interface OfficialsManagerProps {

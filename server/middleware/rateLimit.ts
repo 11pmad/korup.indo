@@ -17,7 +17,23 @@ export const generalApiLimiter = rateLimit({
   max: 120,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting for admin operations
+    return req.baseUrl.startsWith('/api/admin') || req.path.startsWith('/admin');
+  },
   message: {
     error: 'Batas permintaan API terlampaui. Silakan tunggu sesaat.'
   }
 });
+
+// Dedicated rate limiter for authentication routes (login, register, OTP)
+export const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 menit
+  max: 20, // Max 20 percobaan login / register per 15 menit
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Terlalu banyak percobaan autentikasi dari alamat IP Anda. Silakan coba kembali setelah 15 menit demi keamanan.'
+  }
+});
+

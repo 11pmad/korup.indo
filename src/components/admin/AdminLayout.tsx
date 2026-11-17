@@ -17,11 +17,12 @@ import {
   Bell,
   QrCode,
   Activity,
-  MessageSquare
+  MessageSquare,
+  UserCog
 } from 'lucide-react';
 import { sound } from '../../utils/audio.js';
 
-export type AdminSubtab = 'dashboard' | 'ai' | 'cases' | 'officials' | 'reports' | 'comments' | 'monitoring' | 'audit' | 'manual' | 'announcement' | 'donation';
+export type AdminSubtab = 'dashboard' | 'ai' | 'cases' | 'officials' | 'reports' | 'comments' | 'monitoring' | 'audit' | 'manual' | 'announcement' | 'donation' | 'users';
 
 interface AdminLayoutProps {
   activeSubtab: AdminSubtab;
@@ -30,6 +31,8 @@ interface AdminLayoutProps {
   onBackToPublic: () => void;
   pendingReportsCount: number;
   adminUsername: string;
+  adminFullName?: string | null;
+  adminRole?: string;
   children: React.ReactNode;
 }
 
@@ -40,6 +43,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   onBackToPublic,
   pendingReportsCount,
   adminUsername,
+  adminFullName,
+  adminRole = 'super_admin',
   children
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
@@ -50,6 +55,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     icon: React.ComponentType<{ className?: string }>;
     badge?: string;
     badgeColor?: string;
+    roles?: string[];
   }
 
   interface NavGroup {
@@ -62,10 +68,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       title: 'Manajemen Kasus & Data',
       items: [
         { id: 'dashboard', label: 'Dashboard Ringkasan', icon: LayoutDashboard },
-        { id: 'cases', label: 'Kelola Berkas Perkara', icon: Briefcase },
-        { id: 'officials', label: 'Kelola Pejabat Publik', icon: Users },
-        { id: 'manual', label: 'Formulir Input Manual', icon: FileEdit },
-        { id: 'ai', label: 'Kurasi AI Assistant', icon: Sparkles, badge: 'AI Flash' },
+        { id: 'cases', label: 'Kelola Berkas Perkara', icon: Briefcase, roles: ['super_admin', 'admin', 'editor', 'auditor', 'reviewer'] },
+        { id: 'officials', label: 'Kelola Pejabat Publik', icon: Users, roles: ['super_admin', 'admin', 'editor', 'auditor', 'reviewer'] },
+        { id: 'manual', label: 'Formulir Input Manual', icon: FileEdit, roles: ['super_admin', 'admin', 'editor'] },
+        { id: 'ai', label: 'Kurasi AI Assistant', icon: Sparkles, badge: 'AI Flash', roles: ['super_admin', 'admin', 'editor'] },
       ]
     },
     {
@@ -76,31 +82,49 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           label: 'Moderasi Laporan Warga', 
           icon: ShieldCheck, 
           badge: pendingReportsCount > 0 ? String(pendingReportsCount) : undefined,
-          badgeColor: 'bg-amber-500 text-white'
+          badgeColor: 'bg-amber-500 text-white',
+          roles: ['super_admin', 'admin', 'moderator', 'editor', 'auditor', 'reviewer']
         },
         { 
           id: 'comments', 
           label: 'Moderasi Komentar Warga', 
-          icon: MessageSquare 
+          icon: MessageSquare,
+          roles: ['super_admin', 'admin', 'moderator', 'auditor', 'reviewer']
         },
       ]
     },
     {
-      title: 'Sistem & Pengaturan',
+      title: 'Sistem & Tim Verifikator',
       items: [
+        { 
+          id: 'users', 
+          label: 'Manajemen Pengguna', 
+          icon: UserCog,
+          badge: 'Staf',
+          badgeColor: 'bg-purple-600 text-white',
+          roles: ['super_admin', 'admin', 'auditor', 'reviewer']
+        },
         { 
           id: 'monitoring', 
           label: 'Monitoring & Trafik Log', 
           icon: Activity,
           badge: 'Live',
-          badgeColor: 'bg-emerald-500 text-white'
+          badgeColor: 'bg-emerald-500 text-white',
+          roles: ['super_admin', 'admin', 'auditor', 'reviewer']
         },
-        { id: 'audit', label: 'Log Audit & Rollback', icon: History },
-        { id: 'announcement', label: 'Teks Pemberitahuan', icon: Bell },
-        { id: 'donation', label: 'Donasi & QRIS Admin', icon: QrCode }
+        { id: 'audit', label: 'Log Audit & Rollback', icon: History, roles: ['super_admin', 'admin', 'auditor', 'reviewer'] },
+        { id: 'announcement', label: 'Teks Pemberitahuan', icon: Bell, roles: ['super_admin', 'admin'] },
+        { id: 'donation', label: 'Donasi & QRIS Admin', icon: QrCode, roles: ['super_admin'] }
       ]
     }
   ];
+
+  // Filter navigation by role
+  const userRole = adminRole || 'super_admin';
+  const allowedNavGroups = navGroups.map(group => ({
+    ...group,
+    items: group.items.filter(item => !item.roles || item.roles.includes(userRole))
+  })).filter(group => group.items.length > 0);
 
   const handleNav = (tab: AdminSubtab) => {
     sound.playPop();
@@ -116,6 +140,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       case 'officials': return 'Pangkalan Data Pejabat Publik';
       case 'reports': return 'Antrean Moderasi Laporan Warga';
       case 'comments': return 'Moderasi Komentar Warga & Suara Publik';
+      case 'users': return 'Manajemen Tim & Pengguna Staf';
       case 'monitoring': return 'Observabilitas Trafik Pengunjung & Monitoring Log';
       case 'audit': return 'Jejak Audit & Rollback Mutasi';
       case 'manual': return 'Formulir Input Manual';
@@ -180,7 +205,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
         {/* Navigation List */}
         <nav className="flex-1 p-3 space-y-4 overflow-y-auto">
-          {navGroups.map((group) => (
+          {allowedNavGroups.map((group) => (
             <div key={group.title} className="space-y-1">
               <div className="px-3 pt-1 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                 {group.title}
@@ -224,14 +249,16 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           {/* User badge */}
           <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-[#DC2626]">
-                {adminUsername.charAt(0).toUpperCase()}
+              <div className="w-7 h-7 rounded-lg bg-purple-950/70 border border-purple-800/60 flex items-center justify-center font-bold text-xs text-purple-300 shrink-0">
+                {(adminFullName || adminUsername).charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-bold text-white truncate">{adminUsername}</div>
-                <div className="text-[10px] text-emerald-400 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span>Super Admin</span>
+                <div className="text-xs font-bold text-white truncate" title={adminFullName || adminUsername}>
+                  {adminFullName || adminUsername}
+                </div>
+                <div className="text-[10px] text-purple-300 flex items-center gap-1 font-medium capitalize">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
+                  <span>{userRole.replace('_', ' ')}</span>
                 </div>
               </div>
             </div>

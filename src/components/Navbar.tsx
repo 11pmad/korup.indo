@@ -12,14 +12,18 @@ import {
   X,
   BookOpen,
   Sparkles,
+  User,
   UserCheck,
   LogOut,
   UserCog,
+  CreditCard,
+  Database,
   MapPin as MapPinIcon
 } from 'lucide-react';
 import { sound } from '../utils/audio.js';
-import { CitizenAuthModal, AVATAR_OPTIONS, CitizenUser } from './CitizenAuthModal.js';
+import { CitizenAuthModal, CitizenUser } from './CitizenAuthModal.js';
 import { CitizenProfileModal } from './CitizenProfileModal.js';
+import { OpenDataModal } from './OpenDataModal.js';
 
 interface NavbarProps {
   activeTab: 'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin';
@@ -38,6 +42,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [citizenModalOpen, setCitizenModalOpen] = useState(false);
   const [citizenProfileModalOpen, setCitizenProfileModalOpen] = useState(false);
   const [citizenDropdownOpen, setCitizenDropdownOpen] = useState(false);
+  const [openDataModalOpen, setOpenDataModalOpen] = useState(false);
 
   useEffect(() => {
     loadCitizen();
@@ -49,7 +54,19 @@ export const Navbar: React.FC<NavbarProps> = ({
   const loadCitizen = () => {
     try {
       const stored = localStorage.getItem('lki_citizen_user');
-      setCitizenUser(stored ? JSON.parse(stored) : null);
+      const token = localStorage.getItem('lki_citizen_token');
+      if (stored && token) {
+        const u = JSON.parse(stored);
+        if (u.isEmailVerified === false || (!u.email && u.authProvider !== 'google')) {
+          localStorage.removeItem('lki_citizen_token');
+          localStorage.removeItem('lki_citizen_user');
+          setCitizenUser(null);
+        } else {
+          setCitizenUser(u);
+        }
+      } else {
+        setCitizenUser(null);
+      }
     } catch {
       setCitizenUser(null);
     }
@@ -226,6 +243,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>Lapor Kasus Baru</span>
             </button>
 
+            {/* Katalog Dataset Terbuka */}
+            <button
+              id="open-data-btn"
+              onClick={() => {
+                sound.playPop();
+                setOpenDataModalOpen(true);
+              }}
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 hover:bg-emerald-100 text-xs font-bold transition-all duration-150 shadow-2xs cursor-pointer whitespace-nowrap transform hover:rotate-1 hover:-translate-y-0.5 hover:shadow-xs active:scale-95"
+              title="Katalog & Unduh Dataset Terbuka LKI (CSV & JSON)"
+            >
+              <Database className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Dataset Terbuka</span>
+            </button>
+
             {/* Mobile Menu Toggle */}
             <button
               id="mobile-menu-toggle"
@@ -255,8 +286,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="w-7 h-7 rounded-xl object-cover border-2 border-amber-400 shrink-0 shadow-2xs" 
                 />
               ) : (
-                <div className="w-7 h-7 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-sm shrink-0">
-                  {AVATAR_OPTIONS.find(a => a.id === citizenUser.avatarSeed)?.emoji || '👤'}
+                <div className="w-7 h-7 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0">
+                  <User className="w-4 h-4 text-amber-800" />
                 </div>
               )}
               <div className="text-left hidden xs:block sm:block">
@@ -279,8 +310,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {citizenUser.photoUrl ? (
                       <img src={citizenUser.photoUrl} alt="Avatar" className="w-8 h-8 rounded-full object-cover border border-slate-300 shrink-0" />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center text-base shrink-0">
-                        {AVATAR_OPTIONS.find(a => a.id === citizenUser.avatarSeed)?.emoji || '👤'}
+                      <div className="w-8 h-8 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0">
+                        <User className="w-4 h-4 text-amber-800" />
                       </div>
                     )}
                     <div className="overflow-hidden">
@@ -306,8 +337,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }}
                   className="w-full px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-amber-50 hover:text-amber-900 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
                 >
-                  <UserCog className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Edit Profil Warga</span>
+                  <CreditCard className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Profil Warga (e-KTP)</span>
                 </button>
 
                 <button
@@ -398,6 +429,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Sparkles className="w-4 h-4 text-amber-600" /> Laporkan Kasus Baru
           </button>
+          <button
+            onClick={() => {
+              setMobileMenuOpen(false);
+              sound.playPop();
+              setOpenDataModalOpen(true);
+            }}
+            className="w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 flex items-center gap-3"
+          >
+            <Database className="w-4 h-4 text-emerald-600" /> Dataset Terbuka (CSV &amp; JSON)
+          </button>
 
           {/* Mobile Citizen Account */}
           <div className="pt-2 border-t border-[#DFD3BA]">
@@ -408,7 +449,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {citizenUser.photoUrl ? (
                       <img src={citizenUser.photoUrl} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-slate-300 shrink-0" />
                     ) : (
-                      <span className="text-xl">{AVATAR_OPTIONS.find(a => a.id === citizenUser.avatarSeed)?.emoji || '👤'}</span>
+                      <div className="w-7 h-7 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0">
+                        <User className="w-4 h-4 text-amber-800" />
+                      </div>
                     )}
                     <div>
                       <div className="text-xs font-bold text-slate-800">{citizenUser.displayName}</div>
@@ -434,8 +477,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }}
                   className="w-full py-1.5 px-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-[#92400E] rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <UserCog className="w-3.5 h-3.5 text-amber-700" />
-                  <span>Edit Profil Warga</span>
+                  <CreditCard className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Profil Warga (e-KTP)</span>
                 </button>
               </div>
             ) : (
@@ -469,6 +512,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           onProfileUpdated={(updated) => setCitizenUser(updated)}
         />
       )}
+
+      {/* Modal Pusat Katalog & Unduh Dataset Terbuka (Open Data) */}
+      <OpenDataModal
+        isOpen={openDataModalOpen}
+        onClose={() => setOpenDataModalOpen(false)}
+      />
     </header>
   );
 };

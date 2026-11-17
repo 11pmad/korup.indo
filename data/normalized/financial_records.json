@@ -516,5 +516,61 @@
     "source_id": "src-kejagung-tom-lembong-2024",
     "source_page": "Siaran Pers",
     "verification_status": "PARTIALLY_VERIFIED"
+  },
+  {
+    "financial_id": "fin-antam-emas-loss-2024",
+    "case_id": "cas-antam-emas-109-ton-2024",
+    "person_id": null,
+    "financial_type": "estimated_loss_amount",
+    "amount": 1200000000000,
+    "currency": "IDR",
+    "financial_year": 2024,
+    "financial_description": "Taksiran kerugian negara dan peredaran komoditas emas ilegal 109 ton berlogo Antam",
+    "fact_classification": "PROSECUTOR_CLAIM",
+    "source_id": "src-kejagung-emas-antam-109ton-2024",
+    "source_page": "Siaran Pers",
+    "verification_status": "VERIFIED_PRIMARY"
+  },
+  {
+    "financial_id": "fin-apd-covid-loss-2023",
+    "case_id": "cas-apd-covid-kemenkes-2023",
+    "person_id": null,
+    "financial_type": "audit_loss_amount",
+    "amount": 319000000000,
+    "currency": "IDR",
+    "financial_year": 2020,
+    "financial_description": "Kerugian keuangan negara pengadaan APD Kemenkes hasil audit investigatif BPKP",
+    "fact_classification": "COURT_FINDING",
+    "source_id": "src-kpk-apd-covid-kemenkes-2023",
+    "source_page": "Siaran Pers KPK",
+    "verification_status": "VERIFIED_PRIMARY"
+  },
+  {
+    "financial_id": "fin-pdpde-gas-loss-2021",
+    "case_id": "cas-pdpde-gas-sumsel-alex-2021",
+    "person_id": null,
+    "financial_type": "court_recognized_loss_amount",
+    "amount": 480000000000,
+    "currency": "IDR",
+    "financial_year": 2019,
+    "financial_description": "Kerugian negara alokasi penjualan gas bumi PDPDE Sumsel (USD 30,19 juta) berkekuatan hukum tetap",
+    "fact_classification": "COURT_FINDING",
+    "source_id": "src-ma-pdpde-gas-alex-noerdin-2023",
+    "source_page": "hal. 195",
+    "verification_status": "VERIFIED_PRIMARY"
+  },
+  {
+    "financial_id": "fin-kereta-besitang-loss-2024",
+    "case_id": "cas-kereta-besitang-langsa-2024",
+    "person_id": null,
+    "financial_type": "court_recognized_loss_amount",
+    "amount": 1157087853322,
+    "currency": "IDR",
+    "financial_year": 2019,
+    "financial_description": "Kerugian keuangan negara total loss proyek pembangunan rel kereta Besitang-Langsa audit BPKP",
+    "fact_classification": "COURT_FINDING",
+    "source_id": "src-pn-jakpus-kereta-besitang-2024",
+    "source_page": "hal. 210",
+    "verification_status": "VERIFIED_PRIMARY"
   }
 ]

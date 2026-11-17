@@ -23,7 +23,8 @@ import {
   Trash2
 } from 'lucide-react';
 import { sound } from '../utils/audio.js';
-import { PROVINCES_LIST } from './ReportModal.js';
+import { PROVINCES_LIST, getCitiesByProvince } from '../constants/provinces.js';
+import { useGoogleLogin } from '@react-oauth/google';
 
 export interface CitizenUser {
   id: string;
@@ -44,18 +45,9 @@ interface CitizenAuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (user: CitizenUser) => void;
-  initialMode?: 'login' | 'register' | 'quick' | 'verify_email';
+  initialMode?: 'login' | 'register' | 'verify_email';
   contextMessage?: string;
 }
-
-export const AVATAR_OPTIONS = [
-  { id: 'garuda', emoji: '🦅', label: 'Garuda' },
-  { id: 'merah', emoji: '🔴', label: 'Merah Putih' },
-  { id: 'padi', emoji: '🌾', label: 'Padi Kapas' },
-  { id: 'emas', emoji: '⭐', label: 'Bintang Emas' },
-  { id: 'banteng', emoji: '🐃', label: 'Banteng' },
-  { id: 'buku', emoji: '📖', label: 'Cendekia' }
-];
 
 export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
   isOpen,
@@ -64,7 +56,7 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
   initialMode = 'login',
   contextMessage
 }) => {
-  const [mode, setMode] = useState<'login' | 'register' | 'quick' | 'verify_email' | 'google_prompt'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'verify_email' | 'google_prompt'>('login');
   
   // Registration & Login Form states
   const [identifier, setIdentifier] = useState(''); // Username or Email for login
@@ -76,7 +68,6 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
   const [originCity, setOriginCity] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
   const [bio, setBio] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState('garuda');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
@@ -123,8 +114,6 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
     return () => clearInterval(timer);
   }, [resendCooldown]);
 
-  if (!isOpen) return null;
-
   const handleSaveAuth = (token: string, user: CitizenUser) => {
     localStorage.setItem('lki_citizen_token', token);
     localStorage.setItem('lki_citizen_user', JSON.stringify(user));
@@ -133,6 +122,43 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
     if (onSuccess) onSuccess(user);
     onClose();
   };
+
+  // Google OAuth Popup Hook via Google Identity Services (MUST be at the top level before early returns)
+  const triggerGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setError(null);
+      setLoading(true);
+      sound.playPop();
+      try {
+        const res = await fetch('/api/auth/citizen/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accessToken: tokenResponse.access_token,
+            originProvince: originProvince || undefined,
+            originCity: originCity || undefined
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal masuk menggunakan akun Google.');
+        }
+
+        handleSaveAuth(data.token, data.user);
+      } catch (err: any) {
+        sound.playError();
+        setError(err.message || 'Gagal memproses otentikasi Google.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: (errorResponse) => {
+      sound.playError();
+      console.error('Google login error:', errorResponse);
+      setError('Gagal menghubungkan akun Google. Pastikan jendela popup tidak diblokir browser.');
+    }
+  });
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -217,8 +243,7 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
           originProvince: originProvince || undefined,
           originCity: originCity.trim() || undefined,
           photoUrl: photoUrl.trim() || undefined,
-          bio: bio.trim() || undefined,
-          avatarSeed: selectedAvatar
+          bio: bio.trim() || undefined
         })
       });
       const data = await res.json();
@@ -304,7 +329,8 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
     }
   };
 
-  // 5. Google Sign-In Action
+  // 5. Google Sign-In Actions
+
   const handleOpenGooglePrompt = () => {
     sound.playPop();
     const defaultEmail = email || (identifier.includes('@') ? identifier : 'warga.pengawal@gmail.com');
@@ -348,35 +374,8 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
     }
   };
 
-  // 6. Quick Auth (Mode Kilat)
-  const handleQuickAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
 
-    try {
-      const res = await fetch('/api/auth/citizen/quick', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          displayName: displayName || 'Warga Pemerhati Integritas',
-          avatarSeed: selectedAvatar,
-          originProvince: originProvince || undefined,
-          originCity: originCity || undefined
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Gagal membuat identitas warga kilat.');
-      }
-      handleSaveAuth(data.token, data.user);
-    } catch (err: any) {
-      sound.playError();
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (!isOpen) return null;
 
   const modalContent = (
     <div 
@@ -413,10 +412,9 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
 
           <h3 className="text-xl sm:text-2xl font-marker text-[#1E293B] tracking-wide">
             {mode === 'login' && 'Masuk Akun Warga'}
-            {mode === 'register' && 'Daftar Akun Warga & Foto Asal Daerah'}
+            {mode === 'register' && 'Daftar Akun Warga & Verifikasi'}
             {mode === 'verify_email' && 'Verifikasi Email Warga'}
             {mode === 'google_prompt' && 'Masuk dengan Akun Google'}
-            {mode === 'quick' && 'Suara Kilat Warga'}
           </h3>
 
           <p className="text-xs text-[#64748B] max-w-sm mx-auto leading-relaxed">
@@ -427,16 +425,14 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
                 ? 'Hubungkan akun Google Anda untuk autentikasi cepat dan terverifikasi otomatis.'
                 : mode === 'login' 
                 ? 'Masuk untuk memberikan reaksi sentimen, telaah kritis, dan mengawal berkas korupsi.'
-                : mode === 'register'
-                ? 'Daftarkan akun warga, upload foto diri & tentukan asal daerah Anda.'
-                : 'Berikan reaksi emoji dan aspirasi instan tanpa perlu mendaftarkan kata sandi.'
+                : 'Daftarkan akun warga dengan verifikasi email OTP untuk mengawal berkas korupsi.'
             )}
           </p>
         </div>
 
-        {/* Tab Switcher (Visible in login, register, quick) */}
+        {/* Tab Switcher (Visible in login & register) */}
         {mode !== 'verify_email' && mode !== 'google_prompt' && (
-          <div className="grid grid-cols-3 gap-1.5 bg-[#F5EFE0] p-1.5 rounded-2xl border border-[#E7DECB] text-xs font-bold">
+          <div className="grid grid-cols-2 gap-2 bg-[#F5EFE0] p-1.5 rounded-2xl border border-[#E7DECB] text-xs font-bold">
             <button
               type="button"
               onClick={() => {
@@ -445,14 +441,14 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
                 setError(null);
                 setInfoMsg(null);
               }}
-              className={`py-2 px-1 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 mode === 'login' 
                   ? 'bg-white text-[#1E293B] shadow-sm border border-[#E2D5B7]' 
                   : 'text-[#78716C] hover:text-[#1E293B] hover:bg-white/50'
               }`}
             >
-              <LogIn className="w-3.5 h-3.5 text-blue-600" />
-              <span>Masuk</span>
+              <LogIn className="w-4 h-4 text-blue-600" />
+              <span>Masuk Akun</span>
             </button>
             
             <button
@@ -463,32 +459,14 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
                 setError(null);
                 setInfoMsg(null);
               }}
-              className={`py-2 px-1 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 mode === 'register' 
                   ? 'bg-white text-[#1E293B] shadow-sm border border-[#E2D5B7]' 
                   : 'text-[#78716C] hover:text-[#1E293B] hover:bg-white/50'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Daftar</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                sound.playPop();
-                setMode('quick');
-                setError(null);
-                setInfoMsg(null);
-              }}
-              className={`py-2 px-1 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                mode === 'quick' 
-                  ? 'bg-white text-[#1E293B] shadow-sm border border-[#E2D5B7]' 
-                  : 'text-[#78716C] hover:text-[#1E293B] hover:bg-white/50'
-              }`}
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-600" />
-              <span>Mode Kilat</span>
+              <Sparkles className="w-4 h-4 text-emerald-600" />
+              <span>Daftar Baru</span>
             </button>
           </div>
         )}
@@ -517,8 +495,9 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
             {/* Google Sign In Button */}
             <button
               type="button"
-              onClick={handleOpenGooglePrompt}
-              className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 border-2 border-[#CBD5E1] hover:border-slate-400 rounded-xl text-xs sm:text-sm font-bold text-slate-700 transition-all shadow-xs flex items-center justify-center gap-3 cursor-pointer"
+              onClick={() => triggerGoogleLogin()}
+              disabled={loading}
+              className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 border-2 border-[#CBD5E1] hover:border-slate-400 rounded-xl text-xs sm:text-sm font-bold text-slate-700 transition-all shadow-xs flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -526,7 +505,7 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
               </svg>
-              <span>Masuk dengan Akun Google</span>
+              <span>{loading ? 'Menghubungkan...' : 'Masuk dengan Akun Google'}</span>
             </button>
 
             <div className="relative flex items-center justify-center">
@@ -562,12 +541,16 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
                   type="button"
                   onClick={() => {
                     sound.playPop();
-                    setMode('quick');
+                    const targetEmail = identifier.includes('@') ? identifier.trim() : '';
+                    if (targetEmail) {
+                      setVerificationEmail(targetEmail);
+                    }
+                    setMode('verify_email');
                     setError(null);
                   }}
                   className="text-[11px] font-bold text-amber-700 hover:text-amber-800 hover:underline cursor-pointer"
                 >
-                  Lupa sandi? Pakai Mode Kilat ⚡
+                  Belum verifikasi email? Masukkan OTP 🔑
                 </button>
               </div>
               <div className="relative">
@@ -629,8 +612,9 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
             {/* Google Quick Register Button */}
             <button
               type="button"
-              onClick={handleOpenGooglePrompt}
-              className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 border-2 border-[#CBD5E1] hover:border-slate-400 rounded-xl text-xs sm:text-sm font-bold text-slate-700 transition-all shadow-xs flex items-center justify-center gap-3 cursor-pointer"
+              onClick={() => triggerGoogleLogin()}
+              disabled={loading}
+              className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 border-2 border-[#CBD5E1] hover:border-slate-400 rounded-xl text-xs sm:text-sm font-bold text-slate-700 transition-all shadow-xs flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -638,7 +622,7 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
               </svg>
-              <span>Daftar Cepat dengan Akun Google</span>
+              <span>{loading ? 'Menghubungkan...' : 'Daftar Cepat dengan Akun Google'}</span>
             </button>
 
             <div className="relative flex items-center justify-center">
@@ -659,9 +643,7 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
                   {photoUrl ? (
                     <img src={photoUrl} alt="Preview Warga" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-2xl">
-                      {AVATAR_OPTIONS.find(a => a.id === selectedAvatar)?.emoji || '🦅'}
-                    </span>
+                    <User className="w-7 h-7 text-slate-400" />
                   )}
                   {photoUrl && (
                     <button
@@ -692,7 +674,7 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
                     <span>{photoUrl ? 'Ganti Foto Diri' : 'Pilih Foto dari Perangkat'}</span>
                   </label>
                   <p className="text-[10px] text-[#78716C]">
-                    PNG, JPG, WebP (maks 4MB) atau pakai lencana avatar di bawah.
+                    Format gambar PNG, JPG, WebP (maksimal 4MB).
                   </p>
                 </div>
               </div>
@@ -765,7 +747,12 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
                 <div>
                   <select
                     value={originProvince}
-                    onChange={e => setOriginProvince(e.target.value)}
+                    onChange={e => {
+                      const newProv = e.target.value;
+                      setOriginProvince(newProv);
+                      const cities = getCitiesByProvince(newProv);
+                      setOriginCity(cities.length > 0 ? cities[0] : '');
+                    }}
                     className="w-full px-2 py-1.5 bg-white border border-[#CBD5E1] focus:border-amber-500 rounded-xl text-xs text-slate-900 outline-hidden shadow-2xs cursor-pointer font-medium"
                   >
                     <option value="">-- Pilih Provinsi Asal --</option>
@@ -778,13 +765,27 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
                 </div>
 
                 <div>
-                  <input
-                    type="text"
+                  <select
                     value={originCity}
                     onChange={e => setOriginCity(e.target.value)}
-                    placeholder="Kota/Kab. (misal: Surabaya)"
-                    className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] focus:border-amber-500 rounded-xl text-xs text-slate-900 outline-hidden shadow-2xs"
-                  />
+                    disabled={!originProvince}
+                    className="w-full px-2 py-1.5 bg-white border border-[#CBD5E1] focus:border-amber-500 rounded-xl text-xs text-slate-900 outline-hidden shadow-2xs cursor-pointer font-medium disabled:bg-slate-100 disabled:cursor-not-allowed"
+                  >
+                    {!originProvince ? (
+                      <option value="">-- Pilih Provinsi Dahulu --</option>
+                    ) : getCitiesByProvince(originProvince).length === 0 ? (
+                      <option value="">-- Tidak ada data kota --</option>
+                    ) : (
+                      <>
+                        <option value="">-- Pilih Kota / Kab. --</option>
+                        {getCitiesByProvince(originProvince).map(c => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </>
+                    )}
+                  </select>
                 </div>
               </div>
             </div>
@@ -812,36 +813,6 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-              </div>
-            </div>
-
-            {/* Avatar Selector */}
-            <div className="space-y-1">
-              <label className="block text-xs font-bold text-[#334155]">
-                Pilih Lencana Karakter Avatar {!photoUrl && '(Aktif)'}
-              </label>
-              <div className="grid grid-cols-6 gap-1.5">
-                {AVATAR_OPTIONS.map(av => (
-                  <button
-                    key={av.id}
-                    type="button"
-                    onClick={() => {
-                      sound.playPop();
-                      setSelectedAvatar(av.id);
-                    }}
-                    className={`p-1.5 rounded-xl border flex flex-col items-center justify-center transition-all cursor-pointer ${
-                      selectedAvatar === av.id
-                        ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-400/30 scale-105 shadow-xs'
-                        : 'border-slate-200 bg-white hover:bg-slate-50'
-                    }`}
-                    title={av.label}
-                  >
-                    <span className="text-base">{av.emoji}</span>
-                    <span className="text-[9px] font-bold text-slate-700 truncate max-w-full">
-                      {av.label}
-                    </span>
-                  </button>
-                ))}
               </div>
             </div>
 
@@ -977,6 +948,28 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
               </div>
             </div>
 
+            <button
+              type="button"
+              onClick={() => triggerGoogleLogin()}
+              disabled={loading}
+              className="w-full py-2.5 px-4 bg-white hover:bg-blue-50 border-2 border-blue-400 rounded-xl text-xs sm:text-sm font-bold text-blue-700 transition-all shadow-xs flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              <span>{loading ? 'Menghubungkan...' : 'Buka Jendela Popup Google'}</span>
+            </button>
+
+            <div className="relative flex items-center justify-center my-2">
+              <div className="border-t border-[#CBD5E1] w-full"></div>
+              <span className="bg-[#FFFDF8] px-3 text-[10px] font-bold text-slate-400 uppercase">
+                Atau Masukkan Manual (Dev Test)
+              </span>
+            </div>
+
             <div className="space-y-1">
               <label className="block text-xs font-bold text-[#334155]">
                 Akun Google (Email)
@@ -1015,8 +1008,13 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <select
                   value={googleOriginProv}
-                  onChange={e => setGoogleOriginProv(e.target.value)}
-                  className="w-full px-2 py-1.5 bg-white border border-[#CBD5E1] rounded-xl text-xs font-medium"
+                  onChange={e => {
+                    const newProv = e.target.value;
+                    setGoogleOriginProv(newProv);
+                    const cities = getCitiesByProvince(newProv);
+                    setGoogleOriginCity(cities.length > 0 ? cities[0] : '');
+                  }}
+                  className="w-full px-2 py-1.5 bg-white border border-[#CBD5E1] rounded-xl text-xs font-medium cursor-pointer"
                 >
                   <option value="">-- Pilih Provinsi --</option>
                   {PROVINCES_LIST.map(p => (
@@ -1026,13 +1024,27 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
                   ))}
                 </select>
 
-                <input
-                  type="text"
+                <select
                   value={googleOriginCity}
                   onChange={e => setGoogleOriginCity(e.target.value)}
-                  placeholder="Kota / Kab."
-                  className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-xl text-xs"
-                />
+                  disabled={!googleOriginProv}
+                  className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-xl text-xs font-medium cursor-pointer disabled:bg-slate-100 disabled:cursor-not-allowed"
+                >
+                  {!googleOriginProv ? (
+                    <option value="">-- Pilih Provinsi Dahulu --</option>
+                  ) : getCitiesByProvince(googleOriginProv).length === 0 ? (
+                    <option value="">-- Tidak ada data kota --</option>
+                  ) : (
+                    <>
+                      <option value="">-- Pilih Kota / Kab. --</option>
+                      {getCitiesByProvince(googleOriginProv).map(c => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
               </div>
             </div>
 
@@ -1066,112 +1078,6 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
           </form>
         )}
 
-        {/* ======================================================== */}
-        {/* MODE 5: QUICK VOICE (Mode Kilat) */}
-        {/* ======================================================== */}
-        {mode === 'quick' && (
-          <form onSubmit={handleQuickAuth} className="space-y-3">
-            <div className="p-3 bg-[#FFFBEB] border border-dashed border-[#FDE68A] rounded-2xl text-xs text-[#92400E] leading-relaxed flex items-start gap-2">
-              <Zap className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <strong>Suara Kilat:</strong> Cukup tentukan nama panggilan dan asal daerah untuk langsung memberikan reaksi sentimen dan menulis komentar.
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-xs font-bold text-[#334155]">
-                Nama Panggilan / Alias Netizen
-              </label>
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  required
-                  value={displayName}
-                  onChange={e => setDisplayName(e.target.value)}
-                  placeholder="Contoh: Warga Sadar Hukum / Siti Bandung"
-                  className="w-full pl-9 pr-3 py-2 bg-white border border-[#CBD5E1] focus:border-amber-500 rounded-xl text-xs text-slate-900 outline-hidden shadow-xs"
-                />
-              </div>
-            </div>
-
-            {/* Asal Daerah */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[11px] font-bold text-[#475569] mb-1">
-                  Provinsi Asal
-                </label>
-                <select
-                  value={originProvince}
-                  onChange={e => setOriginProvince(e.target.value)}
-                  className="w-full px-2 py-1.5 bg-white border border-[#CBD5E1] rounded-xl text-xs"
-                >
-                  <option value="">-- Pilih Provinsi --</option>
-                  {PROVINCES_LIST.map(p => (
-                    <option key={p.id} value={p.name}>{p.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-[#475569] mb-1">
-                  Kota / Kabupaten
-                </label>
-                <input
-                  type="text"
-                  value={originCity}
-                  onChange={e => setOriginCity(e.target.value)}
-                  placeholder="Kota / Kab."
-                  className="w-full px-2.5 py-1.5 bg-white border border-[#CBD5E1] rounded-xl text-xs"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-xs font-bold text-[#334155]">
-                Pilih Lencana Avatar
-              </label>
-              <div className="grid grid-cols-6 gap-1.5">
-                {AVATAR_OPTIONS.map(av => (
-                  <button
-                    key={av.id}
-                    type="button"
-                    onClick={() => {
-                      sound.playPop();
-                      setSelectedAvatar(av.id);
-                    }}
-                    className={`p-1.5 rounded-xl border flex flex-col items-center justify-center transition-all cursor-pointer ${
-                      selectedAvatar === av.id
-                        ? 'border-amber-500 bg-amber-100 ring-2 ring-amber-400/40 scale-105 shadow-xs'
-                        : 'border-slate-200 bg-white hover:bg-slate-50'
-                    }`}
-                    title={av.label}
-                  >
-                    <span className="text-base">{av.emoji}</span>
-                    <span className="text-[9px] font-bold text-slate-700 truncate max-w-full">
-                      {av.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-[#D97706] hover:bg-[#B45309] text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              {loading ? (
-                <span>Menyiapkan Identitas Kilat...</span>
-              ) : (
-                <>
-                  <span>Mulai Bersuara Sebagai Warga</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
-        )}
 
         {/* Footer Note */}
         <div className="pt-2 border-t border-[#EAE1CD] text-center text-[11px] text-[#78716C] flex items-center justify-center gap-1.5">

@@ -165,6 +165,13 @@ export const CaseReactionsSection: React.FC<CaseReactionsSectionProps> = ({
         },
         body: JSON.stringify({ reaction_type: reactionType })
       });
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem('lki_citizen_token');
+        localStorage.removeItem('lki_citizen_user');
+        setPendingReaction(reactionType);
+        setAuthModalOpen(true);
+        return;
+      }
       if (res.ok) {
         const json = await res.json();
         setData(json.data);
@@ -172,6 +179,10 @@ export const CaseReactionsSection: React.FC<CaseReactionsSectionProps> = ({
           onCountChange(json.data.total);
         }
         sound.playSuccess();
+      } else {
+        const errJson = await res.json().catch(() => null);
+        console.error('Failed to submit reaction:', errJson?.error);
+        sound.playError();
       }
     } catch (err) {
       console.error('Error submitting reaction:', err);
@@ -415,8 +426,8 @@ export const CaseReactionsSection: React.FC<CaseReactionsSectionProps> = ({
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         onSuccess={handleAuthSuccess}
-        initialMode="quick"
-        contextMessage="Pilih nama panggilan Anda untuk langsung mencatat reaksi pada kasus ini."
+        initialMode="login"
+        contextMessage="Masuk dengan Akun Google atau verifikasi email Anda untuk memberikan reaksi sentimen pada kasus ini."
       />
     </div>
   );

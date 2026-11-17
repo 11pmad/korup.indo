@@ -88,5 +88,29 @@
     "case_id": "cas-ott-pupr-kalsel-sahbirin-2024",
     "location_id": "loc-kalsel-banjarbaru",
     "location_context": "Dinas PUPR Provinsi Kalimantan Selatan"
+  },
+  {
+    "case_location_id": "cl-antam-jaksel",
+    "case_id": "cas-antam-emas-109-ton-2024",
+    "location_id": "loc-dki-jaksel",
+    "location_context": "Kantor UBPP Logam Mulia PT Antam Tbk dan Butik Emas"
+  },
+  {
+    "case_location_id": "cl-apd-kemenkes-jaksel",
+    "case_id": "cas-apd-covid-kemenkes-2023",
+    "location_id": "loc-dki-jaksel",
+    "location_context": "Gedung Kementerian Kesehatan RI HR Rasuna Said"
+  },
+  {
+    "case_location_id": "cl-pdpde-palembang",
+    "case_id": "cas-pdpde-gas-sumsel-alex-2021",
+    "location_id": "loc-sumsel-palembang",
+    "location_context": "Kantor BUMD PDPDE Sumsel dan Pemprov Sumatera Selatan"
+  },
+  {
+    "case_location_id": "cl-kereta-langsa",
+    "case_id": "cas-kereta-besitang-langsa-2024",
+    "location_id": "loc-sumut-langsa",
+    "location_context": "Jalur Rel Kereta Api Besitang Langkat hingga Kota Langsa"
   }
 ]

@@ -1,14 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Navbar } from './components/Navbar.js';
 import { DisclaimerBanner } from './components/DisclaimerBanner.js';
 import { LandingPage } from './components/LandingPage.js';
-import { IndonesiaMap } from './components/IndonesiaMap.js';
-import { LeaderboardTable } from './components/LeaderboardTable.js';
-import { StatsDashboard } from './components/StatsDashboard.js';
-import { SearchCasesView } from './components/SearchCasesView.js';
-import { AdminPanel } from './components/AdminPanel.js';
 import { CaseDetailModal } from './components/CaseDetailModal.js';
-import { ReportModal } from './components/ReportModal.js';
 import { Footer } from './components/Footer.js';
 import { 
   CorruptionCase, 
@@ -18,6 +12,14 @@ import {
 } from './types.js';
 import { sound } from './utils/audio.js';
 import { Loader2 } from 'lucide-react';
+
+// Code-split heavy components for faster initial load & lower memory footprint
+const IndonesiaMap = lazy(() => import('./components/IndonesiaMap.js').then(m => ({ default: m.IndonesiaMap })));
+const LeaderboardTable = lazy(() => import('./components/LeaderboardTable.js').then(m => ({ default: m.LeaderboardTable })));
+const StatsDashboard = lazy(() => import('./components/StatsDashboard.js').then(m => ({ default: m.StatsDashboard })));
+const SearchCasesView = lazy(() => import('./components/SearchCasesView.js').then(m => ({ default: m.SearchCasesView })));
+const AdminPanel = lazy(() => import('./components/AdminPanel.js').then(m => ({ default: m.AdminPanel })));
+const ReportModal = lazy(() => import('./components/ReportModal.js').then(m => ({ default: m.ReportModal })));
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin'>(() => {
@@ -133,16 +135,23 @@ export default function App() {
   // DEDICATED ADMIN PORTAL VIEW (Page layout with sidebar)
   if (activeTab === 'admin') {
     return (
-      <AdminPanel 
-        onRefreshData={loadAllData} 
-        onBackToHome={() => {
-          sound.playPop();
-          setActiveTab('beranda');
-          if (typeof window !== 'undefined' && window.location.pathname === '/admin') {
-            window.history.pushState({}, '', '/');
-          }
-        }}
-      />
+      <Suspense fallback={
+        <div className="min-h-screen bg-[#0B0F19] flex flex-col items-center justify-center space-y-4">
+          <Loader2 className="w-10 h-10 text-[#DC2626] animate-spin" />
+          <p className="font-mono text-sm text-[#94A3B8]">Memuat Portal Admin...</p>
+        </div>
+      }>
+        <AdminPanel 
+          onRefreshData={loadAllData} 
+          onBackToHome={() => {
+            sound.playPop();
+            setActiveTab('beranda');
+            if (typeof window !== 'undefined' && window.location.pathname === '/admin') {
+              window.history.pushState({}, '', '/');
+            }
+          }}
+        />
+      </Suspense>
     );
   }
 
@@ -174,7 +183,14 @@ export default function App() {
             </p>
           </div>
         ) : (
-          <>
+          <Suspense fallback={
+            <div className="py-24 text-center space-y-3">
+              <Loader2 className="w-10 h-10 text-[#EA580C] animate-spin mx-auto" />
+              <p className="font-marker text-xl text-[#57534E]">
+                Memuat Tampilan...
+              </p>
+            </div>
+          }>
             {/* TAB: BERANDA / LANDING PAGE */}
             {activeTab === 'beranda' && (
               <LandingPage
@@ -229,7 +245,7 @@ export default function App() {
                 onOpenReport={(cId, mode) => handleOpenReport(cId, mode)}
               />
             )}
-          </>
+          </Suspense>
         )}
 
       </main>
@@ -242,16 +258,20 @@ export default function App() {
       />
 
       {/* Report Mistake Modal */}
-      <ReportModal
-        isOpen={reportModalOpen}
-        onClose={() => setReportModalOpen(false)}
-        caseId={reportTargetCaseId}
-        initialMode={reportInitialMode}
-        cases={cases.map(c => ({
-          id: c.id,
-          title: `${c.official?.nama} (${c.official?.jabatan}) - ${c.official?.provinsi}`
-        }))}
-      />
+      {reportModalOpen && (
+        <Suspense fallback={null}>
+          <ReportModal
+            isOpen={reportModalOpen}
+            onClose={() => setReportModalOpen(false)}
+            caseId={reportTargetCaseId}
+            initialMode={reportInitialMode}
+            cases={cases.map(c => ({
+              id: c.id,
+              title: `${c.official?.nama} (${c.official?.jabatan}) - ${c.official?.provinsi}`
+            }))}
+          />
+        </Suspense>
+      )}
 
       {/* Scrapbook Footer (Memuat Kartu QRIS & Info Landasan Sumber) */}
       <Footer 

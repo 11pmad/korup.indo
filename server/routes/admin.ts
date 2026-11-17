@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { db, schema } from '../db/index.js';
 import { eq, desc, asc, sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-import { generateToken, verifyAdminJwt } from '../middleware/auth.js';
+import { generateToken, verifyAdminJwt, requireAdminRole } from '../middleware/auth.js';
+import { authRateLimiter } from '../middleware/rateLimit.js';
 import { z } from 'zod';
 import { processAdminCommand } from '../gemini.js';
 import fs from 'fs';
@@ -22,7 +23,7 @@ const DEFAULT_ANNOUNCEMENT = {
 const router = Router();
 
 // POST /api/admin/login
-router.post('/login', async (req, res) => {
+router.post('/login', authRateLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) {
@@ -37,14 +38,24 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Kredensial login tidak cocok.' });
     }
 
-    const isValid = bcrypt.compareSync(password, user.password_hash);
+    if (user.is_active === 0) {
+      return res.status(403).json({ error: 'Akses akun Anda telah dinonaktifkan / ditangguhkan. Silakan hubungi Super Admin.' });
+    }
+
+    const isValid = await bcrypt.compare(password, user.password_hash);
     if (!isValid) {
       return res.status(401).json({ error: 'Kredensial login tidak cocok.' });
     }
 
+    // Update last_login timestamp
+    await db.update(schema.adminUsers)
+      .set({ last_login: sql`NOW()` })
+      .where(eq(schema.adminUsers.id, user.id));
+
     const token = generateToken({
       id: user.id,
       username: user.username,
+      full_name: user.full_name,
       role: user.role
     });
 
@@ -53,6 +64,8 @@ router.post('/login', async (req, res) => {
       user: {
         id: user.id,
         username: user.username,
+        full_name: user.full_name,
+        email: user.email,
         role: user.role
       }
     });
@@ -236,7 +249,7 @@ router.put('/cases/:id', async (req, res) => {
 });
 
 // DELETE /api/admin/cases/:id
-router.delete('/cases/:id', async (req, res) => {
+router.delete('/cases/:id', requireAdminRole(['super_admin', 'admin']), async (req, res) => {
   try {
     const { id } = req.params;
     const [deleted] = await db.delete(schema.cases).where(eq(schema.cases.id, id)).returning();
@@ -995,7 +1008,7 @@ router.post('/cases/confirm', async (req, res) => {
 });
 
 // POST /api/admin/rollback/:log_id
-router.post('/rollback/:log_id', async (req, res) => {
+router.post('/rollback/:log_id', requireAdminRole(['super_admin']), async (req, res) => {
   try {
     const { log_id } = req.params;
 

@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import { sound } from '../../utils/audio.js';
 import { REACTION_DEFINITIONS } from '../CaseReactionsSection.js';
-import { AVATAR_OPTIONS } from '../CitizenAuthModal.js';
 
 interface AdminCommentUser {
   id: string;
@@ -177,10 +176,6 @@ export const AdminCommentsManager: React.FC<AdminCommentsManagerProps> = ({
   const totalPages = Math.ceil(filteredComments.length / effectivePageSize) || 1;
   const paginatedComments = filteredComments.slice((page - 1) * effectivePageSize, page * effectivePageSize);
 
-  const getAvatarEmoji = (seed?: string) => {
-    const found = AVATAR_OPTIONS.find(a => a.id === seed);
-    return found ? found.emoji : '👤';
-  };
 
   const getReactionBadge = (reactionType: string | null) => {
     if (!reactionType || !REACTION_DEFINITIONS[reactionType]) return null;
@@ -353,9 +348,13 @@ export const AdminCommentsManager: React.FC<AdminCommentsManagerProps> = ({
                   <div className="space-y-3 flex-1 min-w-0">
                     {/* User header + Case title */}
                     <div className="flex flex-wrap items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center text-sm">
-                        {getAvatarEmoji(comment.user.avatar_seed)}
-                      </div>
+                      {comment.user.photo_url ? (
+                        <img src={comment.user.photo_url} alt="" className="w-7 h-7 rounded-full object-cover border border-slate-300 shrink-0" />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0">
+                          <User className="w-3.5 h-3.5" />
+                        </div>
+                      )}
                       <span className="text-xs font-bold text-slate-900">
                         {comment.user.display_name}
                       </span>

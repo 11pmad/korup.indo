@@ -514,5 +514,53 @@
     "source_page": "Siaran Pers",
     "source_excerpt": "OTT uang tunai Rp12 miliar fee proyek lapangan sepak bola dan kolam renang di Kalsel.",
     "source_reliability": "high"
+  },
+  {
+    "source_id": "src-kejagung-emas-antam-109ton-2024",
+    "source_title": "Siaran Pers Kejaksaan Agung RI (Kasus Emas 109 Ton PT Antam Tbk)",
+    "source_url": "https://www.kejaksaan.go.id/berita/penyidikan-tata-kelola-komoditas-emas-109-ton-pt-antam-tbk",
+    "source_type": "official_press_release",
+    "source_institution": "Kejaksaan Agung RI",
+    "publication_date": "2024-05-29",
+    "access_date": "2026-09-23",
+    "source_page": "Siaran Pers Kapuspenkum",
+    "source_excerpt": "Penetapan 6 mantan GM UBPP Logam Mulia PT Antam Tbk atas pembubuhan cap ilegal pada 109 ton emas.",
+    "source_reliability": "high"
+  },
+  {
+    "source_id": "src-kpk-apd-covid-kemenkes-2023",
+    "source_title": "Konferensi Pers KPK RI (Penahanan Tersangka Dugaan Korupsi APD Covid-19 Kemenkes)",
+    "source_url": "https://www.kpk.go.id/id/berita/siaran-pers/penahanan-tersangka-korupsi-apd-kemenkes-2024",
+    "source_type": "official_press_release",
+    "source_institution": "KPK",
+    "publication_date": "2024-10-03",
+    "access_date": "2026-09-23",
+    "source_page": "Siaran Pers KPK RI",
+    "source_excerpt": "Penahanan tersangka kasus APD Covid-19 Kemenkes senilai Rp3,03 triliun dengan kerugian negara Rp319 miliar berdasar audit BPKP.",
+    "source_reliability": "high"
+  },
+  {
+    "source_id": "src-ma-pdpde-gas-alex-noerdin-2023",
+    "source_title": "Putusan Kasasi Mahkamah Agung RI No. 5221 K/Pid.Sus/2023 (Alex Noerdin - PDPDE Gas Sumsel)",
+    "source_url": "https://putusan3.mahkamahagung.go.id/direktori/putusan/kasasi-pdpde-sumsel-alex-noerdin-2023.html",
+    "source_type": "court_decision",
+    "source_institution": "Mahkamah Agung RI",
+    "publication_date": "2023-11-28",
+    "access_date": "2026-09-23",
+    "source_page": "Amar Putusan Kasasi MA RI No. 5221 K/Pid.Sus/2023",
+    "source_excerpt": "Menjatuhkan vonis inkrah atas tindak pidana korupsi pengelolaan gas bumi PDPDE Sumsel dengan kerugian negara USD 30,19 juta.",
+    "source_reliability": "high"
+  },
+  {
+    "source_id": "src-pn-jakpus-kereta-besitang-2024",
+    "source_title": "Putusan Pengadilan Tipikor Jakarta Pusat No. 54/Pid.Sus-TPK/2024/PN.Jkt.Pst (Jalur Kereta Api Besitang-Langsa)",
+    "source_url": "https://putusan3.mahkamahagung.go.id/direktori/putusan/tipikor-jalur-kereta-besitang-langsa-2024.html",
+    "source_type": "court_decision",
+    "source_institution": "Pengadilan Negeri Jakarta Pusat",
+    "publication_date": "2024-11-27",
+    "access_date": "2026-09-23",
+    "source_page": "Amar Putusan hal. 210",
+    "source_excerpt": "Vonis bersalah atas korupsi pembangunan jalur kereta api Besitang-Langsa Balai Teknik Perkeretaapian Medan dengan kerugian negara total loss Rp1,15 triliun.",
+    "source_reliability": "high"
   }
 ]

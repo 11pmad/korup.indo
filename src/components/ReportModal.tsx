@@ -31,55 +31,8 @@ import {
 } from 'lucide-react';
 import { getOfficialPhoto, handleImageError } from '../utils/photo.js';
 
-export const PROVINCES_LIST = [
-  { id: 'pusat', name: 'Pusat / Nasional (Kementerian / Lembaga RI)' },
-  { id: 'aceh', name: 'Aceh' },
-  { id: 'bali', name: 'Bali' },
-  { id: 'banten', name: 'Banten' },
-  { id: 'bengkulu', name: 'Bengkulu' },
-  { id: 'diy', name: 'DI Yogyakarta' },
-  { id: 'dki-jakarta', name: 'DKI Jakarta' },
-  { id: 'gorontalo', name: 'Gorontalo' },
-  { id: 'jambi', name: 'Jambi' },
-  { id: 'jabar', name: 'Jawa Barat' },
-  { id: 'jateng', name: 'Jawa Tengah' },
-  { id: 'jatim', name: 'Jawa Timur' },
-  { id: 'kalbar', name: 'Kalimantan Barat' },
-  { id: 'kalsel', name: 'Kalimantan Selatan' },
-  { id: 'kalteng', name: 'Kalimantan Tengah' },
-  { id: 'kaltim', name: 'Kalimantan Timur' },
-  { id: 'kaltara', name: 'Kalimantan Utara' },
-  { id: 'babel', name: 'Kepulauan Bangka Belitung' },
-  { id: 'kepri', name: 'Kepulauan Riau' },
-  { id: 'lampung', name: 'Lampung' },
-  { id: 'maluku', name: 'Maluku' },
-  { id: 'malut', name: 'Maluku Utara' },
-  { id: 'ntb', name: 'Nusa Tenggara Barat' },
-  { id: 'ntt', name: 'Nusa Tenggara Timur' },
-  { id: 'papua', name: 'Papua' },
-  { id: 'papbar', name: 'Papua Barat' },
-  { id: 'papbd2', name: 'Papua Barat Daya' },
-  { id: 'papbd', name: 'Papua Pegunungan' },
-  { id: 'papsel', name: 'Papua Selatan' },
-  { id: 'papteng', name: 'Papua Tengah' },
-  { id: 'riau', name: 'Riau' },
-  { id: 'sulbar', name: 'Sulawesi Barat' },
-  { id: 'sulsel', name: 'Sulawesi Selatan' },
-  { id: 'sulteng', name: 'Sulawesi Tengah' },
-  { id: 'sultra', name: 'Sulawesi Tenggara' },
-  { id: 'sulut', name: 'Sulawesi Utara' },
-  { id: 'sumbar', name: 'Sumatera Barat' },
-  { id: 'sumsel', name: 'Sumatera Selatan' },
-  { id: 'sumut', name: 'Sumatera Utara' }
-];
-
-export const SECTORS_LIST = [
-  { id: 'pengadaan_barang_jasa', label: 'Pengadaan Barang & Jasa', icon: '📦' },
-  { id: 'bansos_bencana', label: 'Bansos & Bencana', icon: '🤝' },
-  { id: 'suap_gratifikasi', label: 'Suap & Gratifikasi', icon: '💼' },
-  { id: 'perizinan_sda_tambang', label: 'Perizinan SDA & Tambang', icon: '⛏️' },
-  { id: 'mafia_peradilan', label: 'Mafia Peradilan / Hukum', icon: '⚖️' }
-];
+import { PROVINCES_LIST, SECTORS_LIST } from '../constants/provinces.js';
+export { PROVINCES_LIST, SECTORS_LIST };
 
 interface ReportModalProps {
   isOpen: boolean;

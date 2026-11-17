@@ -9,27 +9,31 @@ router.get('/trends', async (req, res) => {
   try {
     const { metric = 'combined' } = req.query;
 
-    const cases = await db
+    // Direct SQL-level aggregation per year instead of in-memory full table scanning
+    const rows = await db
       .select({
-        date: schema.cases.case_date,
-        loss: schema.cases.loss_amount
+        year: sql<number>`extract(year from ${schema.cases.case_date})::int`,
+        totalLoss: sql<number>`coalesce(sum(${schema.cases.loss_amount}), 0)::float8`,
+        totalCases: sql<number>`count(*)::int`
       })
-      .from(schema.cases);
+      .from(schema.cases)
+      .where(sql`${schema.cases.case_date} IS NOT NULL`)
+      .groupBy(sql`extract(year from ${schema.cases.case_date})`)
+      .orderBy(sql`extract(year from ${schema.cases.case_date}) asc`);
 
     const yearStats: Record<number, { year: number; totalLoss: number; totalCases: number }> = {};
 
-    for (let yr = 2011; yr <= 2025; yr++) {
+    for (let yr = 2011; yr <= 2026; yr++) {
       yearStats[yr] = { year: yr, totalLoss: 0, totalCases: 0 };
     }
 
-    for (const c of cases) {
-      if (c.date) {
-        const yr = new Date(c.date).getFullYear();
-        if (!yearStats[yr]) {
-          yearStats[yr] = { year: yr, totalLoss: 0, totalCases: 0 };
-        }
-        yearStats[yr].totalLoss += c.loss;
-        yearStats[yr].totalCases += 1;
+    for (const r of rows) {
+      if (r.year) {
+        yearStats[r.year] = {
+          year: r.year,
+          totalLoss: Number(r.totalLoss) || 0,
+          totalCases: Number(r.totalCases) || 0
+        };
       }
     }
 

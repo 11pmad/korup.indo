@@ -741,7 +741,7 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
                 }`}
               >
                 <MapPin className="w-3.5 h-3.5 text-[#0284C7]" />
-                <span>Wilayah / Pulau</span>
+                <span>Per Provinsi</span>
               </button>
             </div>
 
@@ -1400,7 +1400,7 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
           <div className="divide-y divide-[#F1E8D5]">
             {regionLeaderboard.length === 0 ? (
               <div className="p-12 text-center text-[#78716C] font-hand text-lg">
-                Tidak ada data wilayah pada filter yang dipilih.
+                Tidak ada data provinsi pada filter yang dipilih.
               </div>
             ) : (
               regionLeaderboard.map((item, idx) => {

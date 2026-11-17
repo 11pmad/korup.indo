@@ -44,6 +44,10 @@ class ScrapbookSound {
     }
   }
 
+  public playClick() {
+    this.playPop();
+  }
+
   public playSticker() {
     if (!this.isEnabled) return;
     try {

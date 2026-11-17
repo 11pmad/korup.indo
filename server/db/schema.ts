@@ -1,4 +1,4 @@
-import { pgTable, text, integer, doublePrecision, timestamp, pgEnum, jsonb, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, doublePrecision, timestamp, pgEnum, jsonb, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
 
 // Enums
@@ -31,7 +31,10 @@ export const reportStatusEnum = pgEnum('report_status', [
 
 export const adminRoleEnum = pgEnum('admin_role', [
   'super_admin',
+  'admin',
   'editor',
+  'moderator',
+  'auditor',
   'reviewer'
 ]);
 
@@ -91,7 +94,11 @@ export const adminUsers = pgTable('admin_users', {
   id: text('id').primaryKey(),
   username: text('username').unique().notNull(),
   password_hash: text('password_hash').notNull(),
+  full_name: text('full_name'),
+  email: text('email'),
   role: adminRoleEnum('role').default('editor').notNull(),
+  is_active: integer('is_active').default(1).notNull(),
+  last_login: timestamp('last_login'),
   created_at: timestamp('created_at').defaultNow().notNull()
 });
 
@@ -156,20 +163,34 @@ export const cases = pgTable(
   },
   (table) => [
     index('cases_title_trgm_idx').using('gin', sql`${table.title} gin_trgm_ops`),
-    index('cases_chronology_trgm_idx').using('gin', sql`${table.chronology} gin_trgm_ops`)
+    index('cases_chronology_trgm_idx').using('gin', sql`${table.chronology} gin_trgm_ops`),
+    index('cases_province_id_idx').on(table.province_id),
+    index('cases_era_id_idx').on(table.era_id),
+    index('cases_legal_status_idx').on(table.legal_status),
+    index('cases_sector_category_idx').on(table.sector_category),
+    index('cases_loss_amount_idx').on(table.loss_amount),
+    index('cases_case_date_idx').on(table.case_date),
+    index('cases_primary_official_id_idx').on(table.primary_official_id)
   ]
 );
 
 // 8. Case Officials (Many-to-Many)
-export const caseOfficials = pgTable('case_officials', {
-  case_id: text('case_id')
-    .references(() => cases.id, { onDelete: 'cascade' })
-    .notNull(),
-  official_id: text('official_id')
-    .references(() => officials.id, { onDelete: 'cascade' })
-    .notNull(),
-  role_in_case: text('role_in_case')
-});
+export const caseOfficials = pgTable(
+  'case_officials',
+  {
+    case_id: text('case_id')
+      .references(() => cases.id, { onDelete: 'cascade' })
+      .notNull(),
+    official_id: text('official_id')
+      .references(() => officials.id, { onDelete: 'cascade' })
+      .notNull(),
+    role_in_case: text('role_in_case')
+  },
+  (table) => [
+    index('case_officials_case_id_idx').on(table.case_id),
+    index('case_officials_official_id_idx').on(table.official_id)
+  ]
+);
 
 // 9. Case Companies (Many-to-Many)
 export const caseCompanies = pgTable('case_companies', {
@@ -206,47 +227,70 @@ export const caseDocuments = pgTable('case_documents', {
 });
 
 // 12. Public Reports
-export const publicReports = pgTable('public_reports', {
-  id: text('id').primaryKey(),
-  case_id: text('case_id').references(() => cases.id, { onDelete: 'set null' }),
-  report_type: reportTypeEnum('report_type').notNull(),
-  description: text('description').notNull(),
-  reference_url: text('reference_url'),
-  submitter_contact: text('submitter_contact'),
-  metadata: jsonb('metadata'),
-  status: reportStatusEnum('status').default('pending_review').notNull(),
-  reviewed_by: text('reviewed_by').references(() => adminUsers.id),
-  created_at: timestamp('created_at').defaultNow().notNull(),
-  reviewed_at: timestamp('reviewed_at')
-});
+export const publicReports = pgTable(
+  'public_reports',
+  {
+    id: text('id').primaryKey(),
+    case_id: text('case_id').references(() => cases.id, { onDelete: 'set null' }),
+    report_type: reportTypeEnum('report_type').notNull(),
+    description: text('description').notNull(),
+    reference_url: text('reference_url'),
+    submitter_contact: text('submitter_contact'),
+    metadata: jsonb('metadata'),
+    status: reportStatusEnum('status').default('pending_review').notNull(),
+    reviewed_by: text('reviewed_by').references(() => adminUsers.id),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    reviewed_at: timestamp('reviewed_at')
+  },
+  (table) => [
+    index('public_reports_status_idx').on(table.status),
+    index('public_reports_case_id_idx').on(table.case_id)
+  ]
+);
 
 // 13. Audit Logs
-export const auditLogs = pgTable('audit_logs', {
-  id: text('id').primaryKey(),
-  admin_user_id: text('admin_user_id').references(() => adminUsers.id),
-  entity_type: text('entity_type').notNull(),
-  entity_id: text('entity_id').notNull(),
-  action: auditActionEnum('action').notNull(),
-  diff_snapshot: jsonb('diff_snapshot'),
-  created_at: timestamp('created_at').defaultNow().notNull()
-});
+export const auditLogs = pgTable(
+  'audit_logs',
+  {
+    id: text('id').primaryKey(),
+    admin_user_id: text('admin_user_id').references(() => adminUsers.id),
+    entity_type: text('entity_type').notNull(),
+    entity_id: text('entity_id').notNull(),
+    action: auditActionEnum('action').notNull(),
+    diff_snapshot: jsonb('diff_snapshot'),
+    created_at: timestamp('created_at').defaultNow().notNull()
+  },
+  (table) => [
+    index('audit_logs_entity_id_idx').on(table.entity_id),
+    index('audit_logs_created_at_idx').on(table.created_at)
+  ]
+);
 
 // 14. Visitor & Traffic Logs (Monitoring Observability)
-export const visitorLogs = pgTable('visitor_logs', {
-  id: text('id').primaryKey(),
-  timestamp: timestamp('timestamp', { withTimezone: true }).defaultNow().notNull(),
-  method: text('method').notNull(),
-  path: text('path').notNull(),
-  status_code: integer('status_code').notNull(),
-  duration_ms: integer('duration_ms').default(0).notNull(),
-  ip_address: text('ip_address'),
-  user_agent: text('user_agent'),
-  device_type: text('device_type').default('desktop'),
-  browser: text('browser').default('unknown'),
-  os: text('os').default('unknown'),
-  referrer: text('referrer'),
-  session_id: text('session_id')
-});
+export const visitorLogs = pgTable(
+  'visitor_logs',
+  {
+    id: text('id').primaryKey(),
+    timestamp: timestamp('timestamp', { withTimezone: true }).defaultNow().notNull(),
+    method: text('method').notNull(),
+    path: text('path').notNull(),
+    status_code: integer('status_code').notNull(),
+    duration_ms: integer('duration_ms').default(0).notNull(),
+    ip_address: text('ip_address'),
+    user_agent: text('user_agent'),
+    device_type: text('device_type').default('desktop'),
+    browser: text('browser').default('unknown'),
+    os: text('os').default('unknown'),
+    referrer: text('referrer'),
+    session_id: text('session_id')
+  },
+  (table) => [
+    index('visitor_logs_timestamp_idx').on(table.timestamp),
+    index('visitor_logs_session_id_idx').on(table.session_id),
+    index('visitor_logs_path_idx').on(table.path),
+    index('visitor_logs_status_code_idx').on(table.status_code)
+  ]
+);
 
 // 15. Citizen Users (Regular Public Users)
 export const citizenUsers = pgTable('citizen_users', {
@@ -284,6 +328,7 @@ export const caseReactions = pgTable(
     created_at: timestamp('created_at').defaultNow().notNull()
   },
   (table) => [
+    uniqueIndex('case_reactions_case_user_idx').on(table.case_id, table.user_id),
     index('case_reactions_case_id_idx').on(table.case_id),
     index('case_reactions_user_id_idx').on(table.user_id)
   ]
@@ -326,7 +371,7 @@ export const commentUpvotes = pgTable(
     created_at: timestamp('created_at').defaultNow().notNull()
   },
   (table) => [
-    index('comment_upvotes_comment_user_idx').on(table.comment_id, table.user_id)
+    uniqueIndex('comment_upvotes_comment_user_idx').on(table.comment_id, table.user_id)
   ]
 );
 

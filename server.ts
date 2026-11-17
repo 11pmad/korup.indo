@@ -20,6 +20,7 @@ import monitoringRouter, { trafficLoggerMiddleware } from './server/routes/monit
 import { citizenAuthRouter } from './server/routes/citizenAuth.js';
 import { reactionsRouter } from './server/routes/reactions.js';
 import { commentsRouter } from './server/routes/comments.js';
+import { adminUsersRouter } from './server/routes/adminUsers.js';
 
 import { db, schema } from './server/db/index.js';
 import { eq, desc, sql } from 'drizzle-orm';
@@ -30,6 +31,15 @@ const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Security headers middleware (OWASP recommendations)
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
 
 // Visitor traffic & monitoring interceptor
 app.use(trafficLoggerMiddleware);
@@ -48,6 +58,7 @@ app.use('/api/export', exportRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/admin/monitoring', monitoringRouter);
 app.use('/api/monitoring', monitoringRouter);
+app.use('/api/admin/users', adminUsersRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/eras', erasRouter);
 app.use('/api/auth/citizen', citizenAuthRouter);
@@ -65,16 +76,28 @@ const DEFAULT_ANNOUNCEMENT = {
   updated_by: 'system'
 };
 
+// In-memory cache for settings to avoid synchronous disk read contention
+let cachedAnnouncement: any = null;
+let cachedAnnouncementTime = 0;
+let cachedDonation: any = null;
+let cachedDonationTime = 0;
+const SETTINGS_CACHE_TTL_MS = 60 * 1000; // 1 minute
+
 app.get('/api/settings/announcement', (req, res) => {
   try {
+    const now = Date.now();
+    if (cachedAnnouncement && now - cachedAnnouncementTime < SETTINGS_CACHE_TTL_MS) {
+      return res.json(cachedAnnouncement);
+    }
     const filePath = path.join(process.cwd(), 'data', 'announcement.json');
     if (fs.existsSync(filePath)) {
-      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-      return res.json(data);
+      cachedAnnouncement = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      cachedAnnouncementTime = now;
+      return res.json(cachedAnnouncement);
     }
     res.json(DEFAULT_ANNOUNCEMENT);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Gagal memuat pengaturan pengumuman.' });
   }
 });
 
@@ -92,61 +115,48 @@ const DEFAULT_DONATION = {
 
 app.get('/api/settings/donation', (req, res) => {
   try {
+    const now = Date.now();
+    if (cachedDonation && now - cachedDonationTime < SETTINGS_CACHE_TTL_MS) {
+      return res.json(cachedDonation);
+    }
     const filePath = path.join(process.cwd(), 'data', 'donation.json');
     if (fs.existsSync(filePath)) {
-      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-      return res.json(data);
+      cachedDonation = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      cachedDonationTime = now;
+      return res.json(cachedDonation);
     }
     res.json(DEFAULT_DONATION);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Gagal memuat pengaturan donasi.' });
   }
 });
 
 
-// 2. Compatibility Endpoints for existing frontend components
+// 2. Compatibility Endpoints for existing frontend components (SQL Optimized)
 
-
-// Backward compatibility: GET /api/regions/summary (Dynamic Live Aggregation)
+// Backward compatibility: GET /api/regions/summary (Direct SQL Aggregation)
 app.get('/api/regions/summary', async (req, res) => {
   try {
-    const list = await db.select().from(schema.provinces);
-    const caseStats = await db
+    const summary = await db
       .select({
-        province_id: schema.cases.province_id,
-        case_count: sql<number>`count(${schema.cases.id})::int`,
-        total_loss: sql<number>`coalesce(sum(${schema.cases.loss_amount}), 0)::float8`
+        id: schema.provinces.id,
+        provinsi: schema.provinces.name,
+        island_group: schema.provinces.island_cluster,
+        total_kasus: sql<number>`coalesce(count(${schema.cases.id}), 0)::int`,
+        total_kerugian: sql<number>`coalesce(sum(${schema.cases.loss_amount}), 0)::float8`
       })
-      .from(schema.cases)
-      .groupBy(schema.cases.province_id);
+      .from(schema.provinces)
+      .leftJoin(schema.cases, eq(schema.provinces.id, schema.cases.province_id))
+      .groupBy(schema.provinces.id, schema.provinces.name, schema.provinces.island_cluster);
 
-    const statsMap: Record<string, { count: number; loss: number }> = {};
-    for (const cs of caseStats) {
-      if (cs.province_id) {
-        statsMap[cs.province_id] = {
-          count: Number(cs.case_count) || 0,
-          loss: Number(cs.total_loss) || 0
-        };
-      }
-    }
-
-    const summary = list.map(p => {
-      const st = statsMap[p.id] || { count: 0, loss: 0 };
-      return {
-        id: p.id,
-        provinsi: p.name,
-        total_kasus: st.count,
-        total_kerugian: st.loss,
-        island_group: p.island_cluster
-      };
-    });
     res.json(summary);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error('Error in GET /api/regions/summary:', err);
+    res.status(500).json({ error: 'Gagal memuat ringkasan wilayah.' });
   }
 });
 
-// Backward compatibility: GET /api/leaderboard
+// Backward compatibility: GET /api/leaderboard (Optimized SQL Aggregation)
 app.get('/api/leaderboard', async (req, res) => {
   try {
     const list = await db
@@ -164,28 +174,26 @@ app.get('/api/leaderboard', async (req, res) => {
       .leftJoin(schema.parties, eq(schema.officials.party_id, schema.parties.id))
       .orderBy(desc(schema.officials.total_loss_amount));
 
-    // Get case IDs per official
-    const cases = await db
+    // Aggregate case IDs and latest year directly in PostgreSQL instead of loading all cases into RAM
+    const caseStats = await db
       .select({
-        id: schema.cases.id,
         official_id: schema.cases.primary_official_id,
-        case_date: schema.cases.case_date
+        case_ids: sql<string[]>`array_agg(${schema.cases.id})`,
+        total_cases: sql<number>`count(${schema.cases.id})::int`,
+        latest_year: sql<number>`coalesce(max(extract(year from ${schema.cases.case_date})::int), 2024)::int`
       })
-      .from(schema.cases);
+      .from(schema.cases)
+      .where(sql`${schema.cases.primary_official_id} IS NOT NULL`)
+      .groupBy(schema.cases.primary_official_id);
 
-    const casesMap: Record<string, { ids: string[]; latestYear: number }> = {};
-    for (const c of cases) {
-      if (c.official_id) {
-        if (!casesMap[c.official_id]) {
-          casesMap[c.official_id] = { ids: [], latestYear: 2024 };
-        }
-        casesMap[c.official_id].ids.push(c.id);
-        if (c.case_date) {
-          const y = new Date(c.case_date).getFullYear();
-          if (y > casesMap[c.official_id].latestYear) {
-            casesMap[c.official_id].latestYear = y;
-          }
-        }
+    const casesMap: Record<string, { ids: string[]; totalCases: number; latestYear: number }> = {};
+    for (const cs of caseStats) {
+      if (cs.official_id) {
+        casesMap[cs.official_id] = {
+          ids: cs.case_ids || [],
+          totalCases: cs.total_cases || 1,
+          latestYear: cs.latest_year || 2024
+        };
       }
     }
 
@@ -196,7 +204,7 @@ app.get('/api/leaderboard', async (req, res) => {
       jabatan: o.position_title,
       partai: o.party_name || 'Non-Partai',
       provinsi: o.province_name || '-',
-      total_kasus: casesMap[o.id]?.ids.length || 1,
+      total_kasus: casesMap[o.id]?.totalCases || 1,
       total_kerugian_negara: o.total_loss,
       status_hukum_terkini: o.current_legal_status === 'divonis_inkrah'
         ? 'Divonis Inkrah'
@@ -211,7 +219,8 @@ app.get('/api/leaderboard', async (req, res) => {
 
     res.json(leaderboard);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error('Error in GET /api/leaderboard:', err);
+    res.status(500).json({ error: 'Gagal memuat data klasemen.' });
   }
 });
 
@@ -300,7 +309,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🏛️ Server Liga Korupsi Indonesia (LKI) aktif di http://0.0.0.0:${PORT}`);
+    console.log(`🏛️ Server Liga Korupsi Indonesia (LKI) aktif di http://localhost:${PORT}`);
   });
 }
 

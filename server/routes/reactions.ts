@@ -199,23 +199,46 @@ reactionsRouter.post('/case/:caseId', verifyCitizenJwt, async (req, res) => {
       return res.status(404).json({ error: 'Berkas perkara tidak ditemukan.' });
     }
 
-    // Upsert into case_reactions
-    const reactionId = `rxn-${caseId}-${userId}`;
-    await db
-      .insert(schema.caseReactions)
-      .values({
-        id: reactionId,
-        case_id: caseId,
-        user_id: userId,
-        reaction_type: reaction_type as any
-      })
-      .onConflictDoUpdate({
-        target: [schema.caseReactions.case_id, schema.caseReactions.user_id],
-        set: {
-          reaction_type: reaction_type as any,
-          created_at: sql`NOW()`
-        }
-      });
+    // Check if user already had this exact reaction -> allow toggling off (cancel vote)
+    const existing = await db.query.caseReactions.findFirst({
+      where: and(
+        eq(schema.caseReactions.case_id, caseId),
+        eq(schema.caseReactions.user_id, userId)
+      )
+    });
+
+    let userReaction: string | null = reaction_type;
+    let message = `Reaksi Anda (${REACTION_DEFINITIONS[reaction_type].emoji} ${REACTION_DEFINITIONS[reaction_type].label}) berhasil dicatat!`;
+
+    if (existing && existing.reaction_type === reaction_type) {
+      // User clicked the same reaction again -> cancel reaction
+      await db.delete(schema.caseReactions).where(
+        and(
+          eq(schema.caseReactions.case_id, caseId),
+          eq(schema.caseReactions.user_id, userId)
+        )
+      );
+      userReaction = null;
+      message = 'Reaksi Anda telah dibatalkan.';
+    } else {
+      // Upsert into case_reactions
+      const reactionId = `rxn-${caseId}-${userId}`;
+      await db
+        .insert(schema.caseReactions)
+        .values({
+          id: reactionId,
+          case_id: caseId,
+          user_id: userId,
+          reaction_type: reaction_type as any
+        })
+        .onConflictDoUpdate({
+          target: [schema.caseReactions.case_id, schema.caseReactions.user_id],
+          set: {
+            reaction_type: reaction_type as any,
+            created_at: sql`NOW()`
+          }
+        });
+    }
 
     // Recompute stats
     const allReactions = await db
@@ -227,10 +250,10 @@ reactionsRouter.post('/case/:caseId', verifyCitizenJwt, async (req, res) => {
 
     return res.json({
       status: 'success',
-      message: `Reaksi Anda (${REACTION_DEFINITIONS[reaction_type].emoji} ${REACTION_DEFINITIONS[reaction_type].label}) berhasil dicatat!`,
+      message,
       data: {
         ...sentiment,
-        userReaction: reaction_type,
+        userReaction,
         definitions: REACTION_DEFINITIONS
       }
     });

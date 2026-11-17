@@ -141,5 +141,16 @@
     "latitude": -2.5337,
     "longitude": 140.7181,
     "location_type": "institution_location"
+  },
+  {
+    "location_id": "loc-sumut-langsa",
+    "island_cluster": "Sumatera",
+    "province": "Sumatera Utara",
+    "city_regency": "Kabupaten Langkat",
+    "district": "Besitang",
+    "village": null,
+    "latitude": 3.9877,
+    "longitude": 98.1561,
+    "location_type": "project_location"
   }
 ]

@@ -1,11 +1,17 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import { OAuth2Client } from 'google-auth-library';
 import { db, schema } from '../db/index.js';
 import { eq, or } from 'drizzle-orm';
 import { generateCitizenToken, verifyCitizenJwt } from '../middleware/auth.js';
+import { authRateLimiter } from '../middleware/rateLimit.js';
 
 export const citizenAuthRouter = Router();
+
+const googleClient = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID || '84674853872-vknld967r5obl81av27d588mf8ghfhd6.apps.googleusercontent.com'
+);
 
 const registerSchema = z.object({
   username: z.string().min(3, 'Username minimal 3 karakter').max(30).regex(/^[a-zA-Z0-9_]+$/, 'Username hanya boleh huruf, angka, dan underscore'),
@@ -34,9 +40,11 @@ const loginSchema = z.object({
 });
 
 const googleAuthSchema = z.object({
-  email: z.string().email('Format email tidak valid'),
-  displayName: z.string().min(1, 'Nama tampilan diperlukan'),
-  googleId: z.string().min(1, 'Google ID diperlukan'),
+  credential: z.string().optional(),
+  accessToken: z.string().optional(),
+  email: z.string().email('Format email tidak valid').optional(),
+  displayName: z.string().optional(),
+  googleId: z.string().optional(),
   photoUrl: z.string().optional().or(z.literal('')),
   originProvince: z.string().optional().or(z.literal('')),
   originCity: z.string().optional().or(z.literal(''))
@@ -51,19 +59,12 @@ const updateProfileSchema = z.object({
   avatarSeed: z.string().optional()
 });
 
-const quickAuthSchema = z.object({
-  displayName: z.string().min(2, 'Nama minimal 2 karakter').max(50),
-  avatarSeed: z.string().optional(),
-  originProvince: z.string().optional().or(z.literal('')),
-  originCity: z.string().optional().or(z.literal(''))
-});
-
 function generate6DigitOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 // POST /api/auth/citizen/register
-citizenAuthRouter.post('/register', async (req, res) => {
+citizenAuthRouter.post('/register', authRateLimiter, async (req, res) => {
   try {
     const parse = registerSchema.safeParse(req.body);
     if (!parse.success) {
@@ -113,7 +114,9 @@ citizenAuthRouter.post('/register', async (req, res) => {
       role: 'citizen'
     });
 
-    console.log(`[Citizen Auth] OTP Code for ${email}: ${otpCode}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[Citizen Auth] OTP Code for ${email}: ${otpCode}`);
+    }
 
     return res.status(201).json({
       status: 'success',
@@ -121,7 +124,7 @@ citizenAuthRouter.post('/register', async (req, res) => {
       needsVerification: true,
       email: email.toLowerCase(),
       // In local development / preview environment, we return debug_otp so user can easily test without real SMTP mailer setup
-      debug_otp: otpCode
+      ...(process.env.NODE_ENV !== 'production' ? { debug_otp: otpCode } : {})
     });
   } catch (err: any) {
     console.error('Error in citizen register:', err);
@@ -130,7 +133,7 @@ citizenAuthRouter.post('/register', async (req, res) => {
 });
 
 // POST /api/auth/citizen/verify-email
-citizenAuthRouter.post('/verify-email', async (req, res) => {
+citizenAuthRouter.post('/verify-email', authRateLimiter, async (req, res) => {
   try {
     const parse = verifyEmailSchema.safeParse(req.body);
     if (!parse.success) {
@@ -236,7 +239,7 @@ citizenAuthRouter.post('/verify-email', async (req, res) => {
 });
 
 // POST /api/auth/citizen/resend-code
-citizenAuthRouter.post('/resend-code', async (req, res) => {
+citizenAuthRouter.post('/resend-code', authRateLimiter, async (req, res) => {
   try {
     const parse = resendCodeSchema.safeParse(req.body);
     if (!parse.success) {
@@ -267,12 +270,14 @@ citizenAuthRouter.post('/resend-code', async (req, res) => {
       })
       .where(eq(schema.citizenUsers.id, user.id));
 
-    console.log(`[Citizen Auth Resend] New OTP Code for ${email}: ${otpCode}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[Citizen Auth Resend] New OTP Code for ${email}: ${otpCode}`);
+    }
 
     return res.json({
       status: 'success',
       message: 'Kode verifikasi baru berhasil dikirim ke email Anda.',
-      debug_otp: otpCode
+      ...(process.env.NODE_ENV !== 'production' ? { debug_otp: otpCode } : {})
     });
   } catch (err: any) {
     console.error('Error in resending verification code:', err);
@@ -281,7 +286,7 @@ citizenAuthRouter.post('/resend-code', async (req, res) => {
 });
 
 // POST /api/auth/citizen/login
-citizenAuthRouter.post('/login', async (req, res) => {
+citizenAuthRouter.post('/login', authRateLimiter, async (req, res) => {
   try {
     const parse = loginSchema.safeParse(req.body);
     if (!parse.success) {
@@ -325,7 +330,7 @@ citizenAuthRouter.post('/login', async (req, res) => {
         error: 'Email Anda belum diverifikasi. Silakan masukkan kode OTP yang telah dikirim ke email Anda.',
         needsVerification: true,
         email: user.email,
-        debug_otp: currentOtp
+        ...(process.env.NODE_ENV !== 'production' ? { debug_otp: currentOtp } : {})
       });
     }
 
@@ -366,7 +371,7 @@ citizenAuthRouter.post('/login', async (req, res) => {
 });
 
 // POST /api/auth/citizen/google
-citizenAuthRouter.post('/google', async (req, res) => {
+citizenAuthRouter.post('/google', authRateLimiter, async (req, res) => {
   try {
     const parse = googleAuthSchema.safeParse(req.body);
     if (!parse.success) {
@@ -375,8 +380,57 @@ citizenAuthRouter.post('/google', async (req, res) => {
       });
     }
 
-    const { email, displayName, googleId, photoUrl, originProvince, originCity } = parse.data;
+    let { email, displayName, googleId, photoUrl, originProvince, originCity, credential, accessToken } = parse.data;
+
+    // 1. Verifikasi Google ID Token jika dikirim credential
+    if (credential) {
+      try {
+        const ticket = await googleClient.verifyIdToken({
+          idToken: credential,
+          audience: process.env.GOOGLE_CLIENT_ID || '84674853872-vknld967r5obl81av27d588mf8ghfhd6.apps.googleusercontent.com'
+        });
+        const payload = ticket.getPayload();
+        if (!payload || !payload.email) {
+          return res.status(400).json({ error: 'Token Google tidak valid atau tidak memiliki email.' });
+        }
+        googleId = payload.sub;
+        email = payload.email;
+        displayName = displayName || payload.name || payload.given_name || email.split('@')[0];
+        photoUrl = photoUrl || payload.picture || null;
+      } catch (err: any) {
+        console.error('Google ID token verification failed:', err);
+        return res.status(401).json({ error: 'Verifikasi Google Token gagal: ' + (err.message || 'Token tidak valid') });
+      }
+    } 
+    // 2. Verifikasi Google OAuth Access Token jika dikirim accessToken
+    else if (accessToken) {
+      try {
+        const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        if (!userInfoRes.ok) {
+          throw new Error('Gagal memverifikasi token ke server Google.');
+        }
+        const userInfo = (await userInfoRes.json()) as { sub: string; email: string; name?: string; given_name?: string; picture?: string };
+        if (!userInfo || !userInfo.email) {
+          return res.status(400).json({ error: 'Data profil dari akun Google tidak lengkap.' });
+        }
+        googleId = userInfo.sub;
+        email = userInfo.email;
+        displayName = displayName || userInfo.name || userInfo.given_name || email.split('@')[0];
+        photoUrl = photoUrl || userInfo.picture || null;
+      } catch (err: any) {
+        console.error('Google access token verification failed:', err);
+        return res.status(401).json({ error: 'Verifikasi Google Access Token gagal: ' + (err.message || 'Token tidak valid') });
+      }
+    }
+
+    if (!googleId || !email) {
+      return res.status(400).json({ error: 'Data login Google tidak lengkap (email dan ID Google diperlukan).' });
+    }
+
     const cleanEmail = email.toLowerCase().trim();
+    const finalDisplayName = displayName || cleanEmail.split('@')[0];
 
     // Check if citizen exists with google_id or email
     let user = await db.query.citizenUsers.findFirst({
@@ -387,6 +441,13 @@ citizenAuthRouter.post('/google', async (req, res) => {
     });
 
     if (user) {
+      // Security check: Prevent unauthorized takeover of email registered with password
+      if (user.auth_provider === 'local' && user.password_hash) {
+        return res.status(409).json({
+          error: 'Akun dengan email ini terdaftar menggunakan kata sandi biasa. Silakan masuk dengan formulir login email & kata sandi.'
+        });
+      }
+
       // Update Google info if not already linked or update photo
       await db.update(schema.citizenUsers)
         .set({
@@ -413,7 +474,7 @@ citizenAuthRouter.post('/google', async (req, res) => {
       await db.insert(schema.citizenUsers).values({
         id: userId,
         username,
-        display_name: displayName,
+        display_name: finalDisplayName,
         email: cleanEmail,
         google_id: googleId,
         auth_provider: 'google',
@@ -552,63 +613,12 @@ citizenAuthRouter.put('/profile', verifyCitizenJwt, async (req, res) => {
   }
 });
 
-// POST /api/auth/citizen/quick (Mode Cepat Suara Warga)
-citizenAuthRouter.post('/quick', async (req, res) => {
-  try {
-    const parse = quickAuthSchema.safeParse(req.body);
-    if (!parse.success) {
-      return res.status(400).json({ error: 'Nama tampilan minimal 2 karakter.' });
-    }
-
-    const { displayName, avatarSeed, originProvince, originCity } = parse.data;
-    const randomSuffix = Math.random().toString(36).substring(2, 7);
-    const username = `warga_${randomSuffix}`;
-    const userId = `usr-q-${Date.now()}-${randomSuffix}`;
-    const chosenAvatar = avatarSeed || ['garuda', 'merah', 'emas', 'banteng', 'padi'][Math.floor(Math.random() * 5)];
-
-    await db.insert(schema.citizenUsers).values({
-      id: userId,
-      username,
-      display_name: displayName,
-      email: null,
-      password_hash: null,
-      avatar_seed: chosenAvatar,
-      origin_province: originProvince || null,
-      origin_city: originCity || null,
-      is_email_verified: 0,
-      auth_provider: 'local',
-      role: 'citizen'
-    });
-
-    const token = generateCitizenToken({
-      id: userId,
-      username,
-      displayName,
-      role: 'citizen',
-      avatarSeed: chosenAvatar,
-      originProvince: originProvince || undefined,
-      originCity: originCity || undefined,
-      isEmailVerified: false
-    });
-
-    return res.status(201).json({
-      status: 'success',
-      message: 'Identitas Warga aktif! Anda langsung dapat bersuara dan berkomentar.',
-      token,
-      user: {
-        id: userId,
-        username,
-        displayName,
-        role: 'citizen',
-        avatarSeed: chosenAvatar,
-        originProvince,
-        originCity
-      }
-    });
-  } catch (err: any) {
-    console.error('Error in quick citizen auth:', err);
-    return res.status(500).json({ error: 'Gagal membuat identitas warga cepat.' });
-  }
+// POST /api/auth/citizen/quick (Dinonaktifkan: Mengharuskan akun terverifikasi)
+citizenAuthRouter.post('/quick', authRateLimiter, (_req, res) => {
+  return res.status(410).json({
+    error: 'Mode Kilat telah dinonaktifkan demi menjaga integritas data dan kepastian suara warga. Silakan masuk menggunakan Akun Google atau daftarkan email Anda untuk verifikasi OTP.',
+    needsVerification: true
+  });
 });
 
 // GET /api/auth/citizen/me

@@ -13,10 +13,11 @@ import {
   Clock,
   TrendingUp,
   LogIn,
+  User,
   X
 } from 'lucide-react';
 import { sound } from '../utils/audio.js';
-import { CitizenAuthModal, AVATAR_OPTIONS } from './CitizenAuthModal.js';
+import { CitizenAuthModal } from './CitizenAuthModal.js';
 import { REACTION_DEFINITIONS, ReactionType } from './CaseReactionsSection.js';
 
 interface CommentUser {
@@ -89,8 +90,16 @@ export const CaseCommentsSection: React.FC<CaseCommentsSectionProps> = ({
   const loadCurrentUser = () => {
     try {
       const stored = localStorage.getItem('lki_citizen_user');
-      if (stored) {
-        setCurrentUser(JSON.parse(stored));
+      const token = localStorage.getItem('lki_citizen_token');
+      if (stored && token) {
+        const u = JSON.parse(stored);
+        if (u.isEmailVerified === false || (!u.email && u.authProvider !== 'google')) {
+          localStorage.removeItem('lki_citizen_token');
+          localStorage.removeItem('lki_citizen_user');
+          setCurrentUser(null);
+        } else {
+          setCurrentUser(u);
+        }
       } else {
         setCurrentUser(null);
       }
@@ -149,6 +158,13 @@ export const CaseCommentsSection: React.FC<CaseCommentsSectionProps> = ({
         setContent('');
         setSelectedReaction('');
         fetchComments();
+      } else if (res.status === 401 || res.status === 403) {
+        const data = await res.json().catch(() => ({}));
+        localStorage.removeItem('lki_citizen_token');
+        localStorage.removeItem('lki_citizen_user');
+        setCurrentUser(null);
+        alert(data.error || 'Akses ditolak: Verifikasi email diperlukan sebelum berkomentar.');
+        setAuthModalOpen(true);
       } else {
         const data = await res.json().catch(() => ({}));
         alert(data.error || 'Gagal mengirim komentar.');
@@ -163,11 +179,16 @@ export const CaseCommentsSection: React.FC<CaseCommentsSectionProps> = ({
 
   const handleUpvote = async (commentId: string) => {
     sound.click();
+    const token = localStorage.getItem('lki_citizen_token');
+    if (!token) {
+      setAuthModalOpen(true);
+      return;
+    }
+
     try {
-      const token = localStorage.getItem('lki_citizen_token');
       const res = await fetch(`/api/comments/${commentId}/upvote`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (res.ok) {
@@ -186,11 +207,6 @@ export const CaseCommentsSection: React.FC<CaseCommentsSectionProps> = ({
     } catch (err) {
       console.error('Error upvoting comment:', err);
     }
-  };
-
-  const getAvatarEmoji = (seed?: string) => {
-    const found = AVATAR_OPTIONS.find(a => a.id === seed);
-    return found ? found.emoji : '👤';
   };
 
   const mainContent = (
@@ -215,7 +231,7 @@ export const CaseCommentsSection: React.FC<CaseCommentsSectionProps> = ({
               {currentUser.photoUrl ? (
                 <img src={currentUser.photoUrl} alt="" className="w-4 h-4 rounded-full object-cover shrink-0" />
               ) : (
-                <span>{getAvatarEmoji(currentUser.avatarSeed)}</span>
+                <User className="w-3.5 h-3.5 text-emerald-800" />
               )}
               <span className="truncate max-w-[90px]">{currentUser.displayName}</span>
               {(currentUser.originCity || currentUser.originProvince) && (
@@ -422,11 +438,11 @@ export const CaseCommentsSection: React.FC<CaseCommentsSectionProps> = ({
                 {/* Comment Author Header */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center text-base sm:text-lg shadow-2xs shrink-0 overflow-hidden">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-amber-50 border border-amber-300 flex items-center justify-center text-amber-800 shadow-2xs shrink-0 overflow-hidden">
                       {c.user.photo_url ? (
                         <img src={c.user.photo_url} alt={c.user.display_name} className="w-full h-full object-cover" />
                       ) : (
-                        getAvatarEmoji(c.user.avatar_seed)
+                        <User className="w-5 h-5 text-amber-800" />
                       )}
                     </div>
                     <div className="min-w-0">
@@ -515,8 +531,8 @@ export const CaseCommentsSection: React.FC<CaseCommentsSectionProps> = ({
           loadCurrentUser();
           fetchComments();
         }}
-        initialMode="quick"
-        contextMessage="Gunakan nama panggilan untuk menuliskan tanggapan dan mendukung suara warga lainnya."
+        initialMode="login"
+        contextMessage="Masuk dengan Akun Google atau verifikasi email Anda untuk menuliskan tanggapan dan mendukung telaah warga."
       />
     </div>
   );
