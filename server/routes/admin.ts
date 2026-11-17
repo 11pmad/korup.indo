@@ -1177,6 +1177,20 @@ const announcementInputSchema = z.object({
 router.get('/settings/announcement', async (req, res) => {
   try {
     const filePath = path.join(process.cwd(), 'data', 'announcement.json');
+    if (!process.env.VERCEL && fs.existsSync(filePath)) {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      return res.json(data);
+    }
+    const latestSetting = await db
+      .select({ diff_snapshot: schema.auditLogs.diff_snapshot })
+      .from(schema.auditLogs)
+      .where(sql`${schema.auditLogs.entity_type} = 'settings' AND ${schema.auditLogs.entity_id} = 'announcement'`)
+      .orderBy(desc(schema.auditLogs.created_at))
+      .limit(1);
+    const dbConfig = (latestSetting[0]?.diff_snapshot as any)?.updated;
+    if (dbConfig) {
+      return res.json(dbConfig);
+    }
     if (fs.existsSync(filePath)) {
       const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
       return res.json(data);
@@ -1218,8 +1232,12 @@ router.put('/settings/announcement', async (req, res) => {
       updated_by: req.admin?.username || 'admin'
     };
 
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, JSON.stringify(updatedConfig, null, 2), 'utf8');
+    try {
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify(updatedConfig, null, 2), 'utf8');
+    } catch (fsErr) {
+      // Read-only filesystem in serverless environments (persisted via audit_logs below)
+    }
 
     // Catat ke audit_logs
     try {
@@ -1277,6 +1295,20 @@ const donationInputSchema = z.object({
 router.get('/settings/donation', async (req, res) => {
   try {
     const filePath = path.join(process.cwd(), 'data', 'donation.json');
+    if (!process.env.VERCEL && fs.existsSync(filePath)) {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      return res.json(data);
+    }
+    const latestSetting = await db
+      .select({ diff_snapshot: schema.auditLogs.diff_snapshot })
+      .from(schema.auditLogs)
+      .where(sql`${schema.auditLogs.entity_type} = 'settings' AND ${schema.auditLogs.entity_id} = 'donation'`)
+      .orderBy(desc(schema.auditLogs.created_at))
+      .limit(1);
+    const dbConfig = (latestSetting[0]?.diff_snapshot as any)?.config_payload || (latestSetting[0]?.diff_snapshot as any)?.updated;
+    if (dbConfig) {
+      return res.json(dbConfig);
+    }
     if (fs.existsSync(filePath)) {
       const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
       return res.json(data);
@@ -1319,8 +1351,12 @@ router.put('/settings/donation', async (req, res) => {
       updated_by: req.admin?.username || 'admin'
     };
 
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, JSON.stringify(updatedConfig, null, 2), 'utf8');
+    try {
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify(updatedConfig, null, 2), 'utf8');
+    } catch (fsErr) {
+      // Read-only filesystem in serverless environments (persisted via audit_logs below)
+    }
 
     // Catat ke audit_logs
     try {
@@ -1341,6 +1377,7 @@ router.put('/settings/donation', async (req, res) => {
             ...updatedConfig,
             qris_image_url: updatedConfig.qris_image_url ? (updatedConfig.qris_image_url.startsWith('data:') ? '[Base64 Image]' : updatedConfig.qris_image_url) : ''
           },
+          config_payload: updatedConfig,
           status: 'selesai'
         },
         created_at: new Date()

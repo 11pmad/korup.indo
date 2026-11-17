@@ -1,8 +1,6 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
-import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -27,6 +25,7 @@ import { eq, desc, sql } from 'drizzle-orm';
 import { generalApiLimiter } from './server/middleware/rateLimit.js';
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json({ limit: '10mb' }));
@@ -83,13 +82,30 @@ let cachedDonation: any = null;
 let cachedDonationTime = 0;
 const SETTINGS_CACHE_TTL_MS = 60 * 1000; // 1 minute
 
-app.get('/api/settings/announcement', (req, res) => {
+app.get('/api/settings/announcement', async (req, res) => {
   try {
     const now = Date.now();
     if (cachedAnnouncement && now - cachedAnnouncementTime < SETTINGS_CACHE_TTL_MS) {
       return res.json(cachedAnnouncement);
     }
     const filePath = path.join(process.cwd(), 'data', 'announcement.json');
+    if (!process.env.VERCEL && fs.existsSync(filePath)) {
+      cachedAnnouncement = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      cachedAnnouncementTime = now;
+      return res.json(cachedAnnouncement);
+    }
+    const latestSetting = await db
+      .select({ diff_snapshot: schema.auditLogs.diff_snapshot })
+      .from(schema.auditLogs)
+      .where(sql`${schema.auditLogs.entity_type} = 'settings' AND ${schema.auditLogs.entity_id} = 'announcement'`)
+      .orderBy(desc(schema.auditLogs.created_at))
+      .limit(1);
+    const dbConfig = (latestSetting[0]?.diff_snapshot as any)?.updated;
+    if (dbConfig) {
+      cachedAnnouncement = dbConfig;
+      cachedAnnouncementTime = now;
+      return res.json(cachedAnnouncement);
+    }
     if (fs.existsSync(filePath)) {
       cachedAnnouncement = JSON.parse(fs.readFileSync(filePath, 'utf8'));
       cachedAnnouncementTime = now;
@@ -113,13 +129,30 @@ const DEFAULT_DONATION = {
   updated_by: 'system'
 };
 
-app.get('/api/settings/donation', (req, res) => {
+app.get('/api/settings/donation', async (req, res) => {
   try {
     const now = Date.now();
     if (cachedDonation && now - cachedDonationTime < SETTINGS_CACHE_TTL_MS) {
       return res.json(cachedDonation);
     }
     const filePath = path.join(process.cwd(), 'data', 'donation.json');
+    if (!process.env.VERCEL && fs.existsSync(filePath)) {
+      cachedDonation = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      cachedDonationTime = now;
+      return res.json(cachedDonation);
+    }
+    const latestSetting = await db
+      .select({ diff_snapshot: schema.auditLogs.diff_snapshot })
+      .from(schema.auditLogs)
+      .where(sql`${schema.auditLogs.entity_type} = 'settings' AND ${schema.auditLogs.entity_id} = 'donation'`)
+      .orderBy(desc(schema.auditLogs.created_at))
+      .limit(1);
+    const dbConfig = (latestSetting[0]?.diff_snapshot as any)?.config_payload || (latestSetting[0]?.diff_snapshot as any)?.updated;
+    if (dbConfig) {
+      cachedDonation = dbConfig;
+      cachedDonationTime = now;
+      return res.json(cachedDonation);
+    }
     if (fs.existsSync(filePath)) {
       cachedDonation = JSON.parse(fs.readFileSync(filePath, 'utf8'));
       cachedDonationTime = now;
@@ -292,9 +325,10 @@ app.get('/sitemap.xml', async (req, res) => {
   }
 });
 
-// 4. Vite & Static Asset Handling
+// 4. Vite & Static Asset Handling (Local / Standalone Node/Bun Server only)
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa'
@@ -313,4 +347,9 @@ async function startServer() {
   });
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export { app };
+export default app;

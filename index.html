@@ -11,12 +11,12 @@
     <meta name="keywords" content="liga korupsi indonesia, lki, peta korupsi, klasemen korupsi, kpk, putusan mahkamah agung, tipikor, korupsi bumn, kerugian negara, data korupsi indonesia, transparansi hukum, praduga tak bersalah" />
     <meta name="author" content="Liga Korupsi Indonesia" />
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <link rel="canonical" href="http://localhost:3000" />
+    <link rel="canonical" href="https://korup-indo.vercel.app" />
     <meta name="theme-color" content="#F5F0E6" />
 
     <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="http://localhost:3000" />
+    <meta property="og:url" content="https://korup-indo.vercel.app" />
     <meta property="og:title" content="Liga Korupsi Indonesia (LKI) — Portal Transparansi Perkara" />
     <meta property="og:description" content="Eksplorasi data perkara korupsi Indonesia dalam format klasemen liga, peta choropleth 38 provinsi, dan rujukan dokumen pengadilan terverifikasi." />
     <meta property="og:image" content="/og-image.png" />
@@ -28,7 +28,7 @@
 
     <!-- Twitter / X Cards -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="http://localhost:3000" />
+    <meta name="twitter:url" content="https://korup-indo.vercel.app" />
     <meta name="twitter:title" content="Liga Korupsi Indonesia (LKI) — Portal Transparansi Perkara" />
     <meta name="twitter:description" content="Portal transparansi &amp; edukasi perkara korupsi Indonesia berbasis putusan pengadilan inkrah, klasemen liga, dan peta 38 provinsi." />
     <meta name="twitter:image" content="/og-image.png" />
@@ -52,8 +52,8 @@
       "@graph": [
         {
           "@type": "WebSite",
-          "@id": "http://localhost:3000/#website",
-          "url": "http://localhost:3000",
+          "@id": "https://korup-indo.vercel.app/#website",
+          "url": "https://korup-indo.vercel.app",
           "name": "Liga Korupsi Indonesia (LKI)",
           "description": "Portal transparansi & edukasi data perkara korupsi Indonesia berbasis putusan pengadilan berkekuatan hukum tetap, klasemen liga, dan peta spasial 38 provinsi.",
           "inLanguage": "id-ID",
@@ -61,14 +61,14 @@
             "@type": "SearchAction",
             "target": {
               "@type": "EntryPoint",
-              "urlTemplate": "http://localhost:3000/api/cases?q={search_term_string}"
+              "urlTemplate": "https://korup-indo.vercel.app/api/cases?q={search_term_string}"
             },
             "query-input": "required name=search_term_string"
           }
         },
         {
           "@type": "Dataset",
-          "@id": "http://localhost:3000/#dataset",
+          "@id": "https://korup-indo.vercel.app/#dataset",
           "name": "Basis Data Perkara Korupsi Indonesia Terverifikasi",
           "description": "Agregasi data kerugian keuangan negara, profil pejabat terpidana/terdakwa, amar putusan berkekuatan hukum tetap (inkrah), dan pemetaan 38 provinsi.",
           "license": "https://creativecommons.org/licenses/by/4.0/",
@@ -88,12 +88,12 @@
             {
               "@type": "DataDownload",
               "encodingFormat": "text/csv",
-              "contentUrl": "http://localhost:3000/api/export?type=officials"
+              "contentUrl": "https://korup-indo.vercel.app/api/export?type=officials"
             },
             {
               "@type": "DataDownload",
               "encodingFormat": "application/json",
-              "contentUrl": "http://localhost:3000/api/cases"
+              "contentUrl": "https://korup-indo.vercel.app/api/cases"
             }
           ]
         }
