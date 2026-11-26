@@ -188,8 +188,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-40 bg-[#FFFDF8]/95 backdrop-blur-md border-b-2 border-[#E7DFCC] shadow-sm">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 sm:h-20 gap-2 lg:gap-3 xl:gap-4">
+      <div className="max-w-[1400px] mx-auto px-3 sm:px-5 lg:px-6">
+        <div className="flex items-center justify-between h-16 sm:h-20 gap-2 lg:gap-3">
           
           {/* Kolom 1: Logo & Brand (Kiri) */}
           <Link
@@ -208,22 +208,22 @@ export const Navbar: React.FC<NavbarProps> = ({
             
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="font-marker text-lg sm:text-2xl xl:text-[26px] text-[#1E293B] tracking-wide whitespace-nowrap">
+                <span className="font-marker text-lg sm:text-xl 2xl:text-2xl text-[#1E293B] tracking-wide whitespace-nowrap">
                   Liga Korupsi
                 </span>
-                <span className="hidden sm:inline-block lg:hidden xl:inline-block px-2 py-0.5 bg-[#FEF08A] text-[#854D0E] font-hand font-bold text-xs rounded-md border border-[#EAB308] rotate-2 shrink-0">
+                <span className="hidden sm:inline-block lg:hidden 2xl:inline-block px-2 py-0.5 bg-[#FEF08A] text-[#854D0E] font-hand font-bold text-xs rounded-md border border-[#EAB308] rotate-2 shrink-0">
                   Indonesia
                 </span>
               </div>
-              <p className="text-xs text-[#64748B] font-medium hidden xl:block truncate">
+              <p className="text-xs text-[#64748B] font-medium hidden 2xl:block truncate">
                 Portal Transparansi Perkara &amp; Putusan Hukum Terbuka
               </p>
             </div>
           </Link>
 
           {/* Kolom 2: Navigasi Menu Utama (Tengah - Responsif tanpa min-width kaku) */}
-          <nav className="hidden lg:flex items-center bg-[#F5EEDC]/90 border border-[#E2D6BD] p-1 xl:p-1.5 rounded-2xl shadow-2xs shrink-0">
-            <div className="flex items-center gap-1 xl:gap-1.5">
+          <nav className="hidden lg:flex items-center bg-[#F5EEDC]/90 border border-[#E2D6BD] p-1 2xl:p-1.5 rounded-2xl shadow-2xs shrink-0">
+            <div className="flex items-center gap-1 2xl:gap-1.5">
               {navItems.map(item => {
                 const Icon = item.icon;
                 const isActive = !isLaporRoute && !isOpenDataRoute && currentTab === item.id;
@@ -235,7 +235,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={handleMenuLinkClick}
                     aria-current={isActive ? 'page' : undefined}
                     className={`
-                      px-2.5 xl:px-3 py-1.5 xl:py-2 rounded-xl text-xs xl:text-sm font-bold flex items-center justify-center gap-1.5 
+                      px-2.5 2xl:px-3.5 py-1.5 2xl:py-2 rounded-xl text-xs 2xl:text-sm font-bold flex items-center justify-center gap-1.5 
                       transition-all duration-150 cursor-pointer whitespace-nowrap transform select-none
                       ${item.hoverTilt} hover:-translate-y-0.5 hover:shadow-xs
                       active:scale-95 active:translate-y-0 active:rotate-0
@@ -270,7 +270,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               href="/lapor"
               onClick={handleMenuLinkClick}
               aria-current={isLaporRoute ? 'page' : undefined}
-              className={`hidden sm:flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-xl border text-xs font-bold transition-all duration-150 shadow-2xs cursor-pointer whitespace-nowrap transform hover:-rotate-1 hover:-translate-y-0.5 hover:shadow-xs active:scale-95 active:rotate-0 shrink-0 ${
+              className={`hidden sm:flex items-center gap-1.5 px-2.5 2xl:px-3 py-1.5 rounded-xl border text-xs font-bold transition-all duration-150 shadow-2xs cursor-pointer whitespace-nowrap transform hover:-rotate-1 hover:-translate-y-0.5 hover:shadow-xs active:scale-95 active:rotate-0 shrink-0 ${
                 isLaporRoute
                   ? 'bg-[#FDE68A] border-amber-400 text-[#92400E] ring-2 ring-amber-400 -rotate-1'
                   : 'bg-[#FEF3C7] border-[#FDE68A] text-[#92400E] hover:bg-[#FDE68A]'
@@ -278,8 +278,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               title="Laporkan Kasus Korupsi Baru"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span className="hidden lg:inline xl:hidden">Lapor</span>
-              <span className="lg:hidden xl:inline">Lapor Kasus Baru</span>
+              <span className="hidden lg:inline 2xl:hidden">Lapor</span>
+              <span className="lg:hidden 2xl:inline">Lapor Kasus Baru</span>
             </Link>
 
             {/* Tombol Login / Suara Rakyat */}
@@ -304,14 +304,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                       </div>
                     )}
                     <div className="text-left hidden sm:block">
-                      <div className="font-black text-slate-900 text-xs leading-tight truncate max-w-[85px] xl:max-w-[110px]">
+                      <div className="font-black text-slate-900 text-xs leading-tight truncate max-w-[85px] 2xl:max-w-[120px]">
                         {citizenUser.displayName}
                       </div>
-                      <div className="text-[10px] text-amber-700 font-semibold leading-none truncate max-w-[85px] xl:max-w-[110px]">
+                      <div className="text-[10px] text-amber-700 font-semibold leading-none truncate max-w-[85px] 2xl:max-w-[120px]">
                         {citizenUser.originCity || citizenUser.originProvince || 'Suara Rakyat'}
                       </div>
                     </div>
-                    <span className="hidden xl:inline-block px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-[#EA580C] text-white rounded-md text-[9px] font-mono font-black shrink-0 shadow-2xs">
+                    <span className="hidden 2xl:inline-block px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-[#EA580C] text-white rounded-md text-[9px] font-mono font-black shrink-0 shadow-2xs">
                       WARGA
                     </span>
                   </button>
