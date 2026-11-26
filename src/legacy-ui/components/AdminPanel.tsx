@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { AuditLog, UserReport } from '../types';
 import { sound } from '../utils/audio';
 import { parseApiJson } from '../utils/safeJson';
-import { Lock, Unlock } from 'lucide-react';
+import { Eye, EyeOff, Lock, Unlock } from 'lucide-react';
 import { AdminLayout, AdminSubtab } from './admin/AdminLayout';
 import { AdminDashboardOverview } from './admin/AdminDashboardOverview';
 import { AdminCasesManager } from './admin/AdminCasesManager';
@@ -51,6 +51,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
   });
   const [authUsername, setAuthUsername] = useState<string>('');
   const [authPassword, setAuthPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Active view tab
@@ -197,13 +198,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
                 <label className="block text-xs font-bold text-slate-300 mb-1">
                   Password
                 </label>
-                <input
-                  type="password"
-                  value={authPassword}
-                  onChange={e => setAuthPassword(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-[#DC2626] focus:outline-none"
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    value={authPassword}
+                    onChange={e => setAuthPassword(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-3 pr-10 py-2.5 text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-[#DC2626] focus:outline-none"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(prev => !prev)}
+                    aria-label={showPassword ? 'Sembunyikan password' : 'Lihat password'}
+                    title={showPassword ? 'Sembunyikan password' : 'Lihat password'}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <button

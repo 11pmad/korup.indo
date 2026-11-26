@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { NextRequest } from 'next/server';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import {
   ADMIN_COOKIE_NAME,
@@ -49,7 +49,8 @@ export async function POST(req: NextRequest) {
     return apiError('UNAUTHORIZED', 'Kredensial staf tidak valid atau akun nonaktif.', 401);
   }
 
-  if (admin.locked_until && admin.locked_until > new Date()) {
+  const now = new Date();
+  if (admin.locked_until && admin.locked_until > now) {
     return apiError(
       'RATE_LIMITED',
       'Akun terkunci sementara karena terlalu banyak percobaan gagal. Coba lagi 15 menit.',
@@ -59,13 +60,14 @@ export async function POST(req: NextRequest) {
 
   const valid = await bcrypt.compare(parsed.data.password, admin.password_hash);
   if (!valid) {
-    const attempts = admin.failed_login_attempts + 1;
+    const wasExpiredLock = Boolean(admin.locked_until && admin.locked_until <= now);
+    const attempts = (wasExpiredLock ? 0 : admin.failed_login_attempts) + 1;
     const lockedUntil = attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null;
     await db
       .update(schema.adminUsers)
       .set({
-        failed_login_attempts: sql`${schema.adminUsers.failed_login_attempts} + 1`,
-        ...(lockedUntil ? { locked_until: lockedUntil } : {}),
+        failed_login_attempts: attempts,
+        locked_until: lockedUntil,
       })
       .where(eq(schema.adminUsers.id, admin.id));
     return apiError('UNAUTHORIZED', 'Kredensial staf tidak valid.', 401);

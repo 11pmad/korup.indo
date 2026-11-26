@@ -1389,16 +1389,18 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
       if (!admin || !admin.is_active) {
         return NextResponse.json({ error: 'Kredensial login tidak cocok.' }, { status: 401 });
       }
-      if (admin.locked_until && admin.locked_until > new Date()) {
+      const now = new Date();
+      if (admin.locked_until && admin.locked_until > now) {
         return NextResponse.json({ error: 'Akun terkunci sementara. Coba lagi 15 menit.' }, { status: 429 });
       }
       if (!(await bcrypt.compare(password, admin.password_hash))) {
-        const attempts = admin.failed_login_attempts + 1;
+        const wasExpiredLock = Boolean(admin.locked_until && admin.locked_until <= now);
+        const attempts = (wasExpiredLock ? 0 : admin.failed_login_attempts) + 1;
         await db
           .update(schema.adminUsers)
           .set({
-            failed_login_attempts: sql`${schema.adminUsers.failed_login_attempts} + 1`,
-            ...(attempts >= 5 ? { locked_until: new Date(Date.now() + 15 * 60 * 1000) } : {}),
+            failed_login_attempts: attempts,
+            locked_until: attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null,
           })
           .where(eq(schema.adminUsers.id, admin.id));
         return NextResponse.json({ error: 'Kredensial login tidak cocok.' }, { status: 401 });
