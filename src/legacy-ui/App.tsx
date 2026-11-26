@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Navbar } from './components/Navbar';
 import { DisclaimerBanner } from './components/DisclaimerBanner';
 import { LandingPage } from './components/LandingPage';
@@ -23,52 +24,102 @@ const SearchCasesView = lazy(() => import('./components/SearchCasesView').then(m
 const AdminPanel = lazy(() => import('./components/AdminPanel').then(m => ({ default: m.AdminPanel })));
 const ReportModal = lazy(() => import('./components/ReportModal').then(m => ({ default: m.ReportModal })));
 
-export interface AppProps {
-  initialTab?: 'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin';
-  initialCaseId?: string | null;
-  initialOpenReport?: boolean;
+export type PortalTab = 'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin';
+
+interface PortalDataSnapshot {
+  cases: CorruptionCase[];
+  regions: RegionSummary[];
+  leaderboard: LeaderboardItem[];
+  stats: StatsOverview | null;
 }
 
-export default function App({ initialTab, initialCaseId = null, initialOpenReport = false }: AppProps = {}) {
-  const [activeTab, setActiveTab] = useState<'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin'>(() => {
-    if (initialTab) return initialTab;
-    if (typeof window !== 'undefined' && (window.location.pathname === '/admin' || window.location.hash === '#admin')) {
-      return 'admin';
-    }
-    return 'beranda';
-  });
+let portalDataCache: PortalDataSnapshot | null = null;
+let portalDataPromise: Promise<PortalDataSnapshot> | null = null;
+
+function tabToHref(tab: PortalTab): string {
+  return tab === 'beranda' ? '/' : `/${tab}`;
+}
+
+function pathnameToTab(pathname: string | null, fallback: PortalTab = 'beranda'): PortalTab {
+  if (!pathname) return fallback;
+  if (pathname === '/admin') return 'admin';
+  if (pathname === '/peta') return 'peta';
+  if (pathname === '/klasemen' || pathname.startsWith('/tokoh')) return 'klasemen';
+  if (pathname === '/statistik') return 'statistik';
+  if (pathname === '/cari' || pathname.startsWith('/kasus')) return 'cari';
+  if (pathname === '/' || pathname === '/lapor' || pathname === '/open-data') return 'beranda';
+  return fallback;
+}
+
+export interface AppProps {
+  initialTab?: PortalTab;
+  initialCaseId?: string | null;
+  initialOpenReport?: boolean;
+  initialOpenData?: boolean;
+}
+
+export default function App({
+  initialTab,
+  initialCaseId = null,
+  initialOpenReport = false,
+  initialOpenData = false,
+}: AppProps = {}) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<PortalTab>(() =>
+    pathnameToTab(pathname, initialTab || 'beranda')
+  );
   
-  // Data states
-  const [cases, setCases] = useState<CorruptionCase[]>([]);
-  const [regions, setRegions] = useState<RegionSummary[]>([]);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
-  const [stats, setStats] = useState<StatsOverview | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  // Data states (hydrated immediately from module cache across route changes)
+  const [cases, setCases] = useState<CorruptionCase[]>(() => portalDataCache?.cases ?? []);
+  const [regions, setRegions] = useState<RegionSummary[]>(() => portalDataCache?.regions ?? []);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>(() => portalDataCache?.leaderboard ?? []);
+  const [stats, setStats] = useState<StatsOverview | null>(() => portalDataCache?.stats ?? null);
+  const [isLoading, setIsLoading] = useState<boolean>(() => !portalDataCache);
 
   // Selected item states
   const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(initialCaseId);
-  const [reportModalOpen, setReportModalOpen] = useState<boolean>(Boolean(initialOpenReport));
+  const [reportModalOpen, setReportModalOpen] = useState<boolean>(
+    Boolean(initialOpenReport || pathname === '/lapor')
+  );
   const [reportTargetCaseId, setReportTargetCaseId] = useState<string | null>(null);
   const [reportInitialMode, setReportInitialMode] = useState<'new_case' | 'correction' | 'track'>('new_case');
 
-  // Sync browser back/forward history
+  // Sync route pathname changes with UI state
   useEffect(() => {
-    const handlePopState = () => {
-      if (window.location.pathname === '/admin' || window.location.hash === '#admin') {
-        setActiveTab('admin');
-      } else {
-        setActiveTab('beranda');
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+    setActiveTab(pathnameToTab(pathname, initialTab || 'beranda'));
+  }, [pathname, initialTab]);
 
-  // Track SPA pageview in monitoring
+  useEffect(() => {
+    if (pathname === '/lapor') {
+      setReportTargetCaseId(null);
+      setReportInitialMode('new_case');
+      setReportModalOpen(true);
+    } else if (!initialOpenReport) {
+      setReportModalOpen(false);
+    }
+  }, [pathname, initialOpenReport]);
+
+  useEffect(() => {
+    setSelectedCaseId(initialCaseId);
+  }, [initialCaseId]);
+
+  const navigateToTab = (tab: PortalTab) => {
+    const href = tabToHref(tab);
+    setActiveTab(tab);
+    if (pathname !== href) {
+      router.push(href);
+    }
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Track SPA/Route pageview in monitoring
   useEffect(() => {
     try {
-      const pagePath = activeTab === 'beranda' ? '/' : `/${activeTab}`;
+      const pagePath = pathname || tabToHref(activeTab);
       fetch('/api/admin/monitoring/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -78,28 +129,60 @@ export default function App({ initialTab, initialCaseId = null, initialOpenRepor
         })
       }).catch(() => {});
     } catch (e) {}
-  }, [activeTab]);
+  }, [pathname, activeTab]);
 
-  const loadAllData = async () => {
-    setIsLoading(true);
+  const loadAllData = async (forceRefresh = false) => {
+    if (!forceRefresh && portalDataCache) {
+      setCases(portalDataCache.cases);
+      setRegions(portalDataCache.regions);
+      setLeaderboard(portalDataCache.leaderboard);
+      setStats(portalDataCache.stats);
+      setIsLoading(false);
+      return;
+    }
+
+    if (forceRefresh) {
+      portalDataPromise = null;
+    }
+    if (!portalDataCache) {
+      setIsLoading(true);
+    }
+
     try {
-      const [casesRes, regionsRes, leaderRes, statsRes] = await Promise.all([
-        fetch('/api/cases?limit=100'),
-        fetch('/api/regions/summary'),
-        fetch('/api/leaderboard'),
-        fetch('/api/stats/overview')
-      ]);
+      if (!portalDataPromise) {
+        portalDataPromise = (async () => {
+          const [casesRes, regionsRes, leaderRes, statsRes] = await Promise.all([
+            fetch('/api/cases?limit=100'),
+            fetch('/api/regions/summary'),
+            fetch('/api/leaderboard'),
+            fetch('/api/stats/overview')
+          ]);
 
-      const casesData = await casesRes.json();
-      const regionsData = await regionsRes.json();
-      const leaderData = await leaderRes.json();
-      const statsData = await statsRes.json();
+          const [casesData, regionsData, leaderData, statsData] = await Promise.all([
+            casesRes.json(),
+            regionsRes.json(),
+            leaderRes.json(),
+            statsRes.json()
+          ]);
 
-      setCases(Array.isArray(casesData?.cases) ? casesData.cases : []);
-      setRegions(Array.isArray(regionsData) ? regionsData : []);
-      setLeaderboard(Array.isArray(leaderData) ? leaderData : []);
-      setStats(statsData && !statsData.error ? statsData : null);
+          const snapshot: PortalDataSnapshot = {
+            cases: Array.isArray(casesData?.cases) ? casesData.cases : [],
+            regions: Array.isArray(regionsData) ? regionsData : [],
+            leaderboard: Array.isArray(leaderData) ? leaderData : [],
+            stats: statsData && !statsData.error ? statsData : null,
+          };
+          portalDataCache = snapshot;
+          return snapshot;
+        })();
+      }
+
+      const snapshot = await portalDataPromise;
+      setCases(snapshot.cases);
+      setRegions(snapshot.regions);
+      setLeaderboard(snapshot.leaderboard);
+      setStats(snapshot.stats);
     } catch (err) {
+      portalDataPromise = null;
       console.error('Error fetching data:', err);
     } finally {
       setIsLoading(false);
@@ -151,13 +234,10 @@ export default function App({ initialTab, initialCaseId = null, initialOpenRepor
         </div>
       }>
         <AdminPanel 
-          onRefreshData={loadAllData} 
+          onRefreshData={() => loadAllData(true)} 
           onBackToHome={() => {
             sound.playPop();
-            setActiveTab('beranda');
-            if (typeof window !== 'undefined' && window.location.pathname === '/admin') {
-              window.history.pushState({}, '', '/');
-            }
+            navigateToTab('beranda');
           }}
         />
       </Suspense>
@@ -170,11 +250,9 @@ export default function App({ initialTab, initialCaseId = null, initialOpenRepor
       {/* Top Scrapbook Header Navigation */}
       <Navbar
         activeTab={activeTab}
-        setActiveTab={(tab) => {
-          setActiveTab(tab);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        onOpenReport={() => handleOpenReport()}
+        setActiveTab={navigateToTab}
+        onOpenReport={() => router.push('/lapor')}
+        initialOpenData={initialOpenData}
       />
 
       {/* Main Content Area */}
@@ -205,12 +283,9 @@ export default function App({ initialTab, initialCaseId = null, initialOpenRepor
               <LandingPage
                 stats={stats}
                 cases={cases}
-                onNavigate={(tab) => {
-                  setActiveTab(tab);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+                onNavigate={navigateToTab}
                 onSelectCase={(id) => setSelectedCaseId(id)}
-                onOpenReport={() => handleOpenReport()}
+                onOpenReport={() => router.push('/lapor')}
               />
             )}
 
@@ -222,7 +297,7 @@ export default function App({ initialTab, initialCaseId = null, initialOpenRepor
                 selectedProvince={selectedProvince}
                 onSelectProvince={setSelectedProvince}
                 onSelectCase={(id) => setSelectedCaseId(id)}
-                onOpenReport={() => handleOpenReport(undefined, 'new_case')}
+                onOpenReport={() => router.push('/lapor')}
               />
             )}
 
@@ -262,7 +337,14 @@ export default function App({ initialTab, initialCaseId = null, initialOpenRepor
       {/* Case Detail Modal */}
       <CaseDetailModal
         caseData={activeCaseDetail}
-        onClose={() => setSelectedCaseId(null)}
+        onClose={() => {
+          setSelectedCaseId(null);
+          if (pathname?.startsWith('/kasus/')) {
+            router.push('/cari');
+          } else if (pathname?.startsWith('/tokoh/')) {
+            router.push('/klasemen');
+          }
+        }}
         onOpenReport={(cId) => handleOpenReport(cId, 'correction')}
       />
 
@@ -271,7 +353,12 @@ export default function App({ initialTab, initialCaseId = null, initialOpenRepor
         <Suspense fallback={null}>
           <ReportModal
             isOpen={reportModalOpen}
-            onClose={() => setReportModalOpen(false)}
+            onClose={() => {
+              setReportModalOpen(false);
+              if (pathname === '/lapor') {
+                router.push('/');
+              }
+            }}
             caseId={reportTargetCaseId}
             initialMode={reportInitialMode}
             cases={cases.map(c => ({
@@ -286,8 +373,7 @@ export default function App({ initialTab, initialCaseId = null, initialOpenRepor
       <Footer 
         onNavigate={(tab) => {
           sound.playPop();
-          setActiveTab(tab);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          navigateToTab(tab);
         }}
         onOpenReport={(mode) => {
           sound.playPop();
@@ -295,11 +381,7 @@ export default function App({ initialTab, initialCaseId = null, initialOpenRepor
         }}
         onOpenAdmin={() => {
           sound.playPop();
-          setActiveTab('admin');
-          if (typeof window !== 'undefined') {
-            window.history.pushState({}, '', '/admin');
-          }
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          navigateToTab('admin');
         }} 
       />
 

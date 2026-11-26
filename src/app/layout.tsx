@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { ClientProviders } from '@/components/ClientProviders';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://korup-indo.vercel.app';
 
@@ -69,7 +70,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        {children}
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   );

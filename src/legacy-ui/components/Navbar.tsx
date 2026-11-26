@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   Home,
   MapPin, 
@@ -29,22 +31,45 @@ import { OpenDataModal } from './OpenDataModal';
 
 interface NavbarProps {
   activeTab: 'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin';
-  setActiveTab: (tab: 'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin') => void;
-  onOpenReport: () => void;
+  setActiveTab?: (tab: 'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin') => void;
+  onOpenReport?: () => void;
+  initialOpenData?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
-  setActiveTab,
-  onOpenReport
+  initialOpenData = false,
 }) => {
+  const pathname = usePathname();
+  const router = useRouter();
+  const isLaporRoute = pathname === '/lapor';
+  const isOpenDataRoute = pathname === '/open-data';
+  const currentTab: 'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin' =
+    pathname === '/klasemen' || pathname?.startsWith('/tokoh')
+      ? 'klasemen'
+      : pathname === '/peta'
+        ? 'peta'
+        : pathname === '/statistik'
+          ? 'statistik'
+          : pathname === '/cari' || pathname?.startsWith('/kasus')
+            ? 'cari'
+            : pathname === '/admin'
+              ? 'admin'
+              : pathname === '/'
+                ? 'beranda'
+                : activeTab;
+
   const [soundOn, setSoundOn] = useState(sound.isEnabled);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [citizenUser, setCitizenUser] = useState<CitizenUser | null>(null);
   const [citizenModalOpen, setCitizenModalOpen] = useState(false);
   const [citizenProfileModalOpen, setCitizenProfileModalOpen] = useState(false);
   const [citizenDropdownOpen, setCitizenDropdownOpen] = useState(false);
-  const [openDataModalOpen, setOpenDataModalOpen] = useState(false);
+  const [openDataModalOpen, setOpenDataModalOpen] = useState(Boolean(initialOpenData || isOpenDataRoute));
+
+  useEffect(() => {
+    setOpenDataModalOpen(Boolean(initialOpenData || pathname === '/open-data'));
+  }, [pathname, initialOpenData]);
 
   useEffect(() => {
     loadCitizen();
@@ -89,14 +114,14 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
-  const handleNavClick = (tab: 'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin') => {
+  const handleMenuLinkClick = () => {
     sound.playPop();
-    setActiveTab(tab);
     setMobileMenuOpen(false);
   };
 
   const navItems: Array<{
     id: 'beranda' | 'klasemen' | 'peta' | 'statistik' | 'cari';
+    href: string;
     label: string;
     icon: React.ComponentType<{ className?: string }>;
     activeBg: string;
@@ -107,6 +132,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   }> = [
     {
       id: 'beranda',
+      href: '/',
       label: 'Beranda',
       icon: Home,
       activeBg: 'bg-[#FDE047]',
@@ -117,6 +143,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     },
     {
       id: 'klasemen',
+      href: '/klasemen',
       label: 'Klasemen Liga',
       icon: Trophy,
       activeBg: 'bg-[#FB923C]',
@@ -127,6 +154,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     },
     {
       id: 'peta',
+      href: '/peta',
       label: 'Peta Wilayah',
       icon: MapPin,
       activeBg: 'bg-[#38BDF8]',
@@ -137,6 +165,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     },
     {
       id: 'statistik',
+      href: '/statistik',
       label: 'Statistik',
       icon: BarChart3,
       activeBg: 'bg-[#4ADE80]',
@@ -147,6 +176,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     },
     {
       id: 'cari',
+      href: '/cari',
       label: 'Cari Kasus',
       icon: Search,
       activeBg: 'bg-[#C084FC]',
@@ -163,9 +193,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center justify-between h-20 gap-3 xl:gap-6">
           
           {/* Kolom 1: Logo & Brand (Kiri) */}
-          <div 
+          <Link
+            href="/"
             className="flex items-center gap-3 cursor-pointer group shrink-0"
-            onClick={() => handleNavClick('beranda')}
+            onClick={handleMenuLinkClick}
           >
             <div className="relative shrink-0">
               <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#FDE047] border-2 border-[#EAB308] shadow-md flex items-center justify-center rotate-[-4deg] group-hover:rotate-0 transition-transform">
@@ -189,19 +220,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                 Portal Transparansi Perkara &amp; Putusan Hukum Terbuka
               </p>
             </div>
-          </div>
+          </Link>
 
           {/* Kolom 2: Navigasi Menu Utama (Tengah - Distribusi Seimbang & Efek Tilt Tematik) */}
           <nav className="hidden lg:flex items-center bg-[#F5EEDC]/90 border border-[#E2D6BD] p-1.5 rounded-2xl shadow-2xs">
             <div className="grid grid-cols-5 gap-1.5 min-w-[530px] xl:min-w-[620px]">
               {navItems.map(item => {
                 const Icon = item.icon;
-                const isActive = activeTab === item.id;
+                const isActive = !isLaporRoute && !isOpenDataRoute && currentTab === item.id;
                 return (
-                  <button
+                  <Link
                     key={item.id}
                     id={`nav-${item.id}-btn`}
-                    onClick={() => handleNavClick(item.id)}
+                    href={item.href}
+                    onClick={handleMenuLinkClick}
+                    aria-current={isActive ? 'page' : undefined}
                     className={`
                       px-2.5 xl:px-3 py-2 rounded-xl text-xs xl:text-sm font-bold flex items-center justify-center gap-1.5 xl:gap-2 
                       transition-all duration-150 cursor-pointer whitespace-nowrap transform select-none
@@ -214,7 +247,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   >
                     <Icon className="w-4 h-4 shrink-0 transition-transform group-hover:scale-110" />
                     <span>{item.label}</span>
-                  </button>
+                  </Link>
                 );
               })}
             </div>
@@ -233,31 +266,37 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {/* Lapor Kasus Baru */}
-            <button
+            <Link
               id="report-new-case-btn"
-              onClick={() => {
-                sound.playPop();
-                onOpenReport();
-              }}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] hover:bg-[#FDE68A] text-xs font-bold transition-all duration-150 shadow-2xs cursor-pointer whitespace-nowrap transform hover:-rotate-1 hover:-translate-y-0.5 hover:shadow-xs active:scale-95 active:rotate-0"
+              href="/lapor"
+              onClick={handleMenuLinkClick}
+              aria-current={isLaporRoute ? 'page' : undefined}
+              className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all duration-150 shadow-2xs cursor-pointer whitespace-nowrap transform hover:-rotate-1 hover:-translate-y-0.5 hover:shadow-xs active:scale-95 active:rotate-0 ${
+                isLaporRoute
+                  ? 'bg-[#FDE68A] border-amber-400 text-[#92400E] ring-2 ring-amber-400 -rotate-1'
+                  : 'bg-[#FEF3C7] border-[#FDE68A] text-[#92400E] hover:bg-[#FDE68A]'
+              }`}
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-600" />
               <span>Lapor Kasus Baru</span>
-            </button>
+            </Link>
 
             {/* Katalog Dataset Terbuka */}
-            <button
+            <Link
               id="open-data-btn"
-              onClick={() => {
-                sound.playPop();
-                setOpenDataModalOpen(true);
-              }}
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 hover:bg-emerald-100 text-xs font-bold transition-all duration-150 shadow-2xs cursor-pointer whitespace-nowrap transform hover:rotate-1 hover:-translate-y-0.5 hover:shadow-xs active:scale-95"
+              href="/open-data"
+              onClick={handleMenuLinkClick}
+              aria-current={isOpenDataRoute ? 'page' : undefined}
+              className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all duration-150 shadow-2xs cursor-pointer whitespace-nowrap transform hover:rotate-1 hover:-translate-y-0.5 hover:shadow-xs active:scale-95 ${
+                isOpenDataRoute
+                  ? 'bg-emerald-100 border-emerald-400 text-emerald-900 ring-2 ring-emerald-400 rotate-1'
+                  : 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100'
+              }`}
               title="Katalog & Unduh Dataset Terbuka LKI (CSV & JSON)"
             >
               <Database className="w-3.5 h-3.5 text-emerald-700" />
               <span>Dataset Terbuka</span>
-            </button>
+            </Link>
 
             {/* Mobile Menu Toggle */}
             <button
@@ -382,65 +421,69 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
         <div className="lg:hidden px-4 pt-2 pb-4 space-y-2 bg-[#FFFDF8] border-b border-[#E7DFCC]">
-          <button
-            onClick={() => handleNavClick('beranda')}
+          <Link
+            href="/"
+            onClick={handleMenuLinkClick}
             className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-3 ${
-              activeTab === 'beranda' ? 'bg-[#FDE047] text-[#854D0E]' : 'text-[#334155]'
+              !isLaporRoute && !isOpenDataRoute && currentTab === 'beranda' ? 'bg-[#FDE047] text-[#854D0E]' : 'text-[#334155]'
             }`}
           >
             <Home className="w-4 h-4" /> Beranda Utama
-          </button>
-          <button
-            onClick={() => handleNavClick('peta')}
+          </Link>
+          <Link
+            href="/peta"
+            onClick={handleMenuLinkClick}
             className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-3 ${
-              activeTab === 'peta' ? 'bg-[#38BDF8] text-white' : 'text-[#334155]'
+              !isLaporRoute && !isOpenDataRoute && currentTab === 'peta' ? 'bg-[#38BDF8] text-white' : 'text-[#334155]'
             }`}
           >
             <MapPin className="w-4 h-4" /> Peta Interaktif
-          </button>
-          <button
-            onClick={() => handleNavClick('klasemen')}
+          </Link>
+          <Link
+            href="/klasemen"
+            onClick={handleMenuLinkClick}
             className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-3 ${
-              activeTab === 'klasemen' ? 'bg-[#FB923C] text-white' : 'text-[#334155]'
+              !isLaporRoute && !isOpenDataRoute && currentTab === 'klasemen' ? 'bg-[#FB923C] text-white' : 'text-[#334155]'
             }`}
           >
             <Trophy className="w-4 h-4" /> Klasemen Liga Korupsi
-          </button>
-          <button
-            onClick={() => handleNavClick('statistik')}
+          </Link>
+          <Link
+            href="/statistik"
+            onClick={handleMenuLinkClick}
             className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-3 ${
-              activeTab === 'statistik' ? 'bg-[#4ADE80] text-[#064E3B]' : 'text-[#334155]'
+              !isLaporRoute && !isOpenDataRoute && currentTab === 'statistik' ? 'bg-[#4ADE80] text-[#064E3B]' : 'text-[#334155]'
             }`}
           >
             <BarChart3 className="w-4 h-4" /> Statistik &amp; Grafik
-          </button>
-          <button
-            onClick={() => handleNavClick('cari')}
+          </Link>
+          <Link
+            href="/cari"
+            onClick={handleMenuLinkClick}
             className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-3 ${
-              activeTab === 'cari' ? 'bg-[#C084FC] text-white' : 'text-[#334155]'
+              !isLaporRoute && !isOpenDataRoute && currentTab === 'cari' ? 'bg-[#C084FC] text-white' : 'text-[#334155]'
             }`}
           >
             <Search className="w-4 h-4" /> Cari Kasus Pejabat
-          </button>
-          <button
-            onClick={() => {
-              setMobileMenuOpen(false);
-              onOpenReport();
-            }}
-            className="w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm text-[#92400E] bg-[#FEF3C7] flex items-center gap-3"
+          </Link>
+          <Link
+            href="/lapor"
+            onClick={handleMenuLinkClick}
+            className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm text-[#92400E] flex items-center gap-3 ${
+              isLaporRoute ? 'bg-[#FDE68A] ring-2 ring-amber-400' : 'bg-[#FEF3C7]'
+            }`}
           >
             <Sparkles className="w-4 h-4 text-amber-600" /> Laporkan Kasus Baru
-          </button>
-          <button
-            onClick={() => {
-              setMobileMenuOpen(false);
-              sound.playPop();
-              setOpenDataModalOpen(true);
-            }}
-            className="w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 flex items-center gap-3"
+          </Link>
+          <Link
+            href="/open-data"
+            onClick={handleMenuLinkClick}
+            className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm text-emerald-800 border border-emerald-200 flex items-center gap-3 ${
+              isOpenDataRoute ? 'bg-emerald-100 ring-2 ring-emerald-400' : 'bg-emerald-50'
+            }`}
           >
             <Database className="w-4 h-4 text-emerald-600" /> Dataset Terbuka (CSV &amp; JSON)
-          </button>
+          </Link>
 
           {/* Mobile Citizen Account */}
           <div className="pt-2 border-t border-[#DFD3BA]">
@@ -518,7 +561,12 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Modal Pusat Katalog & Unduh Dataset Terbuka (Open Data) */}
       <OpenDataModal
         isOpen={openDataModalOpen}
-        onClose={() => setOpenDataModalOpen(false)}
+        onClose={() => {
+          setOpenDataModalOpen(false);
+          if (pathname === '/open-data') {
+            router.push('/');
+          }
+        }}
       />
     </header>
   );

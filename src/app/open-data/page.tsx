@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function OpenDataPage() {
-  return <V1AppShell initialTab="beranda" />;
+  return <V1AppShell initialTab="beranda" initialOpenData={true} />;
 }

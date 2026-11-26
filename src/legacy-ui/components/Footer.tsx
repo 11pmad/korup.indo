@@ -1,6 +1,8 @@
 "use client";
 
 import React from 'react';
+import Link from 'next/link';
+import { sound } from '../utils/audio';
 import { 
   BookOpen, 
   ShieldAlert, 
@@ -86,63 +88,56 @@ export const Footer: React.FC<FooterProps> = ({
             </h4>
             <ul className="text-xs space-y-2 text-[#64748B]">
               <li>
-                <button
-                  onClick={() => {
-                    onNavigate?.('klasemen');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
+                <Link
+                  href="/klasemen"
+                  onClick={() => sound.playPop()}
                   className="hover:text-[#DC2626] hover:translate-x-1 transition-all inline-flex items-center gap-2 cursor-pointer text-left"
                 >
                   <Trophy className="w-3.5 h-3.5 text-amber-500" />
                   <span>Klasemen Liga Pejabat &amp; Partai</span>
-                </button>
+                </Link>
               </li>
               <li>
-                <button
-                  onClick={() => {
-                    onNavigate?.('peta');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
+                <Link
+                  href="/peta"
+                  onClick={() => sound.playPop()}
                   className="hover:text-[#DC2626] hover:translate-x-1 transition-all inline-flex items-center gap-2 cursor-pointer text-left"
                 >
                   <MapPin className="w-3.5 h-3.5 text-rose-500" />
                   <span>Peta Sebaran 38 Provinsi</span>
-                </button>
+                </Link>
               </li>
               <li>
-                <button
-                  onClick={() => {
-                    onNavigate?.('statistik');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
+                <Link
+                  href="/statistik"
+                  onClick={() => sound.playPop()}
                   className="hover:text-[#DC2626] hover:translate-x-1 transition-all inline-flex items-center gap-2 cursor-pointer text-left"
                 >
                   <BarChart3 className="w-3.5 h-3.5 text-indigo-500" />
                   <span>Statistik &amp; Hall of Shame</span>
-                </button>
+                </Link>
               </li>
               <li>
-                <button
-                  onClick={() => {
-                    onNavigate?.('cari');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
+                <Link
+                  href="/cari"
+                  onClick={() => sound.playPop()}
                   className="hover:text-[#DC2626] hover:translate-x-1 transition-all inline-flex items-center gap-2 cursor-pointer text-left"
                 >
                   <Search className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Pencarian Berkas &amp; Terdakwa</span>
-                </button>
+                </Link>
               </li>
               {onOpenReport && (
                 <>
                   <li className="pt-1">
-                    <button
-                      onClick={() => onOpenReport('new_case')}
+                    <Link
+                      href="/lapor"
+                      onClick={() => sound.playPop()}
                       className="text-amber-900 font-bold hover:text-amber-950 inline-flex items-center gap-1.5 bg-[#FEF3C7] hover:bg-[#FDE68A] border border-[#FCD34D] px-2.5 py-1 rounded-lg transition-colors cursor-pointer text-[11px]"
                     >
                       <Sparkles className="w-3.5 h-3.5 text-amber-700" />
                       <span>Usulkan Kasus Baru</span>
-                    </button>
+                    </Link>
                   </li>
                   <li>
                     <button
@@ -219,18 +214,16 @@ export const Footer: React.FC<FooterProps> = ({
             {onOpenAdmin && (
               <>
                 <span className="text-[#D5C9AB] hidden sm:inline">•</span>
-                <button
+                <Link
                   id="footer-admin-login-btn"
-                  onClick={() => {
-                    onOpenAdmin();
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
+                  href="/admin"
+                  onClick={() => sound.playPop()}
                   className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#78716C] hover:text-[#DC2626] transition-colors py-1 px-2.5 rounded-lg hover:bg-[#EDE3CB] cursor-pointer"
                   title="Akses Masuk Khusus Tim Pengelola & Kurator"
                 >
                   <Lock className="w-3 h-3 opacity-75" />
                   <span>Login Pengelola</span>
-                </button>
+                </Link>
               </>
             )}
           </div>
