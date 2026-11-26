@@ -42,43 +42,53 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const ddlUrl = (process.env.DATABASE_URL_UNPOOLED || env.DATABASE_URL).trim();
-  const isLocal = /localhost|127\.0\.0\.1/.test(ddlUrl);
-  const hasSslMode = /[?&]sslmode=/i.test(ddlUrl);
+  const step = req.nextUrl.searchParams.get('step') || 'all';
 
-  const ddlClient = postgres(ddlUrl, {
-    max: 1,
-    connect_timeout: 15,
-    prepare: false,
-    ...(!isLocal && !hasSslMode ? { ssl: 'require' } : {}),
-  });
+  if (step === 'all' || step === 'migrate') {
+    const ddlUrl = (process.env.DATABASE_URL_UNPOOLED || env.DATABASE_URL).trim();
+    const isLocal = /localhost|127\.0\.0\.1/.test(ddlUrl);
+    const hasSslMode = /[?&]sslmode=/i.test(ddlUrl);
 
-  try {
-    await ddlClient.unsafe('CREATE EXTENSION IF NOT EXISTS pg_trgm;');
-    await ddlClient.unsafe('CREATE EXTENSION IF NOT EXISTS pgcrypto;');
-    await migrate(drizzle(ddlClient), {
-      migrationsFolder: path.resolve(process.cwd(), 'drizzle'),
+    const ddlClient = postgres(ddlUrl, {
+      max: 1,
+      connect_timeout: 15,
+      prepare: false,
+      ...(!isLocal && !hasSslMode ? { ssl: 'require' } : {}),
     });
-  } catch (err) {
-    await ddlClient.end().catch(() => {});
-    return NextResponse.json(
-      {
-        success: false,
-        error: err instanceof Error ? err.message : 'Migrasi database gagal',
-      },
-      { status: 500 }
-    );
-  } finally {
-    await ddlClient.end().catch(() => {});
+
+    try {
+      await ddlClient.unsafe('CREATE EXTENSION IF NOT EXISTS pg_trgm;');
+      await ddlClient.unsafe('CREATE EXTENSION IF NOT EXISTS pgcrypto;');
+      await migrate(drizzle(ddlClient), {
+        migrationsFolder: path.resolve(process.cwd(), 'drizzle'),
+      });
+    } catch (err) {
+      await ddlClient.end().catch(() => {});
+      return NextResponse.json(
+        {
+          success: false,
+          error: err instanceof Error ? err.message : 'Migrasi database gagal',
+        },
+        { status: 500 }
+      );
+    } finally {
+      await ddlClient.end().catch(() => {});
+    }
   }
 
   try {
-    await runSeed();
-    await bootstrapAdmin();
+    if (step === 'all' || step === 'admin') {
+      await bootstrapAdmin();
+    }
+    if (step === 'all' || step === 'seed') {
+      await runSeed();
+    }
 
     return NextResponse.json({
       success: true,
-      bootstrapped: true,
+      step,
+      bootstrapped: step === 'all' || step === 'admin',
+      seeded: step === 'all' || step === 'seed',
       admin_username: env.INITIAL_SUPERADMIN_USERNAME,
       timestamp: new Date().toISOString(),
     });

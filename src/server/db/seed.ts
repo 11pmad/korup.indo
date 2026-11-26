@@ -66,12 +66,18 @@ function deriveCaseStatus(
   return 'penyidikan';
 }
 
+async function runInBatches<T>(items: T[], size: number, fn: (item: T) => Promise<unknown>) {
+  for (let i = 0; i < items.length; i += size) {
+    await Promise.all(items.slice(i, i + size).map(fn));
+  }
+}
+
 export async function runSeed() {
   console.log('Memulai seeding terpadu LKI v2.0 dari data/normalized/...');
 
   // 1. Provinces (38 + nasional)
-  for (const p of CANONICAL_PROVINCES) {
-    await db
+  await runInBatches(CANONICAL_PROVINCES, 15, (p) =>
+    db
       .insert(schema.provinces)
       .values({
         id: p.id,
@@ -82,12 +88,12 @@ export async function runSeed() {
       .onConflictDoUpdate({
         target: schema.provinces.id,
         set: { name: p.name, island_cluster: p.island_cluster, bps_code: p.bps_code },
-      });
-  }
+      })
+  );
 
   // 2. Presidential Eras (10)
-  for (const e of ERAS_MASTER) {
-    await db
+  await runInBatches(ERAS_MASTER, 15, (e) =>
+    db
       .insert(schema.presidentialEras)
       .values(e)
       .onConflictDoUpdate({
@@ -100,8 +106,8 @@ export async function runSeed() {
           cabinet_name: e.cabinet_name,
           context_summary: e.context_summary,
         },
-      });
-  }
+      })
+  );
 
   // 3. Load all canonical JSON datasets
   const sourcesData = readNormalized<any>('sources');
@@ -120,8 +126,8 @@ export async function runSeed() {
   const caseLocationsData = readNormalized<any>('case_locations');
 
   // 4. Sources
-  for (const s of sourcesData) {
-    await db
+  await runInBatches(sourcesData, 15, (s) =>
+    db
       .insert(schema.sources)
       .values({
         id: s.source_id,
@@ -143,12 +149,12 @@ export async function runSeed() {
           source_institution: s.source_institution,
           source_excerpt: s.source_excerpt,
         },
-      });
-  }
+      })
+  );
 
   // 5. Parties
-  for (const p of partiesData) {
-    await db
+  await runInBatches(partiesData, 15, (p) =>
+    db
       .insert(schema.parties)
       .values({
         id: p.party_id,
@@ -163,29 +169,27 @@ export async function runSeed() {
           abbreviation: p.party_abbreviation,
           color_hex: PARTY_COLORS[p.party_id] ?? '#475569',
         },
-      });
-  }
+      })
+  );
 
   // 6. Locations
-  for (const l of locationsData) {
-    await db
-      .insert(schema.locations)
-      .values({
-        id: l.location_id,
-        province_id: resolveProvinceId(l.province),
-        city_regency: l.city_regency,
-        district: l.district,
-        latitude: l.latitude !== null && l.latitude !== undefined ? String(l.latitude) : null,
-        longitude: l.longitude !== null && l.longitude !== undefined ? String(l.longitude) : null,
-        location_type: l.location_type ?? 'offense_location',
-      })
-      .onConflictDoNothing();
+  const locationRows = locationsData.map((l) => ({
+    id: l.location_id,
+    province_id: resolveProvinceId(l.province),
+    city_regency: l.city_regency,
+    district: l.district,
+    latitude: l.latitude !== null && l.latitude !== undefined ? String(l.latitude) : null,
+    longitude: l.longitude !== null && l.longitude !== undefined ? String(l.longitude) : null,
+    location_type: l.location_type ?? 'offense_location',
+  }));
+  if (locationRows.length > 0) {
+    await db.insert(schema.locations).values(locationRows).onConflictDoNothing();
   }
 
   // 7. Companies
-  for (const comp of companiesData) {
+  await runInBatches(companiesData, 15, (comp) => {
     const slug = slugify(comp.company_name) || comp.company_id;
-    await db
+    return db
       .insert(schema.companies)
       .values({
         id: comp.company_id,
@@ -209,12 +213,12 @@ export async function runSeed() {
           company_status: comp.company_status ?? 'aktif',
         },
       });
-  }
+  });
 
   // 8. Persons
-  for (const per of personsData) {
+  await runInBatches(personsData, 15, (per) => {
     const slug = slugify(per.full_name) || per.person_id;
-    await db
+    return db
       .insert(schema.persons)
       .values({
         id: per.person_id,
@@ -236,49 +240,45 @@ export async function runSeed() {
           aliases: per.alias ?? [],
         },
       });
-  }
+  });
 
   // 9. Positions
-  for (const pos of positionsData) {
-    await db
-      .insert(schema.positions)
-      .values({
-        id: pos.position_id,
-        person_id: pos.person_id,
-        position_title: pos.position_title,
-        institution: pos.institution,
-        government_level: pos.government_level,
-        sector: pos.sector,
-        province_id: pos.province ? resolveProvinceId(pos.province) : null,
-        city_regency: pos.city_regency,
-        period_start: pos.period_start,
-        period_end: pos.period_end,
-        position_at_offense: Boolean(pos.position_at_offense),
-        position_at_arrest: Boolean(pos.position_at_arrest),
-        position_at_verdict: Boolean(pos.position_at_verdict),
-        source_id: pos.source_id,
-      })
-      .onConflictDoNothing();
+  const positionRows = positionsData.map((pos) => ({
+    id: pos.position_id,
+    person_id: pos.person_id,
+    position_title: pos.position_title,
+    institution: pos.institution,
+    government_level: pos.government_level,
+    sector: pos.sector,
+    province_id: pos.province ? resolveProvinceId(pos.province) : null,
+    city_regency: pos.city_regency,
+    period_start: pos.period_start,
+    period_end: pos.period_end,
+    position_at_offense: Boolean(pos.position_at_offense),
+    position_at_arrest: Boolean(pos.position_at_arrest),
+    position_at_verdict: Boolean(pos.position_at_verdict),
+    source_id: pos.source_id,
+  }));
+  if (positionRows.length > 0) {
+    await db.insert(schema.positions).values(positionRows).onConflictDoNothing();
   }
 
   // 10. Party Memberships
-  for (const pm of partyMembershipsData) {
-    await db
-      .insert(schema.partyMemberships)
-      .values({
-        id: pm.membership_id,
-        person_id: pm.person_id,
-        party_id: pm.party_id,
-        party_position: pm.party_position,
-        membership_start: pm.membership_start,
-        membership_end: pm.membership_end,
-        party_status: pm.party_status ?? 'aktif',
-        party_at_offense: Boolean(pm.party_at_offense),
-        party_at_arrest: Boolean(pm.party_at_arrest),
-        party_at_verdict: Boolean(pm.party_at_verdict),
-        source_id: pm.source_id,
-      })
-      .onConflictDoNothing();
+  const partyMembershipRows = partyMembershipsData.map((pm) => ({
+    id: pm.membership_id,
+    person_id: pm.person_id,
+    party_id: pm.party_id,
+    party_position: pm.party_position,
+    membership_start: pm.membership_start,
+    membership_end: pm.membership_end,
+    party_status: pm.party_status ?? 'aktif',
+    party_at_offense: Boolean(pm.party_at_offense),
+    party_at_arrest: Boolean(pm.party_at_arrest),
+    party_at_verdict: Boolean(pm.party_at_verdict),
+    source_id: pm.source_id,
+  }));
+  if (partyMembershipRows.length > 0) {
+    await db.insert(schema.partyMemberships).values(partyMembershipRows).onConflictDoNothing();
   }
 
   // 11. Build lookup maps for case province & status
@@ -291,7 +291,7 @@ export async function runSeed() {
   }
 
   // 12. Cases
-  for (const c of casesData) {
+  await runInBatches(casesData, 15, (c) => {
     const eraId = ERA_MAPPING_BY_NAME[c.era_pemerintahan] ?? 'era-jokowi-2';
     const relatedCp = casePersonsData.filter((cp: any) => cp.case_id === c.case_id);
     const relatedVerdicts = verdictsData.filter((v: any) => v.case_id === c.case_id);
@@ -308,7 +308,7 @@ export async function runSeed() {
     const legalStatus = deriveCaseStatus(c, relatedCp, relatedVerdicts);
     const slug = slugify(c.case_title) || c.case_id;
 
-    await db
+    return db
       .insert(schema.cases)
       .values({
         id: c.case_id,
@@ -350,55 +350,49 @@ export async function runSeed() {
           sector_label: c.sector,
         },
       });
-  }
+  });
 
   // 13. Case Persons
-  for (const cp of casePersonsData) {
-    await db
-      .insert(schema.casePersons)
-      .values({
-        id: cp.case_person_id,
-        case_id: cp.case_id,
-        person_id: cp.person_id,
-        is_primary_subject: true,
-        role_in_case: cp.role_in_case,
-        legal_status: cp.legal_status,
-        offense_role: cp.offense_role,
-        defendant_role: cp.defendant_role,
-        source_id: cp.source_id,
-      })
-      .onConflictDoNothing();
+  const casePersonRows = casePersonsData.map((cp) => ({
+    id: cp.case_person_id,
+    case_id: cp.case_id,
+    person_id: cp.person_id,
+    is_primary_subject: true,
+    role_in_case: cp.role_in_case,
+    legal_status: cp.legal_status,
+    offense_role: cp.offense_role,
+    defendant_role: cp.defendant_role,
+    source_id: cp.source_id,
+  }));
+  if (casePersonRows.length > 0) {
+    await db.insert(schema.casePersons).values(casePersonRows).onConflictDoNothing();
   }
 
   // 14. Case Companies & Case Locations
-  for (const cc of caseCompaniesData) {
-    await db
-      .insert(schema.caseCompanies)
-      .values({
-        id: cc.case_company_id,
-        case_id: cc.case_id,
-        company_id: cc.company_id,
-        company_role_in_case: cc.company_role_in_case,
-        transaction_value: cc.transaction_value !== null ? String(cc.transaction_value) : null,
-        contract_value: cc.contract_value !== null ? String(cc.contract_value) : null,
-        tender_value: cc.tender_value !== null ? String(cc.tender_value) : null,
-        transaction_date: cc.transaction_date,
-        company_case_status: cc.company_case_status,
-        source_id: cc.source_id,
-      })
-      .onConflictDoNothing();
+  const caseCompanyRows = caseCompaniesData.map((cc) => ({
+    id: cc.case_company_id,
+    case_id: cc.case_id,
+    company_id: cc.company_id,
+    company_role_in_case: cc.company_role_in_case,
+    transaction_value: cc.transaction_value !== null ? String(cc.transaction_value) : null,
+    contract_value: cc.contract_value !== null ? String(cc.contract_value) : null,
+    tender_value: cc.tender_value !== null ? String(cc.tender_value) : null,
+    transaction_date: cc.transaction_date,
+    company_case_status: cc.company_case_status,
+    source_id: cc.source_id,
+  }));
+  if (caseCompanyRows.length > 0) {
+    await db.insert(schema.caseCompanies).values(caseCompanyRows).onConflictDoNothing();
   }
 
-  for (const cl of caseLocationsData) {
-    await db
-      .insert(schema.caseLocations)
-      .values({
-        id: cl.case_location_id,
-        case_id: cl.case_id,
-        location_id: cl.location_id,
-        location_context: cl.location_context,
-      })
-      .onConflictDoNothing();
+  const caseLocationRows = caseLocationsData.map((cl) => ({
+    id: cl.case_location_id,
+    case_id: cl.case_id,
+    location_id: cl.location_id,
+    location_context: cl.location_context,
+  }));
+  if (caseLocationRows.length > 0) {
+    await db.insert(schema.caseLocations).values(caseLocationRows).onConflictDoNothing();
   }
 
   // 15. Financial Records, Verdicts, Timeline Events & Case-Sources linkage
@@ -410,99 +404,97 @@ export async function runSeed() {
   for (const cp of casePersonsData) linkSource(cp.case_id, cp.source_id);
   for (const cc of caseCompaniesData) linkSource(cc.case_id, cc.source_id);
 
-  for (const f of financialData) {
+  const financialRows = financialData.map((f) => {
     linkSource(f.case_id, f.source_id);
-    await db
-      .insert(schema.financialRecords)
-      .values({
-        id: f.financial_id,
-        case_id: f.case_id,
-        person_id: f.person_id,
-        financial_type: f.financial_type,
-        amount: String(f.amount),
-        currency: f.currency ?? 'IDR',
-        financial_year: f.financial_year,
-        financial_description: f.financial_description,
-        fact_classification: f.fact_classification,
-        source_id: f.source_id,
-        source_page: f.source_page,
-        verification_status: f.verification_status ?? 'VERIFIED_PRIMARY',
-      })
-      .onConflictDoNothing();
+    return {
+      id: f.financial_id,
+      case_id: f.case_id,
+      person_id: f.person_id,
+      financial_type: f.financial_type,
+      amount: String(f.amount),
+      currency: f.currency ?? 'IDR',
+      financial_year: f.financial_year,
+      financial_description: f.financial_description,
+      fact_classification: f.fact_classification,
+      source_id: f.source_id,
+      source_page: f.source_page,
+      verification_status: f.verification_status ?? 'VERIFIED_PRIMARY',
+    };
+  });
+  if (financialRows.length > 0) {
+    await db.insert(schema.financialRecords).values(financialRows).onConflictDoNothing();
   }
 
-  for (const v of verdictsData) {
+  const verdictRows = verdictsData.map((v) => {
     linkSource(v.case_id, v.source_id);
-    await db
-      .insert(schema.verdicts)
-      .values({
-        id: v.verdict_id,
-        case_id: v.case_id,
-        person_id: v.person_id,
-        court: v.court,
-        court_level: v.court_level,
-        decision_number: v.decision_number,
-        decision_date: v.decision_date,
-        decision_type: v.decision_type,
-        guilty_status: v.guilty_status,
-        sentence_type: v.sentence_type,
-        prison_sentence_months: v.prison_sentence_months ?? 0,
-        fine_amount: String(v.fine_amount ?? 0),
-        fine_substitute_sentence: v.fine_substitute_sentence,
-        restitution_amount: String(v.restitution_amount ?? 0),
-        restitution_substitute_sentence: v.restitution_substitute_sentence,
-        additional_penalty: v.additional_penalty,
-        asset_forfeiture: v.asset_forfeiture,
-        political_disqualification: v.political_disqualification,
-        is_final: Boolean(v.is_final),
-        source_id: v.source_id,
-      })
-      .onConflictDoNothing();
+    return {
+      id: v.verdict_id,
+      case_id: v.case_id,
+      person_id: v.person_id,
+      court: v.court,
+      court_level: v.court_level,
+      decision_number: v.decision_number,
+      decision_date: v.decision_date,
+      decision_type: v.decision_type,
+      guilty_status: v.guilty_status,
+      sentence_type: v.sentence_type,
+      prison_sentence_months: v.prison_sentence_months ?? 0,
+      fine_amount: String(v.fine_amount ?? 0),
+      fine_substitute_sentence: v.fine_substitute_sentence,
+      restitution_amount: String(v.restitution_amount ?? 0),
+      restitution_substitute_sentence: v.restitution_substitute_sentence,
+      additional_penalty: v.additional_penalty,
+      asset_forfeiture: v.asset_forfeiture,
+      political_disqualification: v.political_disqualification,
+      is_final: Boolean(v.is_final),
+      source_id: v.source_id,
+    };
+  });
+  if (verdictRows.length > 0) {
+    await db.insert(schema.verdicts).values(verdictRows).onConflictDoNothing();
   }
 
-  for (const t of timelineData) {
+  const timelineRows = timelineData.map((t) => {
     linkSource(t.case_id, t.source_id);
-    await db
-      .insert(schema.timelineEvents)
-      .values({
-        id: t.event_id,
-        case_id: t.case_id,
-        event_date: t.event_date,
-        event_type: t.event_type,
-        event_description: t.event_description,
-        institution: t.institution,
-        location: t.location,
-        source_id: t.source_id,
-        source_page: t.source_page,
-      })
-      .onConflictDoNothing();
+    return {
+      id: t.event_id,
+      case_id: t.case_id,
+      event_date: t.event_date,
+      event_type: t.event_type,
+      event_description: t.event_description,
+      institution: t.institution,
+      location: t.location,
+      source_id: t.source_id,
+      source_page: t.source_page,
+    };
+  });
+  if (timelineRows.length > 0) {
+    await db.insert(schema.timelineEvents).values(timelineRows).onConflictDoNothing();
   }
 
-  for (const pair of caseSourcePairs) {
+  const caseSourceRows = Array.from(caseSourcePairs).map((pair) => {
     const [case_id, source_id] = pair.split('::');
-    await db
-      .insert(schema.caseSources)
-      .values({ case_id, source_id, is_primary: true })
-      .onConflictDoNothing();
+    return { case_id, source_id, is_primary: true };
+  });
+  if (caseSourceRows.length > 0) {
+    await db.insert(schema.caseSources).values(caseSourceRows).onConflictDoNothing();
   }
 
   // 16. Review Queue from data/quality/review_queue.json
   const rqPath = path.resolve(process.cwd(), 'data', 'quality', 'review_queue.json');
   if (fs.existsSync(rqPath)) {
     const rqItems = JSON.parse(fs.readFileSync(rqPath, 'utf8')) as any[];
-    for (const rq of rqItems) {
-      await db
-        .insert(schema.reviewQueue)
-        .values({
-          id: rq.review_id,
-          entity_type: rq.entity_type,
-          entity_id: rq.entity_id,
-          reason: rq.reason,
-          disparity_details: rq.disparity_details,
-          conflicting_sources: rq.conflicting_sources ?? [],
-          status: rq.status ?? 'pending',
-        })
-        .onConflictDoNothing();
+    const rqRows = rqItems.map((rq) => ({
+      id: rq.review_id,
+      entity_type: rq.entity_type,
+      entity_id: rq.entity_id,
+      reason: rq.reason,
+      disparity_details: rq.disparity_details,
+      conflicting_sources: rq.conflicting_sources ?? [],
+      status: rq.status ?? 'pending',
+    }));
+    if (rqRows.length > 0) {
+      await db.insert(schema.reviewQueue).values(rqRows).onConflictDoNothing();
     }
   }
 
