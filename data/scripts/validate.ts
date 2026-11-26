@@ -111,6 +111,7 @@ const validCategories = new Set([
   'prosecutor_loss_amount',
   'audit_loss_amount',
   'alleged_loss_amount',
+  'estimated_loss_amount',
   'bribe_amount',
   'gratification_amount',
   'illegal_profit_amount',

@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-hand: 'Patrick Hand', 'Comic Sans MS', cursive, sans-serif;
+  --font-note: 'Caveat', cursive, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  --color-paper-bg: #FAF7EE;
+  --color-paper-card: #FFFDF9;
+  --color-paper-muted: #F3EDE0;
+  --color-ink-primary: #1C1917;
+  --color-ink-secondary: #57534E;
+  --color-border-archival: #D6CBB5;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    background-color: #FAF7EE;
+    color: #1C1917;
+    background-image: radial-gradient(#E8DFCA 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.archival-card {
+  background-color: #FFFDF9;
+  border: 1.5px solid #D6CBB5;
+  border-radius: 12px;
+  box-shadow: 0 3px 12px rgba(60, 48, 30, 0.06);
+}
+
+.stitched-panel {
+  background-color: #FFFDF9;
+  border: 2px dashed #C7B99D;
+  border-radius: 14px;
+}
+
+.washi-tape {
+  position: relative;
+}
+
+.washi-tape::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 84px;
+  height: 18px;
+  background-color: rgba(254, 240, 138, 0.85);
+  border-left: 2px dashed rgba(202, 138, 4, 0.45);
+  border-right: 2px dashed rgba(202, 138, 4, 0.45);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+}
+
+.judicial-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-family: var(--font-hand);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 2px dashed currentColor;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

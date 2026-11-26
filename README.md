@@ -1,113 +1,66 @@
-# Liga Korupsi Indonesia (LKI)
+# Liga Korupsi Indonesia (LKI) v2.0
 
-> **Portal Edukasi & Transparansi Data Perkara Korupsi Indonesia Berbasis Web**  
-> Mengemas data perkara korupsi (bersumber dari putusan pengadilan inkrah, dakwaan resmi KPK/Kejaksaan Agung, dan rilis lembaga penegak hukum) ke dalam format "klasemen liga", peta spasial choropleth 38 provinsi, grafik analitik sektor & korporasi rekanan, mesin pencari berkas perkara, serta perlindungan asas praduga tak bersalah.
-
----
-
-## 🚀 Tech Stack
-
-| Layer | Teknologi |
-|---|---|
-| **Runtime & Package Manager** | [Bun](https://bun.sh) (v1.4+) |
-| **Frontend** | React 19 + TypeScript + Vite + Tailwind CSS |
-| **Visualisasi** | Recharts (grafik garis/area/donat), Custom SVG Choropleth Map |
-| **Ikon** | Lucide React |
-| **State & Data Fetching** | TanStack Query / React Hooks |
-| **Backend API** | Express.js + Bun native runtime / TypeScript |
-| **Database** | PostgreSQL + Ekstensi `pg_trgm` (GIN search index) |
-| **ORM & Migrations** | Drizzle ORM (`drizzle-orm` & `drizzle-kit`) |
-| **Validasi & Keamanan** | Zod, JSON Web Token (JWT), `bcryptjs`, `express-rate-limit` |
+> **Portal Edukasi Publik & Transparansi Data Perkara Tindak Pidana Korupsi Indonesia (1945–2026)**  
+> Dibangun ulang dari awal di atas arsitektur **Next.js App Router (SSR/ISR) + React 19 + TypeScript Strict + Tailwind CSS v4 + Drizzle ORM + PostgreSQL (`pg_trgm`)**.
 
 ---
 
-## 📦 Panduan Instalasi & Menjalankan
+## Dokumentasi Pra-Produksi & Spesifikasi Arsitektur
 
-### 1. Prasyarat Sistem
-- Pastikan **PostgreSQL** sudah berjalan lokal (default port: `5432`).
-- Pastikan **Bun** telah terinstal di sistem (`curl -fsSL https://bun.sh/install | bash`).
-
-### 2. Setup Environment Variables (`.env`)
-Salin berkas contoh `.env.example` menjadi `.env`:
-```bash
-cp .env.example .env
-```
-Isi konfigurasi database dan JWT secret:
-```env
-DATABASE_URL="postgres://postgres@localhost:5432/lki_db"
-JWT_SECRET="lki-super-secret-jwt-key-2026-indonesia-maju"
-PORT=3000
-APP_URL="http://localhost:3000"
-GEMINI_API_KEY="" # Opsional untuk asisten AI kurasi
-```
-
-### 3. Buat Database & Aktifkan Ekstensi `pg_trgm`
-```bash
-psql -U postgres -c "CREATE DATABASE lki_db;"
-psql -U postgres -d lki_db -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
-```
-
-### 4. Instalasi Dependensi
-```bash
-bun install
-```
-
-### 5. Migrasi Skema Database (Drizzle ORM)
-Push 13 tabel dan GIN trgm index ke PostgreSQL:
-```bash
-bun run db:push
-```
-
-### 6. Seeding Data Dummy Realistis
-Isi database dengan data awal 38 provinsi, era kepresidenan, partai politik, rekanan korporasi, dan 12 kasus contoh berlabel `[CONTOH/DUMMY]`:
-```bash
-bun run db:seed
-```
-
-### 7. Jalankan Server Development
-```bash
-bun run dev
-```
-Buka browser di **[http://localhost:3000](http://localhost:3000)**.
+Seluruh cetak biru produk, skema database terpadu, kontrak API, keamanan, kepatuhan hukum, dan checklist produksi tersedia di folder [`docs/`](./docs/README.md):
+- [01-PRD.md](./docs/01-PRD.md) — Spesifikasi modul fungsional & 5 guardrails hukum
+- [02-ARCHITECTURE.md](./docs/02-ARCHITECTURE.md) — Arsitektur Next.js + Vercel + PostgreSQL
+- [03-DATABASE_SCHEMA.md](./docs/03-DATABASE_SCHEMA.md) — Skema Drizzle ORM terpadu (28 tabel) & Anti Double-Counting
+- [04-API_AND_DATA_CONTRACTS.md](./docs/04-API_AND_DATA_CONTRACTS.md) — Kontrak REST API `/api/v1/*` & rate limiting
+- [05-UI_UX_DESIGN_SYSTEM.md](./docs/05-UI_UX_DESIGN_SYSTEM.md) — Sistem desain, WCAG 2.1 AA, & SEO
+- [06-SECURITY_LEGAL_AND_COMPLIANCE.md](./docs/06-SECURITY_LEGAL_AND_COMPLIANCE.md) — Keamanan OWASP, RBAC 6 peran, Hak Jawab & UU PDP
+- [07-DEPLOYMENT_AND_PRODUCTION_CHECKLIST.md](./docs/07-DEPLOYMENT_AND_PRODUCTION_CHECKLIST.md) — Panduan Vercel + Neon/Supabase
+- [08-REBUILD_ROADMAP.md](./docs/08-REBUILD_ROADMAP.md) — Peta jalan rebuild & pengamanan arsip `v1-legacy-archive`
 
 ---
 
-## 🔑 Kredensial Admin Default
+## Menjalankan Secara Lokal
 
-Panel kurator admin dapat diakses di menu **Admin Kurasi**:
-- **Username**: `admin`
-- **Password**: `admin123`
-- **Role**: `super_admin`
+1. **Salin dan lengkapi `.env`:**
+   ```bash
+   cp .env.example .env
+   ```
+   Pastikan PostgreSQL aktif dan ekstensi `pg_trgm` serta `pgcrypto` telah diaktifkan pada database target.
 
----
+2. **Instalasi dependensi (Bun):**
+   ```bash
+   bun install
+   ```
 
-## 📡 Daftar Endpoint RESTful API
+3. **Migrasi Skema, Seeding Data Kanonik (`data/normalized/`) & Bootstrap Super Admin:**
+   ```bash
+   bun run db:push
+   bun run db:seed
+   bun run db:bootstrap-admin
+   ```
 
-| Method | Endpoint | Keterangan |
-|---|---|---|
-| `GET` | `/api/officials?era=&province=&party=&status=&sort=&page=` | Daftar klasemen pejabat publik terfilter |
-| `GET` | `/api/officials/:id` | Detail profil pejabat beserta riwayat perkara |
-| `GET` | `/api/parties?era=&sort=&page=` | Klasemen akumulasi kerugian per partai politik |
-| `GET` | `/api/provinces` | Agregat 38 provinsi untuk peta choropleth |
-| `GET` | `/api/cases?q=&province=&era=&status=&sector=&page=` | Case explorer dengan search fuzzy & debouncing |
-| `GET` | `/api/cases/:id` | Detail berkas perkara lengkap (vonis, timeline, rujukan) |
-| `GET` | `/api/companies?sector=&page=` | Daftar korporasi rekanan proyek |
-| `GET` | `/api/companies/:id` | Drill-down korporasi dan relasi transaksi perkara |
-| `GET` | `/api/stats/trends?metric=combined\|loss_only\|cases_only` | Tren tahunan kerugian & volume perkara (Recharts) |
-| `GET` | `/api/stats/sectors` | Komposisi modus/sektor korupsi (grafik donat) |
-| `GET` | `/api/stats/hall-of-shame` | Top 10 kerugian terbesar vonis inkrah |
-| `GET` | `/api/export?type=officials\|parties\|provinces` | Ekspor data terfilter ke format CSV |
-| `POST` | `/api/reports` | Kanal partisipasi warga (koreksi data & putusan baru) |
-| `POST` | `/api/admin/login` | Otentikasi admin via JWT |
-| `GET/POST/PUT/DELETE` | `/api/admin/cases` | CRUD berkas kasus peradilan *(Wajib JWT)* |
-| `GET/POST/PUT/DELETE` | `/api/admin/officials` | CRUD pejabat publik *(Wajib JWT)* |
-| `GET/PUT` | `/api/admin/reports/:id` | Moderasi & verifikasi laporan publik *(Wajib JWT)* |
-| `GET` | `/api/admin/audit-logs` | Audit trail perubahan data *(Wajib JWT)* |
+4. **Jalankan Server Development:**
+   ```bash
+   bun run dev
+   ```
+   Akses aplikasi di `http://localhost:3000` dan Portal Kurasi di `http://localhost:3000/admin`.
 
 ---
 
-## ⚖️ Kepatuhan Hukum & Etika Data
+## Perintah Pengujian & Build Produksi
 
-1. **Asas Praduga Tak Bersalah**: Setiap entri atau filter berstatus `Tersangka` atau `Terdakwa` secara otomatis memunculkan banner peringatan hukum Pasal 8 ayat (1) UU Kekuasaan Kehakiman. Tombol dismiss hanya berlaku per sesi peramban (`sessionStorage`) dan tidak permanen.
-2. **Kewajiban Sumber Resmi (`source_url`)**: Sistem menolak input perkara tanpa tautan rujukan resmi yang valid (Direktori Putusan Mahkamah Agung RI, KPK.go.id, atau rilis pers resmi Kejaksaan RI).
-3. **Data Uji Coba**: Seluruh data testing diberi label eksplisit `[CONTOH/DUMMY — BUKAN DATA NYATA]` guna mencegah misinformasi publik selama masa pengujian.
+```bash
+bun run typecheck      # Verifikasi TypeScript strict (tsc --noEmit)
+bun run data:validate  # Validasi integritas dataset kanonik di data/
+bun run test           # Jalankan unit test Vitest
+bun run build          # Build produksi Next.js
+```
+
+---
+
+## Prinsip Kepatuhan Hukum & Etika Data
+
+1. **Asas Praduga Tak Bersalah (Pasal 8 ayat (1) UU No. 48/2009):** Status `tersangka`/`terdakwa` selalu diberi penanda belum inkrah dan tidak ditampilkan di *Hall of Shame* inkrah.
+2. **Anti Double-Counting Finansial:** Nilai proyek, kontrak, audit BPK/BPKP, kerugian vonis pengadilan, suap/gratifikasi, uang pengganti, dan denda dipisahkan secara ketat.
+3. **Kewajiban Sumber Primer:** Setiap perkara wajib memiliki rujukan resmi (Direktori Putusan Mahkamah Agung RI, KPK, Kejaksaan RI, atau media terverifikasi Dewan Pers).
+4. **Kanal Hak Jawab:** Tersedia di `/lapor` dengan kode tiket pelacakan publik dan prioritas moderasi kurator.
