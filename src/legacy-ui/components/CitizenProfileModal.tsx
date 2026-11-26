@@ -363,20 +363,6 @@ export const CitizenProfileModal: React.FC<CitizenProfileModalProps> = ({
                 )}
               </div>
             </div>
-
-            <div className="pt-2 flex justify-end border-t border-[#EAE1CD]">
-              <button
-                type="button"
-                onClick={() => {
-                  sound.playPop();
-                  setModalMode('edit');
-                }}
-                className="px-4 py-2.5 bg-[#1E293B] hover:bg-[#334155] text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer"
-              >
-                <Edit3 className="w-3.5 h-3.5 text-amber-400" />
-                <span>Edit Profil</span>
-              </button>
-            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
