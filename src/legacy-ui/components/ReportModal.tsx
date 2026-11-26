@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { sound } from '../utils/audio';
+import { parseApiJson } from '../utils/safeJson';
 import { formatRupiah } from '../utils/formatters';
 import { 
   X, 
@@ -174,7 +175,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
         })
       });
 
-      const data = await res.json();
+      const data = await parseApiJson(res);
       if (!res.ok) {
         throw new Error(data.error || 'Gagal mengirimkan usulan kasus');
       }
@@ -206,7 +207,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
         })
       });
 
-      const data = await res.json();
+      const data = await parseApiJson(res);
       if (!res.ok) {
         throw new Error(data.error || 'Gagal mengirimkan koreksi');
       }
@@ -234,7 +235,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
     try {
       const res = await fetch(`/api/reports/status/${encodeURIComponent(q)}`);
-      const data = await res.json();
+      const data = await parseApiJson(res);
       if (!res.ok) {
         throw new Error(data.error || 'Tiket laporan tidak ditemukan.');
       }

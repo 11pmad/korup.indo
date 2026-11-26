@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { sound } from '../utils/audio';
+import { parseApiJson } from '../utils/safeJson';
 import { 
   PROVINCES_LIST, 
   getCitiesByProvince, 
@@ -244,7 +245,7 @@ export const CitizenProfileModal: React.FC<CitizenProfileModalProps> = ({
         })
       });
 
-      const data = await res.json();
+      const data = await parseApiJson(res);
       if (!res.ok) {
         throw new Error(data.error || 'Gagal memperbarui profil warga.');
       }

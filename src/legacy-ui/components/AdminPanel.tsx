@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuditLog, UserReport } from '../types';
 import { sound } from '../utils/audio';
+import { parseApiJson } from '../utils/safeJson';
 import { Lock, Unlock } from 'lucide-react';
 import { AdminLayout, AdminSubtab } from './admin/AdminLayout';
 import { AdminDashboardOverview } from './admin/AdminDashboardOverview';
@@ -69,7 +70,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
       const res = await fetch('/api/admin/audit-logs', {
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
       });
-      const data = await res.json();
+      const data = await parseApiJson(res);
       setAuditLogs(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching audit logs:', err);
@@ -84,7 +85,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
       const res = await fetch('/api/admin/reports', {
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
       });
-      const data = await res.json();
+      const data = await parseApiJson(res);
       setReports(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching reports:', err);
@@ -114,7 +115,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
         })
       });
 
-      const data = await res.json();
+      const data = await parseApiJson(res);
       if (!res.ok) {
         throw new Error(data.error || 'Autentikasi gagal');
       }

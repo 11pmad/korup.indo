@@ -14,6 +14,7 @@ import {
   StatsOverview 
 } from './types';
 import { sound } from './utils/audio';
+import { parseApiJson } from './utils/safeJson';
 import { Loader2 } from 'lucide-react';
 
 // Code-split heavy components for faster initial load & lower memory footprint
@@ -159,10 +160,10 @@ export default function App({
           ]);
 
           const [casesData, regionsData, leaderData, statsData] = await Promise.all([
-            casesRes.json(),
-            regionsRes.json(),
-            leaderRes.json(),
-            statsRes.json()
+            parseApiJson(casesRes),
+            parseApiJson(regionsRes),
+            parseApiJson(leaderRes),
+            parseApiJson(statsRes)
           ]);
 
           const snapshot: PortalDataSnapshot = {

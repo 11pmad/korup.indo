@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { parseApiJson } from '../utils/safeJson';
 import { 
   X, 
   UserCheck, 
@@ -142,7 +143,7 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
           })
         });
 
-        const data = await res.json();
+        const data = await parseApiJson(res);
         if (!res.ok) {
           throw new Error(data.error || 'Gagal masuk menggunakan akun Google.');
         }
@@ -195,7 +196,7 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
           password 
         })
       });
-      const data = await res.json();
+      const data = await parseApiJson(res);
       
       if (!res.ok) {
         // If unverified, redirect to OTP verification screen
@@ -248,7 +249,7 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
           bio: bio.trim() || undefined
         })
       });
-      const data = await res.json();
+      const data = await parseApiJson(res);
       if (!res.ok) {
         throw new Error(data.error || 'Gagal mendaftarkan akun warga.');
       }
@@ -287,7 +288,7 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
           code: otpCode.trim()
         })
       });
-      const data = await res.json();
+      const data = await parseApiJson(res);
       if (!res.ok) {
         throw new Error(data.error || 'Kode verifikasi tidak cocok atau telah kadaluarsa.');
       }
@@ -314,7 +315,7 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: verificationEmail.toLowerCase().trim() })
       });
-      const data = await res.json();
+      const data = await parseApiJson(res);
       if (!res.ok) {
         throw new Error(data.error || 'Gagal mengirim ulang kode verifikasi.');
       }
@@ -362,7 +363,7 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
         })
       });
 
-      const data = await res.json();
+      const data = await parseApiJson(res);
       if (!res.ok) {
         throw new Error(data.error || 'Gagal masuk menggunakan akun Google.');
       }
