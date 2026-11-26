@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Scale, ShieldAlert, X } from 'lucide-react';
 import { sound } from '../utils/audio';
+import { stripLeadingEmoji } from './ThemeIcons';
 
 interface Props {
   className?: string;
@@ -18,7 +19,7 @@ interface AnnouncementData {
 }
 
 const DEFAULT_DATA: AnnouncementData = {
-  title: '⚖️ PEMBERITAHUAN ASAS HUKUM & SUMBER RESMI:',
+  title: 'PEMBERITAHUAN ASAS HUKUM & SUMBER RESMI:',
   badge: 'Wajib Dibaca',
   main_text: 'Data bersumber dari putusan pengadilan & pemberitaan media yang tercantum. Setiap orang berhak atas asas praduga tak bersalah hingga ada putusan berkekuatan hukum tetap.',
   sub_text: 'Setiap data diverifikasi dengan tautan resmi direktori putusan Mahkamah Agung RI, KPK.go.id, atau media nasional kredibel.',
@@ -105,7 +106,7 @@ export const DisclaimerBanner: React.FC<Props> = ({ className = '', variant = 'b
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-hand font-bold text-lg text-[#854D0E] tracking-wide">
-              {data.title}
+              {stripLeadingEmoji(data.title)}
             </span>
             {data.badge && (
               <span className="px-2 py-0.5 bg-[#FACC15] text-[#713F12] text-xs font-semibold rounded-full uppercase tracking-wider">

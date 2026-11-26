@@ -227,14 +227,14 @@ export function mapSectorToCategory(rawSector: string | null | undefined): Secto
 }
 
 export const REACTION_META = [
-  { key: 'geram', label: 'Geram', emoji: '😡' },
-  { key: 'rampok', label: 'Uang Rakyat!', emoji: '💸' },
-  { key: 'memalukan', label: 'Memalukan', emoji: '🤦' },
-  { key: 'kawal_sidang', label: 'Kawal Sidang', emoji: '⚖️' },
-  { key: 'tebang_pilih', label: 'Usut Tuntas', emoji: '🔍' },
-  { key: 'khilaf_administrasi', label: 'Celah Sistem', emoji: '📋' },
-  { key: 'dimaklumi', label: 'Perlu Edukasi', emoji: '📚' },
-  { key: 'didukung', label: 'Apresiasi Penindakan', emoji: '👏' },
+  { key: 'geram', label: 'Geram', icon: 'geram' },
+  { key: 'rampok', label: 'Uang Rakyat!', icon: 'rampok' },
+  { key: 'memalukan', label: 'Memalukan', icon: 'memalukan' },
+  { key: 'kawal_sidang', label: 'Kawal Sidang', icon: 'kawal_sidang' },
+  { key: 'tebang_pilih', label: 'Usut Tuntas', icon: 'tebang_pilih' },
+  { key: 'khilaf_administrasi', label: 'Celah Sistem', icon: 'khilaf_administrasi' },
+  { key: 'dimaklumi', label: 'Perlu Edukasi', icon: 'dimaklumi' },
+  { key: 'didukung', label: 'Apresiasi Penindakan', icon: 'didukung' },
 ] as const;
 
 export const ERA_MAPPING_BY_NAME: Record<string, string> = {

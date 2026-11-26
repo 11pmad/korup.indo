@@ -833,10 +833,10 @@ export const AdminOfficialsManager: React.FC<OfficialsManagerProps> = ({
                     className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                   >
                     <option value="">- Pilih Wilayah -</option>
-                    <optgroup label="🏛️ Tingkat Nasional / Pemerintah Pusat">
-                      <option value="nasional">🏛️ Pusat / Nasional (Kementerian / Lembaga RI)</option>
+                    <optgroup label="Tingkat Nasional / Pemerintah Pusat">
+                      <option value="nasional">Pusat / Nasional (Kementerian / Lembaga RI)</option>
                     </optgroup>
-                    <optgroup label="📍 Tingkat Daerah (38 Provinsi Nusantara)">
+                    <optgroup label="Tingkat Daerah (38 Provinsi Nusantara)">
                       {PROVINCES_LIST.filter(p => p.id !== 'pusat' && p.id !== 'nasional').map(p => (
                         <option key={p.id} value={p.id}>
                           {p.name}

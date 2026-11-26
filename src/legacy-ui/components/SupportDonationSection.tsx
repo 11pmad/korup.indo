@@ -6,9 +6,11 @@ import {
   Maximize2, 
   X, 
   Heart,
-  Download
+  Download,
+  Search
 } from 'lucide-react';
 import { sound } from '../utils/audio';
+import { stripLeadingEmoji } from './ThemeIcons';
 
 interface DonationConfig {
   title: string;
@@ -56,8 +58,9 @@ export const SupportDonationSection: React.FC = () => {
   }
 
   // Short display title
-  const displayTitle = config.title 
-    ? (config.title.length > 20 ? 'Dukungan QRIS' : config.title)
+  const cleanTitle = stripLeadingEmoji(config.title);
+  const displayTitle = cleanTitle
+    ? (cleanTitle.length > 20 ? 'Dukungan QRIS' : cleanTitle)
     : 'Dukungan QRIS';
 
   return (
@@ -117,8 +120,9 @@ export const SupportDonationSection: React.FC = () => {
           ) : (
             <p className="font-medium text-[#78716C]">Scan donasi QRIS</p>
           )}
-          <span className="text-[10px] text-[#854D0E] font-medium block">
-            🔍 Klik gambar untuk perbesar
+          <span className="text-[10px] text-[#854D0E] font-medium inline-flex items-center justify-center gap-1">
+            <Search className="w-3 h-3 shrink-0" />
+            <span>Klik gambar untuk perbesar</span>
           </span>
         </div>
       </div>
@@ -150,7 +154,7 @@ export const SupportDonationSection: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Heart className="w-5 h-5 text-rose-500 fill-rose-500 shrink-0" />
                 <h4 className="font-bold text-base sm:text-lg md:text-xl text-slate-900 truncate">
-                  {config.title || 'Dukungan QRIS Pengelola LKI'}
+                  {cleanTitle || 'Dukungan QRIS Pengelola LKI'}
                 </h4>
               </div>
               <p className="text-xs sm:text-sm text-slate-500">

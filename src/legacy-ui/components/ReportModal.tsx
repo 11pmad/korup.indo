@@ -659,7 +659,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                         className="w-full px-3 py-2.5 bg-white border border-[#D5C9AB] rounded-xl text-xs text-slate-900 focus:outline-hidden focus:border-amber-500"
                       >
                         {SECTORS_LIST.map(s => (
-                          <option key={s.id} value={s.id}>{s.icon} {s.label}</option>
+                          <option key={s.id} value={s.id}>{s.label}</option>
                         ))}
                       </select>
                     </div>
@@ -809,7 +809,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold font-mono ${
                       correctionStep === 1 ? 'bg-rose-600 text-white shadow-xs' : 'bg-emerald-600 text-white'
                     }`}>
-                      {correctionStep > 1 ? '✓' : '1'}
+                      {correctionStep > 1 ? <Check className="w-3.5 h-3.5" /> : '1'}
                     </div>
                     <span className={`text-xs font-bold ${correctionStep === 1 ? 'text-slate-900' : 'text-slate-500'}`}>
                       Kategori &amp; Kasus
@@ -822,7 +822,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold font-mono ${
                       correctionStep === 2 ? 'bg-rose-600 text-white shadow-xs' : correctionStep > 2 ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-600'
                     }`}>
-                      {correctionStep > 2 ? '✓' : '2'}
+                      {correctionStep > 2 ? <Check className="w-3.5 h-3.5" /> : '2'}
                     </div>
                     <span className={`text-xs font-bold ${correctionStep === 2 ? 'text-slate-900' : 'text-slate-500'}`}>
                       Bukti &amp; Rincian
@@ -860,7 +860,10 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                               : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                           }`}
                         >
-                          <span className="block font-bold">📝 Koreksi Data Perkara</span>
+                          <span className="font-bold flex items-center gap-1.5">
+                            <FileText className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                            <span>Koreksi Data Perkara</span>
+                          </span>
                           <span className="text-[11px] text-slate-500 font-normal">
                             Kesalahan nama, jabatan, nilai kerugian, atau kronologi.
                           </span>
@@ -875,7 +878,10 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                               : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                           }`}
                         >
-                          <span className="block font-bold">⚖️ Putusan Baru / Kasasi MA</span>
+                          <span className="font-bold flex items-center gap-1.5">
+                            <Scale className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                            <span>Putusan Baru / Kasasi MA</span>
+                          </span>
                           <span className="text-[11px] text-slate-500 font-normal">
                             Pembaruan vonis kasasi, peninjauan kembali (PK), atau vonis bebas.
                           </span>
@@ -1142,12 +1148,22 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                     {/* Target Case / Proposal */}
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 ${
                           trackResult.report_type === 'usulan_kasus_baru'
                             ? 'bg-amber-100 text-amber-800'
                             : 'bg-purple-100 text-purple-800'
                         }`}>
-                          {trackResult.report_type === 'usulan_kasus_baru' ? '🌟 Usulan Kasus Baru' : '📝 Koreksi Berkas'}
+                          {trackResult.report_type === 'usulan_kasus_baru' ? (
+                            <>
+                              <Sparkles className="w-3 h-3 shrink-0" />
+                              <span>Usulan Kasus Baru</span>
+                            </>
+                          ) : (
+                            <>
+                              <FileText className="w-3 h-3 shrink-0" />
+                              <span>Koreksi Berkas</span>
+                            </>
+                          )}
                         </span>
                         <h5 className="font-bold text-sm text-slate-900">
                           {trackResult.case_title}

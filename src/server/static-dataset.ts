@@ -38,7 +38,7 @@ export const PARTY_COLORS: Record<string, string> = {
 };
 
 export const PUBLIC_ANNOUNCEMENT_DEFAULT = {
-  title: '⚖️ PEMBERITAHUAN ASAS HUKUM & SUMBER RESMI:',
+  title: 'PEMBERITAHUAN ASAS HUKUM & SUMBER RESMI:',
   badge: 'Wajib Dibaca',
   main_text:
     'Data bersumber dari putusan pengadilan & pemberitaan media yang tercantum. Setiap orang berhak atas asas praduga tak bersalah hingga ada putusan berkekuatan hukum tetap.',
@@ -48,7 +48,7 @@ export const PUBLIC_ANNOUNCEMENT_DEFAULT = {
 };
 
 export const PUBLIC_DONATION_DEFAULT = {
-  title: '☕ Dukung Independensi & Operasional LKI',
+  title: 'Dukung Independensi & Operasional LKI',
   description:
     'Bantu operasional server, infrastruktur pangkalan data, dan verifikasi berkas direktori putusan peradilan.',
   qris_image_url: '',

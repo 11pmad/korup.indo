@@ -32,14 +32,14 @@ import { resolveProvinceId } from '@/lib/provinces';
 import { mapSectorToCategory, slugify, toNum } from '@/lib/formatters';
 
 const REACTION_DEFINITIONS = {
-  geram: { emoji: '😡', label: 'Sangat Geram', spectrum: 'kecaman', description: 'Tindakan serakah dan tidak bermoral yang melukai rasa keadilan rakyat.' },
-  rampok: { emoji: '💸', label: 'Rampok Uang Rakyat', spectrum: 'kecaman', description: 'Menguras anggaran negara demi kemewahan pribadi dan kroni.' },
-  memalukan: { emoji: '🤮', label: 'Memalukan & Menjijikkan', spectrum: 'kecaman', description: 'Merusak kehormatan institusi dan moral bangsa.' },
-  didukung: { emoji: '🤝', label: 'Didukung & Masuk Akal', spectrum: 'pemakluman', description: 'Kebijakan demi kepentingan rakyat atau fasilitas penunjang tugas dinas yang wajar.' },
-  khilaf_administrasi: { emoji: '💡', label: 'Khilaf Administrasi (Niat Baik)', spectrum: 'pemakluman', description: 'Kesalahan prosedur tanpa niat korupsi; pejabat bersangkutan tidak menikmati sepeser pun.' },
-  dimaklumi: { emoji: '🕊️', label: 'Dimaklumi & Dimaafkan', spectrum: 'pemakluman', description: 'Kerugian negara nihil/dipulihkan; dakwaan hukum terasa berlebihan.' },
-  tebang_pilih: { emoji: '⚖️', label: 'Janggal / Tebang Pilih', spectrum: 'skeptis', description: 'Aroma politisasi hukum atau penargetan lawan politik secara selektif.' },
-  kawal_sidang: { emoji: '🧐', label: 'Kawal Sidang Objektif', spectrum: 'skeptis', description: 'Fakta belum terang; masyarakat harus mengawal pembuktian di pengadilan.' },
+  geram: { icon: 'geram', label: 'Sangat Geram', spectrum: 'kecaman', description: 'Tindakan serakah dan tidak bermoral yang melukai rasa keadilan rakyat.' },
+  rampok: { icon: 'rampok', label: 'Rampok Uang Rakyat', spectrum: 'kecaman', description: 'Menguras anggaran negara demi kemewahan pribadi dan kroni.' },
+  memalukan: { icon: 'memalukan', label: 'Memalukan & Menjijikkan', spectrum: 'kecaman', description: 'Merusak kehormatan institusi dan moral bangsa.' },
+  didukung: { icon: 'didukung', label: 'Didukung & Masuk Akal', spectrum: 'pemakluman', description: 'Kebijakan demi kepentingan rakyat atau fasilitas penunjang tugas dinas yang wajar.' },
+  khilaf_administrasi: { icon: 'khilaf_administrasi', label: 'Khilaf Administrasi (Niat Baik)', spectrum: 'pemakluman', description: 'Kesalahan prosedur tanpa niat korupsi; pejabat bersangkutan tidak menikmati sepeser pun.' },
+  dimaklumi: { icon: 'dimaklumi', label: 'Dimaklumi & Dimaafkan', spectrum: 'pemakluman', description: 'Kerugian negara nihil/dipulihkan; dakwaan hukum terasa berlebihan.' },
+  tebang_pilih: { icon: 'tebang_pilih', label: 'Janggal / Tebang Pilih', spectrum: 'skeptis', description: 'Aroma politisasi hukum atau penargetan lawan politik secara selektif.' },
+  kawal_sidang: { icon: 'kawal_sidang', label: 'Kawal Sidang Objektif', spectrum: 'skeptis', description: 'Fakta belum terang; masyarakat harus mengawal pembuktian di pengadilan.' },
 } as const;
 
 function toLegacyLegalStatus(status: string): 'divonis_inkrah' | 'terdakwa' | 'tersangka' | 'bebas' {
@@ -422,15 +422,15 @@ function computeSentiment(rows: Array<{ reaction_type: string }>) {
   if (total >= 1) {
     if (pemaklumanPct >= 50) {
       badgeType = 'pemakluman';
-      badgeLabel = `🤝 Mayoritas Warga Memaklumi (${pemaklumanPct}%)`;
+      badgeLabel = `Mayoritas Warga Memaklumi (${pemaklumanPct}%)`;
     } else if (kecamanPct >= 50) {
       badgeType = 'kecaman';
-      badgeLabel = `🔥 Dikecam Keras Rakyat (${kecamanPct}%)`;
+      badgeLabel = `Dikecam Keras Rakyat (${kecamanPct}%)`;
     } else if (skeptisPct >= 40) {
       badgeType = 'skeptis';
-      badgeLabel = `⚖️ Dinilai Tebang Pilih / Janggal (${skeptisPct}%)`;
+      badgeLabel = `Dinilai Tebang Pilih / Janggal (${skeptisPct}%)`;
     } else {
-      badgeLabel = '⚖️ Perdebatan Publik Seimbang';
+      badgeLabel = 'Perdebatan Publik Seimbang';
     }
   }
 

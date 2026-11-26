@@ -22,7 +22,13 @@ import {
   X,
   ShieldAlert,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Banknote,
+  BarChart3,
+  Palette,
+  Landmark,
+  ShieldCheck,
+  MousePointerClick
 } from 'lucide-react';
 
 interface IndonesiaMapProps {
@@ -313,39 +319,42 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
                   sound.playPop();
                   setColorMode('kerugian');
                 }}
-                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 ${
                   colorMode === 'kerugian'
                     ? 'bg-[#DC2626] text-white shadow-xs'
                     : 'text-[#57534E] hover:bg-[#F2E8D3]'
                 }`}
               >
-                💰 Nilai Kerugian
+                <Banknote className="w-3.5 h-3.5 shrink-0" />
+                <span>Nilai Kerugian</span>
               </button>
               <button
                 onClick={() => {
                   sound.playPop();
                   setColorMode('kasus');
                 }}
-                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 ${
                   colorMode === 'kasus'
                     ? 'bg-[#0284C7] text-white shadow-xs'
                     : 'text-[#57534E] hover:bg-[#F2E8D3]'
                 }`}
               >
-                📊 Jumlah Kasus
+                <BarChart3 className="w-3.5 h-3.5 shrink-0" />
+                <span>Jumlah Kasus</span>
               </button>
               <button
                 onClick={() => {
                   sound.playPop();
                   setColorMode('scrapbook');
                 }}
-                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 ${
                   colorMode === 'scrapbook'
                     ? 'bg-[#16A34A] text-white shadow-xs'
                     : 'text-[#57534E] hover:bg-[#F2E8D3]'
                 }`}
               >
-                🎨 Kertas Pulau
+                <Palette className="w-3.5 h-3.5 shrink-0" />
+                <span>Kertas Pulau</span>
               </button>
             </div>
           </div>
@@ -368,7 +377,7 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
             }`}
             title="Tampilkan daftar berkas perkara korupsi berskala Nasional / Instansi Pusat"
           >
-            <span className="text-base">🏛️</span>
+            <Landmark className="w-4 h-4 shrink-0" />
             <span>Perkara Skala Nasional / Instansi Pusat</span>
           </button>
 
@@ -386,12 +395,12 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
               className="bg-[#FAF5E8] border border-[#D5C9AB] rounded-xl px-3 py-1.5 text-xs font-bold text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#DC2626] cursor-pointer"
             >
               <option value="">-- Sorot Provinsi --</option>
-              <optgroup label="🏛️ Yurisdiksi Nasional">
+              <optgroup label="Yurisdiksi Nasional">
                 <option value="Pusat / Nasional (Kementerian / Lembaga RI)">
-                  🏛️ Pusat / Nasional (Kementerian / BUMN / DPR RI)
+                  Pusat / Nasional (Kementerian / BUMN / DPR RI)
                 </option>
               </optgroup>
-              <optgroup label="📍 Wilayah 38 Provinsi Nusantara">
+              <optgroup label="Wilayah 38 Provinsi Nusantara">
                 {INDONESIA_PROVINCES_GEO.map(p => (
                   <option key={p.name} value={p.name}>
                     {p.name} ({regionMap.get(normalizeName(p.name).toLowerCase())?.total_kasus || 0} kasus)
@@ -697,7 +706,8 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
                 return (
                   <div className="py-1">
                     <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
-                      🌿 Belum Ada Kasus Terverifikasi
+                      <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
+                      <span>Belum Ada Kasus Terverifikasi</span>
                     </span>
                     <p className="text-[11px] text-gray-500 italic mt-1 leading-snug">
                       Belum ada data perkara korupsi yang terverifikasi di database untuk provinsi ini.
@@ -731,8 +741,9 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
                     <span className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded-md border ${tierBadge.color}`}>
                       {tierBadge.label}
                     </span>
-                    <span className="text-[10px] text-blue-600 font-bold">
-                      👆 Klik untuk buka berkas
+                    <span className="text-[10px] text-blue-600 font-bold inline-flex items-center gap-1">
+                      <MousePointerClick className="w-3 h-3 shrink-0" />
+                      <span>Klik untuk buka berkas</span>
                     </span>
                   </div>
                 </div>
@@ -752,7 +763,9 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#EAE0CD] gap-3">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-2xl">📍</span>
+                <span className="p-2 rounded-xl bg-amber-100 border border-amber-300 text-amber-800 inline-flex items-center justify-center">
+                  <MapPin className="w-5 h-5" />
+                </span>
                 <h3 className="font-marker text-2xl sm:text-3xl text-[#1E293B]">
                   Berkas Perkara di Provinsi {selectedProvince}
                 </h3>
@@ -808,7 +821,9 @@ export const IndonesiaMap: React.FC<IndonesiaMapProps> = ({
             </div>
           ) : selectedProvinceCases.length === 0 ? (
             <div className="p-8 text-center bg-[#FAF5E8] rounded-3xl border-2 border-dashed border-[#E3D7BD] space-y-3">
-              <div className="text-3xl">🌿</div>
+              <div className="w-12 h-12 rounded-2xl bg-emerald-100 border border-emerald-300 text-emerald-700 flex items-center justify-center mx-auto">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
               <h4 className="font-bold text-base text-slate-800 font-sans">
                 Belum Ada Berkas Kasus yang Tercatat di {selectedProvince}
               </h4>

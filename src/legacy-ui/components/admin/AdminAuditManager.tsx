@@ -3,7 +3,7 @@
 import React from 'react';
 import { AuditLog } from '../../types';
 import { sound } from '../../utils/audio';
-import { History, RotateCcw } from 'lucide-react';
+import { History, RotateCcw, User } from 'lucide-react';
 
 interface AdminAuditManagerProps {
   authToken: string;
@@ -121,8 +121,9 @@ export const AdminAuditManager: React.FC<AdminAuditManagerProps> = ({
                       {formattedDate}
                     </span>
                     <span className="text-gray-400">•</span>
-                    <span className="font-bold text-[#334155] bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                      👤 {adminName}
+                    <span className="font-bold text-[#334155] bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-flex items-center gap-1">
+                      <User className="w-3 h-3 text-amber-700 shrink-0" />
+                      <span>{adminName}</span>
                     </span>
                     <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-mono">
                       {entityType}

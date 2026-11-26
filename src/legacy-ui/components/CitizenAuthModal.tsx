@@ -28,6 +28,7 @@ import {
 import { sound } from '../utils/audio';
 import { PROVINCES_LIST, getCitiesByProvince } from '../constants/provinces';
 import { useGoogleLogin } from '@react-oauth/google';
+import { FlagIdIcon } from './ThemeIcons';
 
 export interface CitizenUser {
   id: string;
@@ -410,7 +411,8 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
         <div className="space-y-1.5 text-center pt-1">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] text-[11px] font-bold shadow-2xs">
             <UserCheck className="w-3.5 h-3.5 text-amber-600" />
-            <span>KARTU IDENTITAS SUARA WARGA LKI 🇮🇩</span>
+            <span>AKUN SUARA WARGA LKI</span>
+            <FlagIdIcon className="w-3.5 h-3" />
           </div>
 
           <h3 className="text-xl sm:text-2xl font-marker text-[#1E293B] tracking-wide">
@@ -551,9 +553,10 @@ export const CitizenAuthModal: React.FC<CitizenAuthModalProps> = ({
                     setMode('verify_email');
                     setError(null);
                   }}
-                  className="text-[11px] font-bold text-amber-700 hover:text-amber-800 hover:underline cursor-pointer"
+                  className="text-[11px] font-bold text-amber-700 hover:text-amber-800 hover:underline cursor-pointer inline-flex items-center gap-1"
                 >
-                  Belum verifikasi email? Masukkan OTP 🔑
+                  <span>Belum verifikasi email? Masukkan OTP</span>
+                  <KeyRound className="w-3 h-3 shrink-0" />
                 </button>
               </div>
               <div className="relative">

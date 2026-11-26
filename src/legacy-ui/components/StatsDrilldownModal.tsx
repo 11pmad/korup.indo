@@ -17,8 +17,10 @@ import {
   ChevronRight,
   FileText,
   MapPin,
-  Clock
+  Clock,
+  Scale
 } from 'lucide-react';
+import { SectorIcon } from './ThemeIcons';
 
 export interface DrilldownTarget {
   type: 'company' | 'party' | 'year' | 'category';
@@ -70,7 +72,7 @@ export const StatsDrilldownModal: React.FC<StatsDrilldownModalProps> = ({
         <div className="p-5 sm:p-6 bg-[#FAF5E8] border-b border-[#EAE0CD] flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
             <span className="w-10 h-10 rounded-2xl bg-[#FEF08A] text-[#854D0E] border border-[#EAB308] flex items-center justify-center text-xl shadow-inner shrink-0">
-              {target.icon || '📂'}
+              <SectorIcon sector={target.icon || 'folder'} className="w-5 h-5" />
             </span>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -194,7 +196,7 @@ export const StatsDrilldownModal: React.FC<StatsDrilldownModalProps> = ({
                       <span className="font-marker text-base text-[#DC2626]">
                         {formatRupiah(c.nilai_kerugian_negara)}
                       </span>
-                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-md border ${
+                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-md border inline-flex items-center gap-1 ${
                         c.status_hukum === 'Divonis Inkrah'
                           ? 'bg-[#DCFCE7] text-[#166534] border-[#86EFAC]'
                           : c.status_hukum === 'Terdakwa'
@@ -203,7 +205,8 @@ export const StatsDrilldownModal: React.FC<StatsDrilldownModalProps> = ({
                           ? 'bg-[#FEE2E2] text-[#991B1B] border-[#FECACA]'
                           : 'bg-[#F1F5F9] text-[#475569] border-[#CBD5E1]'
                       }`}>
-                        ⚖️ {c.status_hukum}
+                        <Scale className="w-3 h-3 shrink-0" />
+                        <span>{c.status_hukum}</span>
                       </span>
                     </div>
                   </div>

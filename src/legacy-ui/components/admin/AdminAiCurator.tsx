@@ -8,7 +8,14 @@ import {
   CheckCircle2, 
   Check, 
   X, 
-  ExternalLink 
+  ExternalLink,
+  Bot,
+  User,
+  ClipboardList,
+  MapPin,
+  Scale,
+  FolderOpen,
+  AlertTriangle
 } from 'lucide-react';
 import { formatRupiah } from '../../utils/formatters';
 
@@ -171,7 +178,7 @@ export const AdminAiCurator: React.FC<AdminAiCuratorProps> = ({
             >
               {msg.role === 'ai' && (
                 <div className="w-7 h-7 rounded-lg bg-[#FFE4E6] text-[#E11D48] flex items-center justify-center text-xs font-bold shrink-0 mt-1">
-                  🤖
+                  <Bot className="w-4 h-4" />
                 </div>
               )}
 
@@ -187,7 +194,7 @@ export const AdminAiCurator: React.FC<AdminAiCuratorProps> = ({
 
               {msg.role === 'admin' && (
                 <div className="w-7 h-7 rounded-lg bg-[#EA580C]/20 text-[#EA580C] flex items-center justify-center text-xs font-bold shrink-0 mt-1">
-                  👤
+                  <User className="w-4 h-4" />
                 </div>
               )}
             </div>
@@ -227,7 +234,9 @@ export const AdminAiCurator: React.FC<AdminAiCuratorProps> = ({
         <div className="space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-[#EFE5CF]">
             <div className="flex items-center gap-2">
-              <span className="p-1.5 bg-[#FEF08A] text-[#854D0E] rounded-lg">📋</span>
+              <span className="p-1.5 bg-[#FEF08A] text-[#854D0E] rounded-lg inline-flex items-center justify-center">
+                <ClipboardList className="w-4 h-4" />
+              </span>
               <span className="text-xs font-bold text-[#1E293B]">Pratinjau Draf Data (Human Review)</span>
             </div>
             <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full">
@@ -256,8 +265,9 @@ export const AdminAiCurator: React.FC<AdminAiCuratorProps> = ({
                 <div className="text-gray-600">
                   {activeDraft.official?.jabatan} • {activeDraft.official?.partai}
                 </div>
-                <div className="text-[11px] text-[#0284C7] font-semibold pt-0.5">
-                  📍 {activeDraft.official?.provinsi} ({activeDraft.official?.kota_kabupaten || '-'})
+                <div className="text-[11px] text-[#0284C7] font-semibold pt-0.5 inline-flex items-center gap-1">
+                  <MapPin className="w-3 h-3 shrink-0" />
+                  <span>{activeDraft.official?.provinsi} ({activeDraft.official?.kota_kabupaten || '-'})</span>
                 </div>
               </div>
 
@@ -265,8 +275,9 @@ export const AdminAiCurator: React.FC<AdminAiCuratorProps> = ({
               <div className="p-3 bg-white border border-[#E2D6BA] rounded-xl flex items-center justify-between">
                 <div>
                   <span className="text-[10px] text-gray-500 block">Status Hukum:</span>
-                  <span className="font-bold text-[#B91C1C]">
-                    ⚖️ {activeDraft.corruption_case?.status_hukum}
+                  <span className="font-bold text-[#B91C1C] inline-flex items-center gap-1">
+                    <Scale className="w-3.5 h-3.5 shrink-0" />
+                    <span>{activeDraft.corruption_case?.status_hukum}</span>
                   </span>
                 </div>
                 <div className="text-right">
@@ -306,7 +317,9 @@ export const AdminAiCurator: React.FC<AdminAiCuratorProps> = ({
             </div>
           ) : (
             <div className="py-16 text-center space-y-2 text-gray-400">
-              <div className="text-3xl">🗂️</div>
+              <div className="w-12 h-12 rounded-2xl bg-[#FAF6EC] border border-[#E9DFCB] text-[#854D0E] flex items-center justify-center mx-auto">
+                <FolderOpen className="w-6 h-6" />
+              </div>
               <p className="text-xs font-semibold text-gray-600">Belum ada draft aktif.</p>
               <p className="text-[11px] text-gray-500 font-normal max-w-xs mx-auto">
                 Ketik instruksi di sebelah kiri. Setelah data wajib lengkap dengan tautan berita, draft akan muncul di sini untuk ditinjau.
@@ -318,8 +331,9 @@ export const AdminAiCurator: React.FC<AdminAiCuratorProps> = ({
         {/* Actions for active draft */}
         {activeDraft && (
           <div className="pt-4 border-t border-[#EFE5CF] space-y-2">
-            <div className="p-2 bg-[#FEF9C3] rounded-xl text-[11px] text-[#713F12]">
-              ⚠️ <strong>Human Review SOP:</strong> Pastikan Anda telah mengklik tautan sumber di atas untuk mengonfirmasi keabsahan dokumen sebelum menyetujui.
+            <div className="p-2 bg-[#FEF9C3] rounded-xl text-[11px] text-[#713F12] flex items-start gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-700" />
+              <span><strong>Human Review SOP:</strong> Pastikan Anda telah mengklik tautan sumber di atas untuk mengonfirmasi keabsahan dokumen sebelum menyetujui.</span>
             </div>
 
             <div className="flex items-center gap-2">

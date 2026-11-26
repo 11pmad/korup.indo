@@ -105,7 +105,8 @@ export const SearchCasesView: React.FC<SearchProps> = ({
 
         <div>
           <h2 className="font-marker text-2xl sm:text-3xl text-[#1E293B] flex items-center gap-2">
-            <span>🔍 Eksplorasi &amp; Cari Berkas Kasus</span>
+            <Search className="w-6 h-6 text-[#D97706] shrink-0" />
+            <span>Eksplorasi &amp; Cari Berkas Kasus</span>
           </h2>
           <p className="text-xs sm:text-sm text-[#64748B]">
             Telusuri perkara berdasarkan nama pejabat, korporasi swasta terkait, daerah pemilihan, atau kata kunci kasus.

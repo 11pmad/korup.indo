@@ -8,7 +8,7 @@ async function main() {
   if (!targetUrl || /localhost|127\.0\.0\.1/.test(targetUrl)) {
     console.error(
       [
-        '❌ PROD_DATABASE_URL cloud wajib diberikan dan tidak boleh menunjuk localhost.',
+        '[GAGAL] PROD_DATABASE_URL cloud wajib diberikan dan tidak boleh menunjuk localhost.',
         '',
         'Cara penggunaan:',
         '  PROD_DATABASE_URL="postgresql://user:pass@host/db?sslmode=require" bun run db:setup-prod',
@@ -74,7 +74,7 @@ async function main() {
   const cronSecret = crypto.randomBytes(24).toString('hex');
   const ipHashSalt = crypto.randomBytes(24).toString('hex');
 
-  console.log('\n✅ Database PostgreSQL produksi siap digunakan!');
+  console.log('\n[OK] Database PostgreSQL produksi siap digunakan!');
   console.log('==================================================================');
   console.log('Salin Environment Variables berikut ke Vercel -> Settings -> Environment Variables:\n');
   console.log(`DATABASE_URL=${targetUrl}`);

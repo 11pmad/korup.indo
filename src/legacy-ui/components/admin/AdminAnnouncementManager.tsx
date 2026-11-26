@@ -14,9 +14,11 @@ import {
   Sparkles,
   ToggleLeft,
   ToggleRight,
-  RefreshCw
+  RefreshCw,
+  X
 } from 'lucide-react';
 import { sound } from '../../utils/audio';
+import { stripLeadingEmoji } from '../ThemeIcons';
 
 interface AdminAnnouncementManagerProps {
   authToken: string;
@@ -34,7 +36,7 @@ interface AnnouncementConfig {
 }
 
 const DEFAULT_CONFIG: AnnouncementConfig = {
-  title: '⚖️ PEMBERITAHUAN ASAS HUKUM & SUMBER RESMI:',
+  title: 'PEMBERITAHUAN ASAS HUKUM & SUMBER RESMI:',
   badge: 'Wajib Dibaca',
   main_text: 'Data bersumber dari putusan pengadilan & pemberitaan media yang tercantum. Setiap orang berhak atas asas praduga tak bersalah hingga ada putusan berkekuatan hukum tetap.',
   sub_text: 'Setiap data diverifikasi dengan tautan resmi direktori putusan Mahkamah Agung RI, KPK.go.id, atau media nasional kredibel.',
@@ -188,7 +190,7 @@ export const AdminAnnouncementManager: React.FC<AdminAnnouncementManagerProps> =
             onClick={() => setMessage(null)}
             className="text-slate-400 hover:text-slate-600 cursor-pointer font-bold ml-2"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         </div>
       )}
@@ -248,10 +250,10 @@ export const AdminAnnouncementManager: React.FC<AdminAnnouncementManagerProps> =
                 onChange={e => setFormData({ ...formData, title: e.target.value })}
                 required
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:border-[#DC2626] focus:ring-2 focus:ring-[#DC2626]/20 transition-all font-medium"
-                placeholder="⚖️ PEMBERITAHUAN ASAS HUKUM & SUMBER RESMI:"
+                placeholder="PEMBERITAHUAN ASAS HUKUM & SUMBER RESMI:"
               />
               <p className="text-[11px] text-slate-400 mt-1">
-                Teks judul tebal di bagian atas banner (bisa menyertakan emoji hukum seperti ⚖️).
+                Teks judul tebal di bagian atas banner (ikon neraca hukum ditampilkan otomatis di samping judul).
               </p>
             </div>
 
@@ -371,7 +373,7 @@ export const AdminAnnouncementManager: React.FC<AdminAnnouncementManagerProps> =
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-sm sm:text-base text-[#854D0E] tracking-wide">
-                          {formData.title || 'Judul Pemberitahuan'}
+                          {stripLeadingEmoji(formData.title) || 'Judul Pemberitahuan'}
                         </span>
                         {formData.badge && (
                           <span className="px-2 py-0.5 bg-[#FACC15] text-[#713F12] text-[11px] font-bold rounded-full uppercase tracking-wider">

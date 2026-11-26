@@ -18,10 +18,12 @@ import {
   ExternalLink,
   HelpCircle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  X
 } from 'lucide-react';
 import { sound } from '../../utils/audio';
 import { REACTION_DEFINITIONS } from '../CaseReactionsSection';
+import { ReactionIcon } from '../ThemeIcons';
 
 interface AdminCommentUser {
   id: string;
@@ -194,7 +196,7 @@ export const AdminCommentsManager: React.FC<AdminCommentsManagerProps> = ({
           ? 'bg-rose-100 text-rose-800 border border-rose-300'
           : 'bg-amber-100 text-amber-800 border border-amber-300'
       }`}>
-        <span>{def.emoji}</span>
+        <ReactionIcon type={reactionType} className="w-3.5 h-3.5" />
         <span>{def.label}</span>
       </span>
     );
@@ -221,7 +223,7 @@ export const AdminCommentsManager: React.FC<AdminCommentsManagerProps> = ({
             onClick={() => setNotification(null)}
             className="text-slate-400 hover:text-slate-600 cursor-pointer"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         </div>
       )}

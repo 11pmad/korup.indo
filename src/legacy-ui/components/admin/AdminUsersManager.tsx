@@ -31,10 +31,14 @@ import {
   BadgeCheck,
   Globe,
   SlidersHorizontal,
-  FileCheck
+  FileCheck,
+  Crown,
+  PenLine,
+  MessageSquare
 } from 'lucide-react';
 import { sound } from '../../utils/audio';
 import { PROVINCES_LIST, getCitiesByProvince } from '../../constants/provinces';
+import { RoleIcon } from '../ThemeIcons';
 
 export interface AdminUserItem {
   id: string;
@@ -74,42 +78,42 @@ export const ROLE_CONFIG: Record<string, { label: string; color: string; badgeBg
     label: 'Super Admin',
     color: 'text-purple-700 border-purple-300 bg-purple-50',
     badgeBg: 'bg-purple-100 text-purple-800 border border-purple-300',
-    icon: '👑',
+    icon: 'super_admin',
     description: 'Kendali penuh: kelola semua akun, konfigurasi donasi & sistem, rollback log, dan hapus berkas permanen.'
   },
   admin: {
     label: 'Admin Operasional',
     color: 'text-blue-700 border-blue-300 bg-blue-50',
     badgeBg: 'bg-blue-100 text-blue-800 border border-blue-300',
-    icon: '🛡️',
+    icon: 'admin',
     description: 'Kelola penuh berkas kasus, data pejabat, moderasi laporan & komentar, serta pantau trafik monitoring.'
   },
   editor: {
     label: 'Editor Berkas',
     color: 'text-amber-700 border-amber-300 bg-amber-50',
     badgeBg: 'bg-amber-100 text-amber-800 border border-amber-300',
-    icon: '✍️',
+    icon: 'editor',
     description: 'Kurasi berkas kasus hukum, input formulir manual, dan integrasi kurasi AI Gemini. Tidak bisa hapus berkas permanen.'
   },
   moderator: {
     label: 'Moderator Warga',
     color: 'text-emerald-700 border-emerald-300 bg-emerald-50',
     badgeBg: 'bg-emerald-100 text-emerald-800 border border-emerald-300',
-    icon: '💬',
+    icon: 'moderator',
     description: 'Fokus moderasi suara publik: kelola & sembunyikan komentar melanggar, tinjau usulan warga, dan pantau reaksi.'
   },
   auditor: {
     label: 'Auditor Independen',
     color: 'text-slate-700 border-slate-300 bg-slate-50',
     badgeBg: 'bg-slate-100 text-slate-800 border border-slate-300',
-    icon: '🔍',
+    icon: 'auditor',
     description: 'Akses Read-Only: verifikasi log audit trail, pantau integritas berkas perkara, dan unduh laporan berkala.'
   },
   reviewer: {
     label: 'Auditor Independen',
     color: 'text-slate-700 border-slate-300 bg-slate-50',
     badgeBg: 'bg-slate-100 text-slate-800 border border-slate-300',
-    icon: '🔍',
+    icon: 'auditor',
     description: 'Akses Read-Only: verifikasi log audit trail, pantau integritas berkas perkara, dan unduh laporan berkala.'
   }
 };
@@ -441,7 +445,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
   };
 
   const handleDeleteUser = async (user: AdminUserItem) => {
-    if (!confirm(`⚠️ PERINGATAN: Tindakan ini permanen!\n\nHapus akun pengguna "${user.full_name || user.username}" (${user.role}) dari pangkalan data LKI?`)) {
+    if (!confirm(`PERINGATAN: Tindakan ini permanen!\n\nHapus akun pengguna "${user.full_name || user.username}" (${user.role}) dari pangkalan data LKI?`)) {
       return;
     }
 
@@ -587,7 +591,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
 
   const handleDeleteCitizen = async (citizen: CitizenUserItem) => {
     if (!canManageCitizens) return;
-    if (!confirm(`⚠️ PERINGATAN: Tindakan ini permanen!\n\nHapus akun warga "${citizen.display_name}" (@${citizen.username})?\nSeluruh komentar dan reaksi kasus milik warga ini akan ikut dihapus secara otomatis.`)) {
+    if (!confirm(`PERINGATAN: Tindakan ini permanen!\n\nHapus akun warga "${citizen.display_name}" (@${citizen.username})?\nSeluruh komentar dan reaksi kasus milik warga ini akan ikut dihapus secara otomatis.`)) {
       return;
     }
 
@@ -762,40 +766,45 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
             </div>
 
             <div className="bg-purple-50/70 border border-purple-200 rounded-2xl p-3.5 text-center">
-              <span className="text-[10px] text-purple-700 font-bold block uppercase flex items-center justify-center gap-1">
-                <span>👑</span> Super Admin
+              <span className="text-[10px] text-purple-700 font-bold uppercase flex items-center justify-center gap-1">
+                <Crown className="w-3.5 h-3.5 shrink-0" />
+                <span>Super Admin</span>
               </span>
               <span className="font-marker text-2xl text-purple-900">{stats.superAdminCount}</span>
               <span className="text-[10px] text-purple-600 font-medium block mt-0.5">Otoritas Penuh</span>
             </div>
 
             <div className="bg-blue-50/70 border border-blue-200 rounded-2xl p-3.5 text-center">
-              <span className="text-[10px] text-blue-700 font-bold block uppercase flex items-center justify-center gap-1">
-                <span>🛡️</span> Admin
+              <span className="text-[10px] text-blue-700 font-bold uppercase flex items-center justify-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                <span>Admin</span>
               </span>
               <span className="font-marker text-2xl text-blue-900">{stats.adminCount}</span>
               <span className="text-[10px] text-blue-600 font-medium block mt-0.5">Operasional</span>
             </div>
 
             <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-3.5 text-center">
-              <span className="text-[10px] text-amber-700 font-bold block uppercase flex items-center justify-center gap-1">
-                <span>✍️</span> Editor
+              <span className="text-[10px] text-amber-700 font-bold uppercase flex items-center justify-center gap-1">
+                <PenLine className="w-3.5 h-3.5 shrink-0" />
+                <span>Editor</span>
               </span>
               <span className="font-marker text-2xl text-amber-900">{stats.editorCount}</span>
               <span className="text-[10px] text-amber-600 font-medium block mt-0.5">Kurator Berkas</span>
             </div>
 
             <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-3.5 text-center">
-              <span className="text-[10px] text-emerald-700 font-bold block uppercase flex items-center justify-center gap-1">
-                <span>💬</span> Moderator
+              <span className="text-[10px] text-emerald-700 font-bold uppercase flex items-center justify-center gap-1">
+                <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+                <span>Moderator</span>
               </span>
               <span className="font-marker text-2xl text-emerald-900">{stats.moderatorCount}</span>
               <span className="text-[10px] text-emerald-600 font-medium block mt-0.5">Suara Warga</span>
             </div>
 
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-center">
-              <span className="text-[10px] text-slate-700 font-bold block uppercase flex items-center justify-center gap-1">
-                <span>🔍</span> Auditor
+              <span className="text-[10px] text-slate-700 font-bold uppercase flex items-center justify-center gap-1">
+                <Search className="w-3.5 h-3.5 shrink-0" />
+                <span>Auditor</span>
               </span>
               <span className="font-marker text-2xl text-slate-900">{stats.auditorCount}</span>
               <span className="text-[10px] text-slate-500 font-medium block mt-0.5">Read-Only</span>
@@ -902,7 +911,7 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
 
                           <td className="py-3.5 px-4">
                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${roleMeta.badgeBg}`}>
-                              <span>{roleMeta.icon}</span>
+                              <RoleIcon role={roleMeta.icon} className="w-3.5 h-3.5" />
                               <span>{roleMeta.label}</span>
                             </span>
                           </td>
@@ -1014,32 +1023,36 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
             </div>
 
             <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-3.5 text-center">
-              <span className="text-[10px] text-emerald-700 font-bold block uppercase flex items-center justify-center gap-1">
-                <span>🛡️</span> Terverifikasi
+              <span className="text-[10px] text-emerald-700 font-bold uppercase flex items-center justify-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                <span>Terverifikasi</span>
               </span>
               <span className="font-marker text-2xl text-emerald-900">{citizenStats.verified}</span>
               <span className="text-[10px] text-emerald-600 font-medium block mt-0.5">Kedaulatan Sah</span>
             </div>
 
             <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-3.5 text-center">
-              <span className="text-[10px] text-amber-700 font-bold block uppercase flex items-center justify-center gap-1">
-                <span>⏳</span> Belum Verifikasi
+              <span className="text-[10px] text-amber-700 font-bold uppercase flex items-center justify-center gap-1">
+                <Clock className="w-3.5 h-3.5 shrink-0" />
+                <span>Belum Verifikasi</span>
               </span>
               <span className="font-marker text-2xl text-amber-900">{citizenStats.unverified}</span>
               <span className="text-[10px] text-amber-600 font-medium block mt-0.5">Menunggu OTP</span>
             </div>
 
             <div className="bg-blue-50/70 border border-blue-200 rounded-2xl p-3.5 text-center">
-              <span className="text-[10px] text-blue-700 font-bold block uppercase flex items-center justify-center gap-1">
-                <span>🌐</span> Akun Google
+              <span className="text-[10px] text-blue-700 font-bold uppercase flex items-center justify-center gap-1">
+                <Globe className="w-3.5 h-3.5 shrink-0" />
+                <span>Akun Google</span>
               </span>
               <span className="font-marker text-2xl text-blue-900">{citizenStats.googleCount}</span>
               <span className="text-[10px] text-blue-600 font-medium block mt-0.5">Google OAuth</span>
             </div>
 
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-center">
-              <span className="text-[10px] text-slate-700 font-bold block uppercase flex items-center justify-center gap-1">
-                <span>✉️</span> Akun Email
+              <span className="text-[10px] text-slate-700 font-bold uppercase flex items-center justify-center gap-1">
+                <Mail className="w-3.5 h-3.5 shrink-0" />
+                <span>Akun Email</span>
               </span>
               <span className="font-marker text-2xl text-slate-900">{citizenStats.localCount}</span>
               <span className="text-[10px] text-slate-500 font-medium block mt-0.5">Registrasi Lokal</span>
@@ -1708,15 +1721,15 @@ export const AdminUsersManager: React.FC<AdminUsersManagerProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Status Verifikasi Email &amp; e-KTP
+                  Status Verifikasi Email Warga
                 </label>
                 <select
                   value={editCitizenVerified}
                   onChange={e => setEditCitizenVerified(Number(e.target.value))}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer"
                 >
-                  <option value={1}>✅ Terverifikasi (Dapat berinteraksi penuh &amp; memiliki e-KTP sah)</option>
-                  <option value={0}>⏳ Belum Diverifikasi (Menunggu verifikasi email OTP)</option>
+                  <option value={1}>Terverifikasi (Dapat berinteraksi penuh)</option>
+                  <option value={0}>Belum Diverifikasi (Menunggu verifikasi email OTP)</option>
                 </select>
               </div>
 

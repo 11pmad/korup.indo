@@ -21,9 +21,13 @@ import {
   Flame,
   Landmark,
   Clock,
-  Download
+  Download,
+  Scale,
+  Star,
+  Globe
 } from 'lucide-react';
 import { PresumptionOfInnocenceBanner } from './PresumptionOfInnocenceBanner';
+import { MedalBadge } from './ThemeIcons';
 
 export interface HistoricalEra {
   id: string;
@@ -638,26 +642,8 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
   };
 
   const getRankMedal = (rank: number) => {
-    if (rank === 1) {
-      return (
-        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#FEF08A] border-2 border-[#EAB308] text-[#854D0E] font-marker text-lg shadow-sm rotate-[-4deg]">
-          🥇
-        </span>
-      );
-    }
-    if (rank === 2) {
-      return (
-        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#E2E8F0] border-2 border-[#94A3B8] text-[#334155] font-marker text-lg shadow-sm rotate-[3deg]">
-          🥈
-        </span>
-      );
-    }
-    if (rank === 3) {
-      return (
-        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#FFEDD5] border-2 border-[#F97316] text-[#9A3412] font-marker text-lg shadow-sm rotate-[-2deg]">
-          🥉
-        </span>
-      );
+    if (rank >= 1 && rank <= 3) {
+      return <MedalBadge rank={rank - 1} className="w-4 h-4" />;
     }
     return (
       <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#F3EDE0] border border-[#D5C9A9] text-[#57534E] font-bold text-xs">
@@ -769,8 +755,18 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
                 <Calendar className="w-4 h-4 text-[#D97706]" />
                 <span>Periode Waktu (All-Time / Tahun)</span>
               </label>
-              <span className="text-[11px] font-mono text-[#78716C]">
-                {selectedPeriod === 'alltime' ? '⭐ Menampilkan Data Sepanjang Masa' : `📅 Tahun Aktif: ${selectedPeriod}`}
+              <span className="text-[11px] font-mono text-[#78716C] inline-flex items-center gap-1">
+                {selectedPeriod === 'alltime' ? (
+                  <>
+                    <Star className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span>Menampilkan Data Sepanjang Masa</span>
+                  </>
+                ) : (
+                  <>
+                    <Calendar className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>Tahun Aktif: {selectedPeriod}</span>
+                  </>
+                )}
               </span>
             </div>
 
@@ -789,7 +785,8 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
                     : 'bg-white text-[#44403C] border-[#D5C9AB] hover:bg-[#FFF9EE]'
                 }`}
               >
-                <span>⏱️ All-Time (Semua Tahun)</span>
+                <Clock className="w-3.5 h-3.5 shrink-0" />
+                <span>All-Time (Semua Tahun)</span>
               </button>
 
               {/* Dynamic Year Buttons */}
@@ -901,15 +898,15 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
                 <option value="">Semua Wilayah &amp; Provinsi</option>
                 
                 {(filterPulau === 'Semua Pulau' || filterPulau === 'Nasional / Pusat') && (
-                  <optgroup label="🏛️ Tingkat Nasional / Pemerintah Pusat">
+                  <optgroup label="Tingkat Nasional / Pemerintah Pusat">
                     <option value="Pusat / Nasional (Kementerian / Lembaga RI)">
-                      🏛️ Pusat / Nasional (Kementerian / Lembaga RI / BUMN)
+                      Pusat / Nasional (Kementerian / Lembaga RI / BUMN)
                     </option>
                   </optgroup>
                 )}
 
                 {filterPulau !== 'Nasional / Pusat' && (
-                  <optgroup label="📍 Tingkat Daerah (38 Provinsi Nusantara)">
+                  <optgroup label="Tingkat Daerah (38 Provinsi Nusantara)">
                     {provinces
                       .filter(p => {
                         const isNat = p.toLowerCase().includes('nasional') || p.toLowerCase().includes('pusat');
@@ -1001,13 +998,15 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#EAE0CD] text-xs">
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[#78716C] font-semibold">Filter Aktif:</span>
-              <span className="px-2 py-0.5 rounded-md bg-[#FFFDF8] border border-[#D5C9AB] text-[#1E293B] font-bold">
-                ⏳ {selectedPeriod === 'alltime' ? 'All-Time' : `Tahun ${selectedPeriod}`}
+              <span className="px-2 py-0.5 rounded-md bg-[#FFFDF8] border border-[#D5C9AB] text-[#1E293B] font-bold inline-flex items-center gap-1">
+                <Clock className="w-3 h-3 text-amber-700 shrink-0" />
+                <span>{selectedPeriod === 'alltime' ? 'All-Time' : `Tahun ${selectedPeriod}`}</span>
               </span>
 
               {selectedEra && activeEraObj && (
                 <span className="px-2 py-0.5 rounded-md bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] font-bold inline-flex items-center gap-1">
-                  🏛️ Era: {activeEraObj.shortName}
+                  <Landmark className="w-3 h-3 shrink-0" />
+                  <span>Era: {activeEraObj.shortName}</span>
                   <button
                     onClick={() => {
                       sound.playPop();
@@ -1023,28 +1022,39 @@ export const LeaderboardTable: React.FC<LeaderboardProps> = ({
               )}
 
               {filterPulau !== 'Semua Pulau' && (
-                <span className="px-2 py-0.5 rounded-md bg-[#BAE6FD] border border-[#7DD3FC] text-[#0369A1] font-bold">
-                  🏝️ Pulau: {filterPulau}
+                <span className="px-2 py-0.5 rounded-md bg-[#BAE6FD] border border-[#7DD3FC] text-[#0369A1] font-bold inline-flex items-center gap-1">
+                  <Globe className="w-3 h-3 shrink-0" />
+                  <span>Pulau: {filterPulau}</span>
                 </span>
               )}
 
               {filterProvinsi && (
-                <span className="px-2 py-0.5 rounded-md bg-[#E0F2FE] border border-[#BAE6FD] text-[#0284C7] font-bold">
-                  {filterProvinsi.toLowerCase().includes('nasional') || filterProvinsi.toLowerCase().includes('pusat') 
-                    ? '🏛️ Nasional / Pusat' 
-                    : `📍 Prov: ${filterProvinsi}`}
+                <span className="px-2 py-0.5 rounded-md bg-[#E0F2FE] border border-[#BAE6FD] text-[#0284C7] font-bold inline-flex items-center gap-1">
+                  {filterProvinsi.toLowerCase().includes('nasional') || filterProvinsi.toLowerCase().includes('pusat') ? (
+                    <>
+                      <Landmark className="w-3 h-3 shrink-0" />
+                      <span>Nasional / Pusat</span>
+                    </>
+                  ) : (
+                    <>
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span>Prov: {filterProvinsi}</span>
+                    </>
+                  )}
                 </span>
               )}
 
               {filterPartai && (
-                <span className="px-2 py-0.5 rounded-md bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] font-bold">
-                  🏛️ {filterPartai}
+                <span className="px-2 py-0.5 rounded-md bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] font-bold inline-flex items-center gap-1">
+                  <Landmark className="w-3 h-3 shrink-0" />
+                  <span>{filterPartai}</span>
                 </span>
               )}
 
               {filterStatus && (
-                <span className="px-2 py-0.5 rounded-md bg-[#FEE2E2] border border-[#FECACA] text-[#991B1B] font-bold">
-                  ⚖️ {filterStatus}
+                <span className="px-2 py-0.5 rounded-md bg-[#FEE2E2] border border-[#FECACA] text-[#991B1B] font-bold inline-flex items-center gap-1">
+                  <Scale className="w-3 h-3 shrink-0" />
+                  <span>{filterStatus}</span>
                 </span>
               )}
             </div>

@@ -16,11 +16,14 @@ import {
   TrendingUp,
   LogIn,
   User,
+  MapPin,
+  PenLine,
   X
 } from 'lucide-react';
 import { sound } from '../utils/audio';
 import { CitizenAuthModal } from './CitizenAuthModal';
 import { REACTION_DEFINITIONS, ReactionType } from './CaseReactionsSection';
+import { ReactionIcon, SpectrumIcon } from './ThemeIcons';
 
 interface CommentUser {
   id: string;
@@ -237,8 +240,9 @@ export const CaseCommentsSection: React.FC<CaseCommentsSectionProps> = ({
               )}
               <span className="truncate max-w-[90px]">{currentUser.displayName}</span>
               {(currentUser.originCity || currentUser.originProvince) && (
-                <span className="text-[10px] text-emerald-700 bg-emerald-100/70 px-1.5 py-0.2 rounded font-medium hidden sm:inline">
-                  📍 {currentUser.originCity || currentUser.originProvince}
+                <span className="text-[10px] text-emerald-700 bg-emerald-100/70 px-1.5 py-0.2 rounded font-medium hidden sm:inline-flex items-center gap-1">
+                  <MapPin className="w-2.5 h-2.5 shrink-0" />
+                  <span>{currentUser.originCity || currentUser.originProvince}</span>
                 </span>
               )}
             </div>
@@ -270,31 +274,35 @@ export const CaseCommentsSection: React.FC<CaseCommentsSectionProps> = ({
       <form onSubmit={handlePostComment} className="p-4 sm:p-4.5 bg-[#FAF6EC] border border-[#EBE1CD] rounded-2xl space-y-3 shadow-2xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <label className="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-1.5">
-            <span>✍️ Tulis Komentar / Telaah Kasus</span>
+            <PenLine className="w-4 h-4 text-amber-700 shrink-0" />
+            <span>Tulis Komentar / Telaah Kasus</span>
           </label>
 
           {/* Selector Sikap Reaksi */}
           <div className="flex items-center gap-1.5 text-xs">
             <span className="text-slate-500 text-xs font-medium hidden sm:inline">Sikap Anda:</span>
+            {selectedReaction && (
+              <ReactionIcon type={selectedReaction} className="w-4 h-4 text-amber-700" />
+            )}
             <select
               value={selectedReaction}
               onChange={e => setSelectedReaction(e.target.value)}
               className="px-3 py-1.5 bg-white border border-[#CBD5E1] rounded-xl text-xs font-bold text-slate-800 outline-hidden cursor-pointer"
             >
               <option value="">-- Sertakan Sikap (Opsional) --</option>
-              <optgroup label="🤝 Pemakluman &amp; Niat Baik">
-                <option value="khilaf_administrasi">💡 Khilaf Administrasi (Niat Baik)</option>
-                <option value="didukung">🤝 Didukung &amp; Masuk Akal</option>
-                <option value="dimaklumi">🕊️ Dimaklumi &amp; Dimaafkan</option>
+              <optgroup label="Pemakluman &amp; Niat Baik">
+                <option value="khilaf_administrasi">Khilaf Administrasi (Niat Baik)</option>
+                <option value="didukung">Didukung &amp; Masuk Akal</option>
+                <option value="dimaklumi">Dimaklumi &amp; Dimaafkan</option>
               </optgroup>
-              <optgroup label="😡 Kecaman &amp; Amarah Rakyat">
-                <option value="geram">😡 Sangat Geram</option>
-                <option value="rampok">💸 Rampok Uang Rakyat</option>
-                <option value="memalukan">🤮 Memalukan &amp; Menjijikkan</option>
+              <optgroup label="Kecaman &amp; Amarah Rakyat">
+                <option value="geram">Sangat Geram</option>
+                <option value="rampok">Rampok Uang Rakyat</option>
+                <option value="memalukan">Memalukan &amp; Menjijikkan</option>
               </optgroup>
-              <optgroup label="⚖️ Skeptisisme &amp; Kawal Sidang">
-                <option value="tebang_pilih">⚖️ Janggal / Tebang Pilih</option>
-                <option value="kawal_sidang">🧐 Kawal Sidang Objektif</option>
+              <optgroup label="Skeptisisme &amp; Kawal Sidang">
+                <option value="tebang_pilih">Janggal / Tebang Pilih</option>
+                <option value="kawal_sidang">Kawal Sidang Objektif</option>
               </optgroup>
             </select>
           </div>
@@ -351,35 +359,38 @@ export const CaseCommentsSection: React.FC<CaseCommentsSectionProps> = ({
           <button
             type="button"
             onClick={() => setFilter('pemakluman')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
               filter === 'pemakluman' 
                 ? 'bg-emerald-700 text-white shadow-xs' 
                 : 'bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100'
             }`}
           >
-            🤝 Pemakluman
+            <SpectrumIcon spectrum="pemakluman" className="w-3.5 h-3.5" />
+            <span>Pemakluman</span>
           </button>
           <button
             type="button"
             onClick={() => setFilter('kecaman')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
               filter === 'kecaman' 
                 ? 'bg-rose-700 text-white shadow-xs' 
                 : 'bg-rose-50 border border-rose-200 text-rose-800 hover:bg-rose-100'
             }`}
           >
-            😡 Kecaman
+            <SpectrumIcon spectrum="kecaman" className="w-3.5 h-3.5" />
+            <span>Kecaman</span>
           </button>
           <button
             type="button"
             onClick={() => setFilter('skeptis')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
               filter === 'skeptis' 
                 ? 'bg-amber-600 text-white shadow-xs' 
                 : 'bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100'
             }`}
           >
-            ⚖️ Tebang Pilih / Kawal
+            <SpectrumIcon spectrum="skeptis" className="w-3.5 h-3.5" />
+            <span>Tebang Pilih / Kawal</span>
           </button>
         </div>
 
@@ -453,8 +464,9 @@ export const CaseCommentsSection: React.FC<CaseCommentsSectionProps> = ({
                           {c.user.display_name}
                         </strong>
                         {origin && (
-                          <span className="px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-medium flex items-center gap-0.5">
-                            📍 {origin}
+                          <span className="px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-medium flex items-center gap-1">
+                            <MapPin className="w-2.5 h-2.5 shrink-0" />
+                            <span>{origin}</span>
                           </span>
                         )}
                         <span className="px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-600 text-[10px] font-mono">
@@ -480,7 +492,7 @@ export const CaseCommentsSection: React.FC<CaseCommentsSectionProps> = ({
                         ? 'bg-rose-100 text-rose-900 border border-rose-300'
                         : 'bg-amber-100 text-amber-900 border border-amber-300'
                     }`}>
-                      <span>{c.reaction_info.emoji}</span>
+                      <ReactionIcon type={c.reaction_type} className="w-3.5 h-3.5" />
                       <span className="hidden sm:inline">{c.reaction_info.label}</span>
                     </span>
                   )}

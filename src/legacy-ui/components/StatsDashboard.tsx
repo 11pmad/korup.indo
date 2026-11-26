@@ -23,8 +23,14 @@ import {
   Search,
   Users,
   ChevronRight,
-  Info
+  Info,
+  Scale,
+  Banknote,
+  FolderOpen,
+  Lightbulb,
+  MousePointerClick
 } from 'lucide-react';
+import { SectorIcon } from './ThemeIcons';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -49,16 +55,6 @@ interface StatsProps {
   cases?: CorruptionCase[];
   onSelectCase: (caseId: string) => void;
 }
-
-const SECTOR_ICONS: Record<string, string> = {
-  'Pengadaan Barang & Jasa': '🏗️',
-  'Bansos & Bencana Alam': '📦',
-  'Suap & Gratifikasi Jabatan': '🤝',
-  'Perizinan Lahan & SDA': '🌲',
-  'Pengelolaan Anggaran Daerah': '🏛️',
-  'Mafia Peradilan': '⚖️',
-  'Korupsi Lainnya': '💼'
-};
 
 export const StatsDashboard: React.FC<StatsProps> = ({ stats, cases = [], onSelectCase }) => {
   // Drill-down Modal State
@@ -205,7 +201,7 @@ export const StatsDashboard: React.FC<StatsProps> = ({ stats, cases = [], onSele
       title: comp.name,
       subtitle: `Sektor: ${comp.sektor} • ${comp.defendants.length} Tokoh Terlibat`,
       badgeText: `${comp.cases.length} Perkara Terdata`,
-      icon: '🏢',
+      icon: 'building',
       cases: comp.cases,
       totalLoss: comp.totalLoss
     });
@@ -219,7 +215,7 @@ export const StatsDashboard: React.FC<StatsProps> = ({ stats, cases = [], onSele
       title: partyName,
       subtitle: `Sebaran kasus tindak pidana korupsi yang melibatkan kader ${partyName}`,
       badgeText: `${partyCases.length} Kasus Terdata`,
-      icon: '🏛️',
+      icon: 'landmark',
       cases: partyCases,
       totalLoss: partyLoss
     });
@@ -232,7 +228,7 @@ export const StatsDashboard: React.FC<StatsProps> = ({ stats, cases = [], onSele
       title: `Perkara Korupsi Tahun ${yr}`,
       subtitle: `Daftar seluruh perkara yang terjadi atau divonis pada tahun ${yr}`,
       badgeText: `${yrCases.length} Kasus`,
-      icon: '📅',
+      icon: 'calendar',
       cases: yrCases,
       totalLoss: yrLoss
     });
@@ -245,7 +241,7 @@ export const StatsDashboard: React.FC<StatsProps> = ({ stats, cases = [], onSele
       title: cat.name,
       subtitle: `Daftar kasus dengan modus operandi ${cat.name}`,
       badgeText: `${cat.count} Kasus`,
-      icon: '⚖️',
+      icon: cat.name,
       cases: cat.cases,
       totalLoss: cat.total_loss
     });
@@ -616,8 +612,9 @@ export const StatsDashboard: React.FC<StatsProps> = ({ stats, cases = [], onSele
               </p>
             </div>
           </div>
-          <span className="px-3 py-1 bg-[#FEF3C7] text-[#92400E] font-hand font-bold text-xs rounded-full border border-[#FCD34D]">
-            ⚖️ Putusan Hukum &amp; Tuntutan Resmi
+          <span className="px-3 py-1 bg-[#FEF3C7] text-[#92400E] font-hand font-bold text-xs rounded-full border border-[#FCD34D] inline-flex items-center gap-1.5">
+            <Scale className="w-3.5 h-3.5 shrink-0" />
+            <span>Putusan Hukum &amp; Tuntutan Resmi</span>
           </span>
         </div>
 
@@ -720,7 +717,8 @@ export const StatsDashboard: React.FC<StatsProps> = ({ stats, cases = [], onSele
                     : 'text-slate-600 hover:text-slate-900 hover:bg-[#F3EBD8]'
                 }`}
               >
-                <span>💸 Kerugian (Rp)</span>
+                <Banknote className="w-3.5 h-3.5 shrink-0" />
+                <span>Kerugian (Rp)</span>
               </button>
               <button
                 type="button"
@@ -731,7 +729,8 @@ export const StatsDashboard: React.FC<StatsProps> = ({ stats, cases = [], onSele
                     : 'text-slate-600 hover:text-slate-900 hover:bg-[#F3EBD8]'
                 }`}
               >
-                <span>📂 Jumlah Kasus</span>
+                <FolderOpen className="w-3.5 h-3.5 shrink-0" />
+                <span>Jumlah Kasus</span>
               </button>
             </div>
           </div>
@@ -776,8 +775,8 @@ export const StatsDashboard: React.FC<StatsProps> = ({ stats, cases = [], onSele
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4 select-none">
               {donutHoverIndex !== null && categoryData[donutHoverIndex] ? (
                 <div className="animate-in fade-in zoom-in-95 duration-150 flex flex-col items-center max-w-[210px] sm:max-w-[260px]">
-                  <span className="text-3xl sm:text-4xl leading-none mb-1.5 drop-shadow-xs">
-                    {SECTOR_ICONS[categoryData[donutHoverIndex].name] || '💼'}
+                  <span className="p-2.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 mb-1.5 shadow-2xs">
+                    <SectorIcon sector={categoryData[donutHoverIndex].name} className="w-6 h-6" />
                   </span>
                   <span className="text-xs sm:text-sm font-extrabold text-slate-800 uppercase tracking-tight line-clamp-2 px-1">
                     {categoryData[donutHoverIndex].name}
@@ -801,7 +800,8 @@ export const StatsDashboard: React.FC<StatsProps> = ({ stats, cases = [], onSele
                     </span>
                   </div>
                   <span className="text-[10px] text-amber-700 font-medium mt-2 flex items-center gap-1">
-                    <span>👆 Klik sektor untuk telaah berkas perkara</span>
+                    <MousePointerClick className="w-3 h-3 shrink-0" />
+                    <span>Klik sektor untuk telaah berkas perkara</span>
                   </span>
                 </div>
               ) : (
@@ -826,7 +826,8 @@ export const StatsDashboard: React.FC<StatsProps> = ({ stats, cases = [], onSele
           </div>
 
           <div className="text-[11px] text-slate-400 text-center flex items-center justify-center gap-1.5">
-            <span>💡 Sorot diagram untuk melihat rincian • Klik sektor untuk membuka berkas perkara</span>
+            <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span>Sorot diagram untuk melihat rincian • Klik sektor untuk membuka berkas perkara</span>
           </div>
 
           {/* Interactive Category Rows with Progress Indicators */}
@@ -836,7 +837,6 @@ export const StatsDashboard: React.FC<StatsProps> = ({ stats, cases = [], onSele
               const pct = donutMetric === 'loss'
                 ? (totalLossAll > 0 ? (cat.total_loss / totalLossAll) * 100 : 0)
                 : (totalCasesAll > 0 ? (cat.count / totalCasesAll) * 100 : 0);
-              const icon = SECTOR_ICONS[cat.name] || '💼';
 
               return (
                 <div
@@ -858,8 +858,8 @@ export const StatsDashboard: React.FC<StatsProps> = ({ stats, cases = [], onSele
 
                   <div className="relative flex items-center justify-between gap-2 text-xs">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="text-base shrink-0 p-1 bg-white rounded-lg border border-slate-200/70 shadow-2xs">
-                        {icon}
+                      <span className="shrink-0 p-1.5 bg-white rounded-lg border border-slate-200/70 shadow-2xs text-[#854D0E]">
+                        <SectorIcon sector={cat.name} className="w-4 h-4" />
                       </span>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -923,7 +923,7 @@ export const StatsDashboard: React.FC<StatsProps> = ({ stats, cases = [], onSele
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5">
                     <span className="w-8 h-8 rounded-xl bg-[#FEF08A] text-[#854D0E] font-marker flex items-center justify-center text-sm border border-[#EAB308] shrink-0">
-                      🏢
+                      <Building2 className="w-4 h-4" />
                     </span>
                     <div>
                       <div className="font-bold text-sm text-[#1E293B] group-hover:text-[#0284C7] transition-colors">

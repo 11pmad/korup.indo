@@ -27,6 +27,7 @@ import { sound } from '../utils/audio';
 import { CitizenAuthModal, CitizenUser } from './CitizenAuthModal';
 import { CitizenProfileModal } from './CitizenProfileModal';
 import { OpenDataModal } from './OpenDataModal';
+import { FlagIdIcon } from './ThemeIcons';
 
 interface NavbarProps {
   activeTab: 'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin';
@@ -201,8 +202,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#FDE047] border-2 border-[#EAB308] shadow-md flex items-center justify-center rotate-[-4deg] group-hover:rotate-0 transition-transform">
                 <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-[#854D0E]" />
               </div>
-              <span className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-[#DC2626] text-white text-[10px] font-bold rounded-full rotate-6 shadow-sm">
-                LKI 🇮🇩
+              <span className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-[#DC2626] text-white text-[10px] font-bold rounded-full rotate-6 shadow-sm inline-flex items-center gap-1">
+                <span>LKI</span>
+                <FlagIdIcon className="w-3 h-2.5" />
               </span>
             </div>
             

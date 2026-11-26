@@ -11,7 +11,11 @@ import {
   PlusCircle, 
   Image as ImageIcon, 
   Upload, 
-  X 
+  X,
+  Check,
+  AlertCircle,
+  Landmark,
+  MapPin
 } from 'lucide-react';
 
 interface AdminManualCaseManagerProps {
@@ -119,14 +123,16 @@ export const AdminManualCaseManager: React.FC<AdminManualCaseManagerProps> = ({
       </div>
 
       {manualSuccess && (
-        <div className="p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-2xl text-xs text-[#166534] font-bold">
-          ✓ {manualSuccess}
+        <div className="p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-2xl text-xs text-[#166534] font-bold flex items-center gap-2">
+          <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{manualSuccess}</span>
         </div>
       )}
 
       {manualError && (
-        <div className="p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-2xl text-xs text-[#991B1B]">
-          ✕ {manualError}
+        <div className="p-4 bg-[#FEF2F2] border border-[#FECACA] rounded-2xl text-xs text-[#991B1B] flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <span>{manualError}</span>
         </div>
       )}
 
@@ -241,8 +247,9 @@ export const AdminManualCaseManager: React.FC<AdminManualCaseManagerProps> = ({
 
         {/* Pilihan Tingkat Wilayah: Nasional vs Daerah */}
         <div className="p-3.5 bg-[#FAF5E8] border border-[#D5C9AB] rounded-2xl space-y-3">
-          <label className="block text-xs font-bold text-[#334155] uppercase tracking-wider">
-            🏛️ Cakupan Yurisdiksi / Tingkat Perkara:
+          <label className="text-xs font-bold text-[#334155] uppercase tracking-wider flex items-center gap-1.5">
+            <Landmark className="w-4 h-4 text-[#B45309] shrink-0" />
+            <span>Cakupan Yurisdiksi / Tingkat Perkara:</span>
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
@@ -261,12 +268,17 @@ export const AdminManualCaseManager: React.FC<AdminManualCaseManagerProps> = ({
                   : 'bg-white border-[#E2D8C0] text-[#57534E] hover:bg-[#F7F1E1]'
               }`}
             >
-              <span className="text-2xl p-1 bg-amber-100/70 rounded-xl border border-amber-300/60 shrink-0">🏛️</span>
+              <span className="p-2 bg-amber-100/70 text-amber-800 rounded-xl border border-amber-300/60 shrink-0 inline-flex items-center justify-center">
+                <Landmark className="w-5 h-5" />
+              </span>
               <div className="min-w-0">
                 <div className="font-black text-[13px] text-[#1E293B] flex items-center gap-1.5">
                   <span>Tingkat Nasional / Pemerintah Pusat</span>
                   {manualForm.tingkat_wilayah === 'nasional' && (
-                    <span className="text-emerald-600 text-xs">✓ Aktif</span>
+                    <span className="text-emerald-600 text-xs inline-flex items-center gap-0.5">
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Aktif</span>
+                    </span>
                   )}
                 </div>
                 <p className="text-[11px] text-slate-600 font-normal leading-relaxed mt-1">
@@ -293,12 +305,17 @@ export const AdminManualCaseManager: React.FC<AdminManualCaseManagerProps> = ({
                   : 'bg-white border-[#E2D8C0] text-[#57534E] hover:bg-[#F7F1E1]'
               }`}
             >
-              <span className="text-2xl p-1 bg-emerald-100/70 rounded-xl border border-emerald-300/60 shrink-0">📍</span>
+              <span className="p-2 bg-emerald-100/70 text-emerald-800 rounded-xl border border-emerald-300/60 shrink-0 inline-flex items-center justify-center">
+                <MapPin className="w-5 h-5" />
+              </span>
               <div className="min-w-0">
                 <div className="font-black text-[13px] text-[#1E293B] flex items-center gap-1.5">
                   <span>Tingkat Daerah / 38 Provinsi</span>
                   {manualForm.tingkat_wilayah === 'daerah' && (
-                    <span className="text-emerald-600 text-xs">✓ Aktif</span>
+                    <span className="text-emerald-600 text-xs inline-flex items-center gap-0.5">
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Aktif</span>
+                    </span>
                   )}
                 </div>
                 <p className="text-[11px] text-slate-600 font-normal leading-relaxed mt-1">
@@ -335,7 +352,7 @@ export const AdminManualCaseManager: React.FC<AdminManualCaseManagerProps> = ({
             >
               {manualForm.tingkat_wilayah === 'nasional' ? (
                 <option value="Pusat / Nasional (Kementerian / Lembaga RI)">
-                  🏛️ Tingkat Nasional / Lembaga Pusat RI
+                  Tingkat Nasional / Lembaga Pusat RI
                 </option>
               ) : (
                 PROVINCES_LIST.filter(p => p.id !== 'pusat').map(p => (

@@ -167,7 +167,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5">
             <div className="p-3 bg-slate-800/80 border border-slate-700 rounded-2xl text-xs text-slate-300 space-y-1">
               <div className="font-bold flex items-center gap-1.5 text-amber-300">
-                <span>🔒 Akses Terbatas Staf Kurator</span>
+                <Lock className="w-3.5 h-3.5 shrink-0" />
+                <span>Akses Terbatas Staf Kurator</span>
               </div>
               <p className="text-[11px] text-slate-400">
                 Masuk menggunakan kredensial staf kurator resmi yang terdaftar oleh administrator sistem.

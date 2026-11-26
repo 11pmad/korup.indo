@@ -406,8 +406,8 @@ export const AdminReportsManager: React.FC<AdminReportsManagerProps> = ({
             className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden"
           >
             <option value="all">Semua Tipe</option>
-            <option value="usulan">🌟 Usulan Kasus Baru</option>
-            <option value="koreksi">📝 Koreksi Berkas</option>
+            <option value="usulan">Usulan Kasus Baru</option>
+            <option value="koreksi">Koreksi Berkas</option>
           </select>
 
           <div className="relative w-full sm:w-64">
@@ -484,12 +484,14 @@ export const AdminReportsManager: React.FC<AdminReportsManagerProps> = ({
                         <span>Usulan Kasus Baru</span>
                       </span>
                     ) : rep.report_type === 'rujukan_putusan_baru' ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-purple-50 text-purple-800 border-purple-200">
-                        ⚖️ Putusan Baru / Kasasi MA
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-purple-50 text-purple-800 border-purple-200 inline-flex items-center gap-1">
+                        <Scale className="w-3 h-3 shrink-0" />
+                        <span>Putusan Baru / Kasasi MA</span>
                       </span>
                     ) : (
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-blue-50 text-blue-800 border-blue-200">
-                        📝 Koreksi Data Perkara
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-blue-50 text-blue-800 border-blue-200 inline-flex items-center gap-1">
+                        <FileText className="w-3 h-3 shrink-0" />
+                        <span>Koreksi Data Perkara</span>
                       </span>
                     )}
                   </div>
@@ -648,7 +650,7 @@ export const AdminReportsManager: React.FC<AdminReportsManagerProps> = ({
                             title="Terbitkan usulan kasus ini menjadi berkas perkara resmi"
                           >
                             <Sparkles className="w-3.5 h-3.5" />
-                            <span>{actionLoadingId === rep.id ? 'Menerbitkan...' : '⚡ Terbitkan Kasus ke LKI'}</span>
+                            <span>{actionLoadingId === rep.id ? 'Menerbitkan...' : 'Terbitkan Kasus ke LKI'}</span>
                           </button>
                         )}
 

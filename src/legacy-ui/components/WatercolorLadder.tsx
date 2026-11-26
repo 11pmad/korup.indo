@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Palette, X, Sparkles, Filter, Check, Eye, EyeOff } from 'lucide-react';
+import { Palette, X, Sparkles, Filter, Check, Eye, EyeOff, Pin, Lightbulb } from 'lucide-react';
 import { sound } from '../utils/audio';
 
 export interface SeverityTier {
@@ -174,7 +174,7 @@ export const WatercolorLadder: React.FC<WatercolorLadderProps> = ({
           title="Tampilkan Legenda Cat Air (Show Legend)"
         >
           <span className="w-5 h-5 rounded-full bg-[#FEF08A] text-[#854D0E] flex items-center justify-center text-xs shadow-2xs rotate-[-6deg] group-hover:rotate-0 transition-transform">
-            🎨
+            <Palette className="w-3 h-3" />
           </span>
           <span className="font-marker text-xs">Buka Legenda Peta</span>
           <Eye className="w-3.5 h-3.5 text-[#B45309]" />
@@ -201,7 +201,7 @@ export const WatercolorLadder: React.FC<WatercolorLadderProps> = ({
       <div className="flex items-center justify-between border-b border-[#F0E5CC] pb-2">
         <div className="flex items-center gap-1.5">
           <span className="w-5 h-5 rounded-full bg-[#FEF08A] text-[#854D0E] flex items-center justify-center text-xs shadow-xs rotate-[-6deg]">
-            🎨
+            <Palette className="w-3 h-3" />
           </span>
           <div>
             <h4 className="font-marker text-sm text-[#1E293B] leading-none">
@@ -343,7 +343,7 @@ export const WatercolorLadder: React.FC<WatercolorLadderProps> = ({
                   </span>
 
                   {isCurrentActive && (
-                    <span className="text-white text-xs">📌</span>
+                    <Pin className="w-3 h-3 text-white shrink-0" />
                   )}
                 </div>
 
@@ -355,7 +355,10 @@ export const WatercolorLadder: React.FC<WatercolorLadderProps> = ({
 
       {/* Footer Helper Note */}
       <div className="pt-1.5 border-t border-[#F0E5CC] text-[10px] text-[#78716C] flex items-center justify-between">
-        <span>💡 Arahkan atau klik anak tangga</span>
+        <span className="inline-flex items-center gap-1">
+          <Lightbulb className="w-3 h-3 text-amber-600 shrink-0" />
+          <span>Arahkan atau klik anak tangga</span>
+        </span>
         <span className="font-hand font-bold text-amber-800">Interaktif</span>
       </div>
 

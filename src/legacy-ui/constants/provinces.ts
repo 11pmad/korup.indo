@@ -46,11 +46,11 @@ export const PROVINCES_LIST: ProvinceOption[] = [
 ];
 
 export const SECTORS_LIST = [
-  { id: 'pengadaan_barang_jasa', label: 'Pengadaan Barang & Jasa', icon: '📦' },
-  { id: 'bansos_bencana', label: 'Bansos & Bencana', icon: '🤝' },
-  { id: 'suap_gratifikasi', label: 'Suap & Gratifikasi', icon: '💼' },
-  { id: 'perizinan_sda_tambang', label: 'Perizinan SDA & Tambang', icon: '⛏️' },
-  { id: 'mafia_peradilan', label: 'Mafia Peradilan / BUMN', icon: '⚖️' }
+  { id: 'pengadaan_barang_jasa', label: 'Pengadaan Barang & Jasa', icon: 'hard-hat' },
+  { id: 'bansos_bencana', label: 'Bansos & Bencana', icon: 'package' },
+  { id: 'suap_gratifikasi', label: 'Suap & Gratifikasi', icon: 'handshake' },
+  { id: 'perizinan_sda_tambang', label: 'Perizinan SDA & Tambang', icon: 'tambang' },
+  { id: 'mafia_peradilan', label: 'Mafia Peradilan / BUMN', icon: 'scale' }
 ];
 
 export const PROVINCE_CITIES: Record<string, string[]> = {

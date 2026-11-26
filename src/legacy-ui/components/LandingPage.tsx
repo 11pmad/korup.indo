@@ -18,8 +18,10 @@ import {
   ExternalLink,
   BookOpen,
   Sparkles,
-  Calendar
+  Calendar,
+  Check
 } from 'lucide-react';
+import { FlagIdIcon, MedalBadge } from './ThemeIcons';
 
 interface LandingPageProps {
   stats: StatsOverview | null;
@@ -149,8 +151,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <span className="text-xs font-bold text-[#1E293B]">
                 Fokus Data Akurat Terverifikasi:
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                ✓ Era Terkini
+              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold inline-flex items-center gap-1">
+                <Check className="w-3 h-3 shrink-0" />
+                <span>Era Terkini</span>
               </span>
             </div>
             <p className="text-[11px] text-[#78716C] leading-snug">
@@ -167,13 +170,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               sound.playPop();
               setSelectedEraFilter('prabowo');
             }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
               selectedEraFilter === 'prabowo'
                 ? 'bg-[#DC2626] text-white shadow-xs'
                 : 'text-[#78716C] hover:text-[#1E293B]'
             }`}
           >
-            🇮🇩 Era Terbaru (2024 - Sekarang)
+            <FlagIdIcon className="w-3.5 h-3" />
+            <span>Era Terbaru (2024 - Sekarang)</span>
           </button>
           <button
             type="button"
@@ -181,13 +185,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               sound.playPop();
               setSelectedEraFilter('recent_years');
             }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
               selectedEraFilter === 'recent_years'
                 ? 'bg-[#DC2626] text-white shadow-xs'
                 : 'text-[#78716C] hover:text-[#1E293B]'
             }`}
           >
-            📅 Tahun 2024 - 2025
+            <Calendar className="w-3.5 h-3.5 shrink-0" />
+            <span>Tahun 2024 - 2025</span>
           </button>
         </div>
       </div>
@@ -275,9 +280,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               ></div>
 
               <div className="flex items-center justify-between">
-                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#FEF08A] border-2 border-[#EAB308] text-[#854D0E] font-marker text-base shadow-2xs">
-                  {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
-                </span>
+                <MedalBadge rank={idx} className="w-4 h-4" />
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#FEE2E2] text-[#991B1B] border border-[#FECACA]">
                   {c.status_hukum}
                 </span>
@@ -295,8 +298,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     {c.official?.nama}
                   </h3>
                   <p className="text-xs text-gray-500 truncate">{c.official?.jabatan}</p>
-                  <span className="text-[11px] font-semibold text-[#854D0E]">
-                    📍 {c.official?.provinsi}
+                  <span className="text-[11px] font-semibold text-[#854D0E] inline-flex items-center gap-1">
+                    <MapPin className="w-3 h-3 shrink-0" />
+                    <span>{c.official?.provinsi}</span>
                   </span>
                 </div>
               </div>

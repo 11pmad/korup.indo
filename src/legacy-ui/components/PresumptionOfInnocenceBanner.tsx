@@ -90,7 +90,7 @@ export const PresumptionOfInnocenceBanner: React.FC<Props> = ({
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-hand font-bold text-lg text-[#854D0E] tracking-wide">
-              ⚖️ PEMBERITAHUAN ASAS HUKUM &amp; PRADUGA TAK BERSALAH:
+              PEMBERITAHUAN ASAS HUKUM &amp; PRADUGA TAK BERSALAH:
             </span>
             <span
               className={`px-2 py-0.5 ${

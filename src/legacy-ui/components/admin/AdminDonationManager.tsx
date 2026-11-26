@@ -21,9 +21,12 @@ import {
   ExternalLink,
   X,
   Maximize2,
-  Download
+  Download,
+  Check,
+  Search
 } from 'lucide-react';
 import { sound } from '../../utils/audio';
+import { stripLeadingEmoji } from '../ThemeIcons';
 
 interface AdminDonationManagerProps {
   authToken: string;
@@ -42,7 +45,7 @@ interface DonationConfig {
 }
 
 const DEFAULT_DONATION: DonationConfig = {
-  title: '☕ Dukung Independensi & Operasional LKI',
+  title: 'Dukung Independensi & Operasional LKI',
   description: 'Bantu operasional server, infrastruktur pangkalan data, verifikasi berkas direktori putusan peradilan, dan keterbukaan informasi korupsi Indonesia tanpa kompromi.',
   qris_image_url: '',
   account_name: 'Pengelola Liga Korupsi Indonesia',
@@ -238,7 +241,7 @@ export const AdminDonationManager: React.FC<AdminDonationManagerProps> = ({
             onClick={() => setMessage(null)}
             className="text-slate-400 hover:text-slate-600 cursor-pointer font-bold ml-2"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         </div>
       )}
@@ -298,7 +301,7 @@ export const AdminDonationManager: React.FC<AdminDonationManagerProps> = ({
                 onChange={e => setFormData({ ...formData, title: e.target.value })}
                 required
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:border-[#DC2626] focus:ring-2 focus:ring-[#DC2626]/20 transition-all font-medium"
-                placeholder="☕ Dukung Independensi & Operasional LKI"
+                placeholder="Dukung Independensi & Operasional LKI"
               />
             </div>
 
@@ -409,7 +412,7 @@ export const AdminDonationManager: React.FC<AdminDonationManagerProps> = ({
                         Gambar QRIS Terpasang
                       </div>
                       <div className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-                        <span>✓</span>
+                        <Check className="w-3.5 h-3.5 shrink-0" />
                         <span>Siap dipindai &amp; ditampilkan</span>
                       </div>
                       <div className="text-[10px] text-slate-400 font-mono truncate max-w-[220px]">
@@ -518,8 +521,8 @@ export const AdminDonationManager: React.FC<AdminDonationManagerProps> = ({
                   {/* Judul Sedikit */}
                   <div className="flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold text-[#78350F]">
                     <QrCode className="w-4 h-4 text-[#CA8A04] shrink-0" />
-                    <span className="truncate" title={formData.title || 'Dukungan QRIS'}>
-                      {formData.title ? (formData.title.length > 20 ? 'Dukungan QRIS' : formData.title) : 'Dukungan QRIS'}
+                    <span className="truncate" title={stripLeadingEmoji(formData.title) || 'Dukungan QRIS'}>
+                      {stripLeadingEmoji(formData.title) ? (stripLeadingEmoji(formData.title).length > 20 ? 'Dukungan QRIS' : stripLeadingEmoji(formData.title)) : 'Dukungan QRIS'}
                     </span>
                   </div>
 
@@ -558,8 +561,9 @@ export const AdminDonationManager: React.FC<AdminDonationManagerProps> = ({
                     ) : (
                       <p className="font-medium text-[#78716C]">Scan donasi QRIS</p>
                     )}
-                    <span className="text-[10px] text-[#854D0E] font-medium block">
-                      🔍 Klik gambar untuk perbesar
+                    <span className="text-[10px] text-[#854D0E] font-medium inline-flex items-center justify-center gap-1">
+                      <Search className="w-3 h-3 shrink-0" />
+                      <span>Klik gambar untuk perbesar</span>
                     </span>
                   </div>
                 </div>
@@ -646,7 +650,7 @@ export const AdminDonationManager: React.FC<AdminDonationManagerProps> = ({
               <div className="flex items-center gap-2">
                 <Heart className="w-5 h-5 text-rose-500 fill-rose-500 shrink-0" />
                 <h4 className="font-bold text-base sm:text-lg md:text-xl text-slate-900 truncate">
-                  {formData.title || 'Dukungan QRIS Pengelola LKI'}
+                  {stripLeadingEmoji(formData.title) || 'Dukungan QRIS Pengelola LKI'}
                 </h4>
               </div>
               <p className="text-xs sm:text-sm text-slate-500">
