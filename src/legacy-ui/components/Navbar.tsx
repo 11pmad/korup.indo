@@ -21,7 +21,6 @@ import {
   LogOut,
   UserCog,
   CreditCard,
-  Database,
   MapPin as MapPinIcon
 } from 'lucide-react';
 import { sound } from '../utils/audio';
@@ -188,19 +187,19 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-[#FFFDF8]/95 backdrop-blur-md border-b-2 border-[#E7DFCC] shadow-sm relative">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pr-28 sm:pr-36 md:pr-40 lg:pr-40 xl:pr-44">
-        <div className="flex items-center justify-between h-20 gap-3 xl:gap-6">
+    <header className="sticky top-0 z-40 bg-[#FFFDF8]/95 backdrop-blur-md border-b-2 border-[#E7DFCC] shadow-sm">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 sm:h-20 gap-2 lg:gap-3 xl:gap-4">
           
           {/* Kolom 1: Logo & Brand (Kiri) */}
           <Link
             href="/"
-            className="flex items-center gap-3 cursor-pointer group shrink-0"
+            className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0 min-w-0"
             onClick={handleMenuLinkClick}
           >
             <div className="relative shrink-0">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#FDE047] border-2 border-[#EAB308] shadow-md flex items-center justify-center rotate-[-4deg] group-hover:rotate-0 transition-transform">
-                <BookOpen className="w-6 h-6 sm:w-7 sm:h-7 text-[#854D0E]" />
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#FDE047] border-2 border-[#EAB308] shadow-md flex items-center justify-center rotate-[-4deg] group-hover:rotate-0 transition-transform">
+                <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-[#854D0E]" />
               </div>
               <span className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-[#DC2626] text-white text-[10px] font-bold rounded-full rotate-6 shadow-sm">
                 LKI 🇮🇩
@@ -208,23 +207,23 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
             
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-marker text-2xl sm:text-3xl text-[#1E293B] tracking-wide whitespace-nowrap">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="font-marker text-lg sm:text-2xl xl:text-[26px] text-[#1E293B] tracking-wide whitespace-nowrap">
                   Liga Korupsi
                 </span>
-                <span className="px-2 py-0.5 bg-[#FEF08A] text-[#854D0E] font-hand font-bold text-xs rounded-md border border-[#EAB308] rotate-2 shrink-0">
+                <span className="hidden sm:inline-block lg:hidden xl:inline-block px-2 py-0.5 bg-[#FEF08A] text-[#854D0E] font-hand font-bold text-xs rounded-md border border-[#EAB308] rotate-2 shrink-0">
                   Indonesia
                 </span>
               </div>
-              <p className="text-xs text-[#64748B] font-medium hidden sm:block truncate max-w-[240px] xl:max-w-none">
+              <p className="text-xs text-[#64748B] font-medium hidden xl:block truncate">
                 Portal Transparansi Perkara &amp; Putusan Hukum Terbuka
               </p>
             </div>
           </Link>
 
-          {/* Kolom 2: Navigasi Menu Utama (Tengah - Distribusi Seimbang & Efek Tilt Tematik) */}
-          <nav className="hidden lg:flex items-center bg-[#F5EEDC]/90 border border-[#E2D6BD] p-1.5 rounded-2xl shadow-2xs">
-            <div className="grid grid-cols-5 gap-1.5 min-w-[530px] xl:min-w-[620px]">
+          {/* Kolom 2: Navigasi Menu Utama (Tengah - Responsif tanpa min-width kaku) */}
+          <nav className="hidden lg:flex items-center bg-[#F5EEDC]/90 border border-[#E2D6BD] p-1 xl:p-1.5 rounded-2xl shadow-2xs shrink-0">
+            <div className="flex items-center gap-1 xl:gap-1.5">
               {navItems.map(item => {
                 const Icon = item.icon;
                 const isActive = !isLaporRoute && !isOpenDataRoute && currentTab === item.id;
@@ -236,7 +235,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onClick={handleMenuLinkClick}
                     aria-current={isActive ? 'page' : undefined}
                     className={`
-                      px-2.5 xl:px-3 py-2 rounded-xl text-xs xl:text-sm font-bold flex items-center justify-center gap-1.5 xl:gap-2 
+                      px-2.5 xl:px-3 py-1.5 xl:py-2 rounded-xl text-xs xl:text-sm font-bold flex items-center justify-center gap-1.5 
                       transition-all duration-150 cursor-pointer whitespace-nowrap transform select-none
                       ${item.hoverTilt} hover:-translate-y-0.5 hover:shadow-xs
                       active:scale-95 active:translate-y-0 active:rotate-0
@@ -253,14 +252,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </nav>
 
-          {/* Kolom 3: Right Action Icons (Kanan) */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          {/* Kolom 3: Right Action Icons & Suara Rakyat (Kanan - Dalam Normal Flex Flow) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Sound Toggle */}
             <button
               id="sound-toggle-btn"
               onClick={toggleSound}
               title={soundOn ? 'Matikan Efek Suara' : 'Nyalakan Efek Suara'}
-              className="p-2 rounded-xl bg-[#F6F0DF] border border-[#E3D7BD] text-[#78716C] hover:text-[#1C1917] hover:bg-[#ECE3CD] transition-all duration-150 cursor-pointer transform hover:rotate-6 hover:-translate-y-0.5 active:scale-90 active:rotate-0"
+              className="p-2 rounded-xl bg-[#F6F0DF] border border-[#E3D7BD] text-[#78716C] hover:text-[#1C1917] hover:bg-[#ECE3CD] transition-all duration-150 cursor-pointer transform hover:rotate-6 hover:-translate-y-0.5 active:scale-90 active:rotate-0 shrink-0"
             >
               {soundOn ? <Volume2 className="w-4 h-4 text-[#EA580C]" /> : <VolumeX className="w-4 h-4" />}
             </button>
@@ -271,151 +270,136 @@ export const Navbar: React.FC<NavbarProps> = ({
               href="/lapor"
               onClick={handleMenuLinkClick}
               aria-current={isLaporRoute ? 'page' : undefined}
-              className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all duration-150 shadow-2xs cursor-pointer whitespace-nowrap transform hover:-rotate-1 hover:-translate-y-0.5 hover:shadow-xs active:scale-95 active:rotate-0 ${
+              className={`hidden sm:flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-xl border text-xs font-bold transition-all duration-150 shadow-2xs cursor-pointer whitespace-nowrap transform hover:-rotate-1 hover:-translate-y-0.5 hover:shadow-xs active:scale-95 active:rotate-0 shrink-0 ${
                 isLaporRoute
                   ? 'bg-[#FDE68A] border-amber-400 text-[#92400E] ring-2 ring-amber-400 -rotate-1'
                   : 'bg-[#FEF3C7] border-[#FDE68A] text-[#92400E] hover:bg-[#FDE68A]'
               }`}
+              title="Laporkan Kasus Korupsi Baru"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-              <span>Lapor Kasus Baru</span>
+              <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span className="hidden lg:inline xl:hidden">Lapor</span>
+              <span className="lg:hidden xl:inline">Lapor Kasus Baru</span>
             </Link>
 
-            {/* Katalog Dataset Terbuka */}
-            <Link
-              id="open-data-btn"
-              href="/open-data"
-              onClick={handleMenuLinkClick}
-              aria-current={isOpenDataRoute ? 'page' : undefined}
-              className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all duration-150 shadow-2xs cursor-pointer whitespace-nowrap transform hover:rotate-1 hover:-translate-y-0.5 hover:shadow-xs active:scale-95 ${
-                isOpenDataRoute
-                  ? 'bg-emerald-100 border-emerald-400 text-emerald-900 ring-2 ring-emerald-400 rotate-1'
-                  : 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100'
-              }`}
-              title="Katalog & Unduh Dataset Terbuka LKI (CSV & JSON)"
-            >
-              <Database className="w-3.5 h-3.5 text-emerald-700" />
-              <span>Dataset Terbuka</span>
-            </Link>
+            {/* Tombol Login / Suara Rakyat */}
+            <div className="relative shrink-0">
+              {citizenUser ? (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setCitizenDropdownOpen(!citizenDropdownOpen)}
+                    className="group flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 bg-white/95 hover:bg-white border-2 border-amber-400 hover:border-amber-500 rounded-2xl text-xs font-bold text-slate-800 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0"
+                    title="Akun Suara Rakyat"
+                  >
+                    {citizenUser.photoUrl ? (
+                      <img 
+                        src={citizenUser.photoUrl} 
+                        alt={citizenUser.displayName} 
+                        className="w-6 h-6 sm:w-7 sm:h-7 rounded-xl object-cover border-2 border-amber-400 shrink-0 shadow-2xs" 
+                      />
+                    ) : (
+                      <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0">
+                        <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-800" />
+                      </div>
+                    )}
+                    <div className="text-left hidden sm:block">
+                      <div className="font-black text-slate-900 text-xs leading-tight truncate max-w-[85px] xl:max-w-[110px]">
+                        {citizenUser.displayName}
+                      </div>
+                      <div className="text-[10px] text-amber-700 font-semibold leading-none truncate max-w-[85px] xl:max-w-[110px]">
+                        {citizenUser.originCity || citizenUser.originProvince || 'Suara Rakyat'}
+                      </div>
+                    </div>
+                    <span className="hidden xl:inline-block px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-[#EA580C] text-white rounded-md text-[9px] font-mono font-black shrink-0 shadow-2xs">
+                      WARGA
+                    </span>
+                  </button>
+
+                  {citizenDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl p-2 shadow-xl z-50 space-y-1.5 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs">
+                        <div className="flex items-center gap-2.5">
+                          {citizenUser.photoUrl ? (
+                            <img src={citizenUser.photoUrl} alt="Avatar" className="w-8 h-8 rounded-full object-cover border border-slate-300 shrink-0" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0">
+                              <User className="w-4 h-4 text-amber-800" />
+                            </div>
+                          )}
+                          <div className="overflow-hidden">
+                            <p className="font-bold text-slate-900 truncate">{citizenUser.displayName}</p>
+                            <p className="text-[10px] text-slate-500 font-mono truncate">@{citizenUser.username}</p>
+                          </div>
+                        </div>
+
+                        {(citizenUser.originCity || citizenUser.originProvince) && (
+                          <div className="mt-2 pt-1.5 border-t border-slate-200/60 flex items-center gap-1 text-[10px] text-slate-600 font-medium">
+                            <MapPinIcon className="w-3 h-3 text-amber-600 shrink-0" />
+                            <span className="truncate">{[citizenUser.originCity, citizenUser.originProvince].filter(Boolean).join(', ')}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          sound.playPop();
+                          setCitizenDropdownOpen(false);
+                          setCitizenProfileModalOpen(true);
+                        }}
+                        className="w-full px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-amber-50 hover:text-amber-900 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+                      >
+                        <CreditCard className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Profil Warga (e-KTP)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleLogoutCitizen}
+                        className="w-full px-3 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Keluar Akun Warga</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playPop();
+                    setCitizenModalOpen(true);
+                  }}
+                  className="group flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-amber-500 via-orange-500 to-[#EA580C] hover:from-amber-600 hover:to-[#C2410C] text-white rounded-2xl text-xs font-bold shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0"
+                  title="Masuk / Daftar Suara Rakyat (Beri Aspirasi, Reaksi & Komentar)"
+                >
+                  <span className="p-1 rounded-lg bg-white/20 text-white shrink-0">
+                    <UserCheck className="w-3.5 h-3.5" />
+                  </span>
+                  <div className="flex flex-col text-left leading-none">
+                    <span className="text-[9px] uppercase tracking-wider font-extrabold text-amber-100 leading-none">
+                      LOGIN
+                    </span>
+                    <span className="text-[11px] sm:text-xs font-black tracking-tight leading-tight whitespace-nowrap">
+                      Suara Rakyat
+                    </span>
+                  </div>
+                </button>
+              )}
+            </div>
 
             {/* Mobile Menu Toggle */}
             <button
               id="mobile-menu-toggle"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl bg-[#F6F0DF] text-[#44403C] hover:bg-[#ECE3CD] transition-all duration-150 cursor-pointer transform hover:rotate-3 active:scale-90"
+              className="lg:hidden p-2 rounded-xl bg-[#F6F0DF] text-[#44403C] hover:bg-[#ECE3CD] transition-all duration-150 cursor-pointer transform hover:rotate-3 active:scale-90 shrink-0"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Terpisah dari Kesatuan Navbar: Tombol Login / Suara Rakyat di Sudut Kanan Paling Atas Layar */}
-      <div className="absolute top-1/2 -translate-y-1/2 right-2 sm:right-4 lg:right-6 xl:right-8 z-50">
-        {citizenUser ? (
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setCitizenDropdownOpen(!citizenDropdownOpen)}
-              className="group flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 bg-white/95 hover:bg-white border-2 border-amber-400 hover:border-amber-500 rounded-2xl text-xs font-bold text-slate-800 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0"
-              title="Akun Suara Rakyat"
-            >
-              {citizenUser.photoUrl ? (
-                <img 
-                  src={citizenUser.photoUrl} 
-                  alt={citizenUser.displayName} 
-                  className="w-7 h-7 rounded-xl object-cover border-2 border-amber-400 shrink-0 shadow-2xs" 
-                />
-              ) : (
-                <div className="w-7 h-7 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0">
-                  <User className="w-4 h-4 text-amber-800" />
-                </div>
-              )}
-              <div className="text-left hidden xs:block sm:block">
-                <div className="font-black text-slate-900 text-xs leading-tight truncate max-w-[85px] sm:max-w-[120px]">
-                  {citizenUser.displayName}
-                </div>
-                <div className="text-[10px] text-amber-700 font-semibold leading-none truncate max-w-[85px] sm:max-w-[120px]">
-                  {citizenUser.originCity || citizenUser.originProvince || 'Suara Rakyat'}
-                </div>
-              </div>
-              <span className="hidden sm:inline-block px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-[#EA580C] text-white rounded-md text-[9px] font-mono font-black shrink-0 shadow-2xs">
-                WARGA
-              </span>
-            </button>
-
-            {citizenDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl p-2 shadow-xl z-50 space-y-1.5 animate-in fade-in zoom-in-95 duration-150">
-                <div className="px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs">
-                  <div className="flex items-center gap-2.5">
-                    {citizenUser.photoUrl ? (
-                      <img src={citizenUser.photoUrl} alt="Avatar" className="w-8 h-8 rounded-full object-cover border border-slate-300 shrink-0" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0">
-                        <User className="w-4 h-4 text-amber-800" />
-                      </div>
-                    )}
-                    <div className="overflow-hidden">
-                      <p className="font-bold text-slate-900 truncate">{citizenUser.displayName}</p>
-                      <p className="text-[10px] text-slate-500 font-mono truncate">@{citizenUser.username}</p>
-                    </div>
-                  </div>
-
-                  {(citizenUser.originCity || citizenUser.originProvince) && (
-                    <div className="mt-2 pt-1.5 border-t border-slate-200/60 flex items-center gap-1 text-[10px] text-slate-600 font-medium">
-                      <MapPinIcon className="w-3 h-3 text-amber-600 shrink-0" />
-                      <span className="truncate">{[citizenUser.originCity, citizenUser.originProvince].filter(Boolean).join(', ')}</span>
-                    </div>
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    sound.playPop();
-                    setCitizenDropdownOpen(false);
-                    setCitizenProfileModalOpen(true);
-                  }}
-                  className="w-full px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-amber-50 hover:text-amber-900 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
-                >
-                  <CreditCard className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Profil Warga (e-KTP)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleLogoutCitizen}
-                  className="w-full px-3 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Keluar Akun Warga</span>
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => {
-              sound.playPop();
-              setCitizenModalOpen(true);
-            }}
-            className="group flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-gradient-to-r from-amber-500 via-orange-500 to-[#EA580C] hover:from-amber-600 hover:to-[#C2410C] text-white rounded-2xl text-xs font-bold shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0"
-            title="Masuk / Daftar Suara Rakyat (Beri Aspirasi, Reaksi & Komentar)"
-          >
-            <span className="p-1 rounded-lg bg-white/20 text-white shrink-0">
-              <UserCheck className="w-3.5 h-3.5" />
-            </span>
-            <div className="flex flex-col text-left">
-              <span className="text-[9px] uppercase tracking-wider font-extrabold text-amber-100 leading-none">
-                LOGIN
-              </span>
-              <span className="text-xs font-black tracking-tight leading-tight whitespace-nowrap">
-                Suara Rakyat
-              </span>
-            </div>
-          </button>
-        )}
       </div>
 
       {/* Mobile Menu Dropdown */}
@@ -474,15 +458,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <Sparkles className="w-4 h-4 text-amber-600" /> Laporkan Kasus Baru
-          </Link>
-          <Link
-            href="/open-data"
-            onClick={handleMenuLinkClick}
-            className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm text-emerald-800 border border-emerald-200 flex items-center gap-3 ${
-              isOpenDataRoute ? 'bg-emerald-100 ring-2 ring-emerald-400' : 'bg-emerald-50'
-            }`}
-          >
-            <Database className="w-4 h-4 text-emerald-600" /> Dataset Terbuka (CSV &amp; JSON)
           </Link>
 
           {/* Mobile Citizen Account */}
