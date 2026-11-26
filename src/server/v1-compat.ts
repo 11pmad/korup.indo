@@ -1762,33 +1762,393 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
         });
       }
 
-      if (routePath === 'admin/users' || routePath === 'admin/users/citizens') {
-        if (routePath.endsWith('citizens')) {
-          const citizens = await db.select().from(schema.citizenUsers).orderBy(desc(schema.citizenUsers.created_at));
+      if (segments[1] === 'users') {
+        const VALID_ADMIN_ROLES = ['super_admin', 'admin', 'editor', 'moderator', 'auditor', 'reviewer'] as const;
+        type ValidAdminRole = (typeof VALID_ADMIN_ROLES)[number];
+
+        // 13a. Citizens routes (/api/admin/users/citizens*)
+        if (segments[2] === 'citizens') {
+          const citizenId = segments[3] ? decodeURIComponent(segments[3]) : null;
+          const citizenAction = segments[4] ?? null;
+
+          if (method === 'GET' && !citizenId) {
+            const citizens = await db
+              .select()
+              .from(schema.citizenUsers)
+              .orderBy(desc(schema.citizenUsers.created_at));
+            return NextResponse.json({
+              data: citizens.map((c) => ({
+                id: c.id,
+                username: c.username,
+                display_name: c.display_name,
+                email: c.email,
+                photo_url: c.photo_url,
+                origin_province: c.origin_province,
+                origin_city: c.origin_city,
+                bio: c.bio,
+                avatar_seed: c.avatar_seed,
+                is_email_verified: c.is_email_verified ? 1 : 0,
+                auth_provider: c.auth_provider,
+                role: 'citizen',
+                created_at: c.created_at,
+              })),
+            });
+          }
+
+          if (session.role !== 'super_admin' && session.role !== 'admin') {
+            return NextResponse.json(
+              { error: 'Hanya Admin Operasional atau Super Admin yang dapat mengelola akun warga.' },
+              { status: 403 }
+            );
+          }
+
+          if (citizenId && method === 'PUT' && citizenAction === 'verify') {
+            const body = await req.json().catch(() => ({}));
+            const verified = Boolean(body?.is_email_verified);
+            const [updated] = await db
+              .update(schema.citizenUsers)
+              .set({ is_email_verified: verified, updated_at: new Date() })
+              .where(eq(schema.citizenUsers.id, citizenId))
+              .returning({ id: schema.citizenUsers.id });
+            if (!updated) {
+              return NextResponse.json({ error: 'Akun warga tidak ditemukan.' }, { status: 404 });
+            }
+            await recordAuditLog({
+              adminUserId: session.id,
+              entityType: 'citizen_users',
+              entityId: citizenId,
+              action: 'update',
+              diffSnapshot: { is_email_verified: verified },
+              ipHash,
+            });
+            return NextResponse.json({
+              message: verified ? 'Akun warga berhasil diverifikasi.' : 'Verifikasi akun warga dicabut.',
+            });
+          }
+
+          if (citizenId && method === 'POST' && citizenAction === 'reset-password') {
+            const body = await req.json().catch(() => ({}));
+            const newPassword = String(body?.new_password || '');
+            if (newPassword.length < 6) {
+              return NextResponse.json(
+                { error: 'Kata sandi baru minimal 6 karakter.' },
+                { status: 400 }
+              );
+            }
+            const passwordHash = await bcrypt.hash(newPassword, 12);
+            const [updated] = await db
+              .update(schema.citizenUsers)
+              .set({ password_hash: passwordHash, updated_at: new Date() })
+              .where(eq(schema.citizenUsers.id, citizenId))
+              .returning({ id: schema.citizenUsers.id });
+            if (!updated) {
+              return NextResponse.json({ error: 'Akun warga tidak ditemukan.' }, { status: 404 });
+            }
+            await recordAuditLog({
+              adminUserId: session.id,
+              entityType: 'citizen_users',
+              entityId: citizenId,
+              action: 'update',
+              diffSnapshot: { password_reset: true },
+              ipHash,
+            });
+            return NextResponse.json({ message: 'Kata sandi akun warga berhasil diatur ulang.' });
+          }
+
+          if (citizenId && method === 'PUT' && !citizenAction) {
+            const body = await req.json().catch(() => ({}));
+            const patch: Partial<typeof schema.citizenUsers.$inferInsert> = { updated_at: new Date() };
+            if (body.display_name !== undefined) {
+              const name = String(body.display_name).trim();
+              if (!name) {
+                return NextResponse.json({ error: 'Nama tampilan wajib diisi.' }, { status: 400 });
+              }
+              patch.display_name = name;
+            }
+            if (body.email !== undefined) {
+              const nextEmail = String(body.email).trim().toLowerCase();
+              if (nextEmail) patch.email = nextEmail;
+            }
+            if (body.origin_province !== undefined) {
+              patch.origin_province = String(body.origin_province).trim() || null;
+            }
+            if (body.origin_city !== undefined) {
+              patch.origin_city = String(body.origin_city).trim() || null;
+            }
+            if (body.bio !== undefined) {
+              patch.bio = String(body.bio).trim() || null;
+            }
+            if (body.is_email_verified !== undefined) {
+              patch.is_email_verified = Boolean(body.is_email_verified);
+            }
+
+            const [updated] = await db
+              .update(schema.citizenUsers)
+              .set(patch)
+              .where(eq(schema.citizenUsers.id, citizenId))
+              .returning({ id: schema.citizenUsers.id });
+            if (!updated) {
+              return NextResponse.json({ error: 'Akun warga tidak ditemukan.' }, { status: 404 });
+            }
+            await recordAuditLog({
+              adminUserId: session.id,
+              entityType: 'citizen_users',
+              entityId: citizenId,
+              action: 'update',
+              diffSnapshot: body,
+              ipHash,
+            });
+            return NextResponse.json({ message: 'Data akun warga berhasil diperbarui.' });
+          }
+
+          if (citizenId && method === 'DELETE' && !citizenAction) {
+            const [deleted] = await db
+              .delete(schema.citizenUsers)
+              .where(eq(schema.citizenUsers.id, citizenId))
+              .returning({ id: schema.citizenUsers.id, username: schema.citizenUsers.username });
+            if (!deleted) {
+              return NextResponse.json({ error: 'Akun warga tidak ditemukan.' }, { status: 404 });
+            }
+            await recordAuditLog({
+              adminUserId: session.id,
+              entityType: 'citizen_users',
+              entityId: citizenId,
+              action: 'delete',
+              diffSnapshot: { username: deleted.username },
+              ipHash,
+            });
+            return NextResponse.json({ message: 'Akun warga berhasil dihapus.' });
+          }
+
+          return NextResponse.json({ error: `Endpoint '/api/${routePath}' tidak ditemukan.` }, { status: 404 });
+        }
+
+        // 13b. Staff routes (/api/admin/users*)
+        const staffId = segments[2] ? decodeURIComponent(segments[2]) : null;
+        const staffAction = segments[3] ?? null;
+
+        if (method === 'GET' && !staffId) {
+          const admins = await db
+            .select()
+            .from(schema.adminUsers)
+            .orderBy(desc(schema.adminUsers.created_at));
+          return NextResponse.json({
+            data: admins.map((a) => ({
+              id: a.id,
+              username: a.username,
+              full_name: a.full_name,
+              email: a.email,
+              role: a.role,
+              is_active: a.is_active ? 1 : 0,
+              last_login: a.last_login,
+              created_at: a.created_at,
+            })),
+          });
+        }
+
+        if (session.role !== 'super_admin') {
           return NextResponse.json(
-            citizens.map((c) => ({
-              id: c.id,
-              username: c.username,
-              display_name: c.display_name,
-              email: c.email,
-              is_email_verified: c.is_email_verified ? 1 : 0,
-              auth_provider: c.auth_provider,
-              created_at: c.created_at,
-            }))
+            { error: 'Hanya Super Admin yang dapat mengelola akun staf.' },
+            { status: 403 }
           );
         }
-        const admins = await db.select().from(schema.adminUsers).orderBy(desc(schema.adminUsers.created_at));
-        return NextResponse.json(
-          admins.map((a) => ({
-            id: a.id,
-            username: a.username,
-            full_name: a.full_name,
-            email: a.email,
-            role: a.role,
-            is_active: a.is_active ? 1 : 0,
-            last_login: a.last_login,
-          }))
-        );
+
+        if (method === 'POST' && !staffId) {
+          const body = await req.json().catch(() => ({}));
+          const username = String(body?.username || '').trim().toLowerCase();
+          const password = String(body?.password || '');
+          const fullName = String(body?.full_name || '').trim();
+          const email = body?.email ? String(body.email).trim().toLowerCase() : null;
+          const roleRaw = String(body?.role || 'editor');
+
+          if (username.length < 3 || !fullName || password.length < 8) {
+            return NextResponse.json(
+              { error: 'Username (min 3 karakter), nama lengkap, dan kata sandi (min 8 karakter) wajib diisi.' },
+              { status: 400 }
+            );
+          }
+          if (!VALID_ADMIN_ROLES.includes(roleRaw as ValidAdminRole)) {
+            return NextResponse.json({ error: 'Peran staf tidak valid.' }, { status: 400 });
+          }
+
+          const existing = await db
+            .select({ id: schema.adminUsers.id })
+            .from(schema.adminUsers)
+            .where(eq(schema.adminUsers.username, username))
+            .limit(1);
+          if (existing.length > 0) {
+            return NextResponse.json({ error: 'Username sudah terdaftar.' }, { status: 409 });
+          }
+
+          const newId = `adm-${crypto.randomUUID().slice(0, 8)}`;
+          const passwordHash = await bcrypt.hash(password, 12);
+          const [created] = await db
+            .insert(schema.adminUsers)
+            .values({
+              id: newId,
+              username,
+              password_hash: passwordHash,
+              full_name: fullName,
+              email: email || null,
+              role: roleRaw as ValidAdminRole,
+              is_active: true,
+            })
+            .returning();
+
+          await recordAuditLog({
+            adminUserId: session.id,
+            entityType: 'admin_users',
+            entityId: newId,
+            action: 'create',
+            diffSnapshot: { username, full_name: fullName, role: roleRaw },
+            ipHash,
+          });
+
+          return NextResponse.json(
+            {
+              message: `Akun staf '${username}' berhasil dibuat.`,
+              data: {
+                id: created.id,
+                username: created.username,
+                full_name: created.full_name,
+                email: created.email,
+                role: created.role,
+                is_active: created.is_active ? 1 : 0,
+                last_login: created.last_login,
+                created_at: created.created_at,
+              },
+            },
+            { status: 201 }
+          );
+        }
+
+        if (staffId && method === 'PUT' && staffAction === 'status') {
+          if (staffId === session.id) {
+            return NextResponse.json(
+              { error: 'Tidak dapat menangguhkan akun Anda sendiri.' },
+              { status: 400 }
+            );
+          }
+          const body = await req.json().catch(() => ({}));
+          const isActive = Boolean(body?.is_active);
+          const [updated] = await db
+            .update(schema.adminUsers)
+            .set({
+              is_active: isActive,
+              ...(isActive ? { failed_login_attempts: 0, locked_until: null } : {}),
+            })
+            .where(eq(schema.adminUsers.id, staffId))
+            .returning({ id: schema.adminUsers.id });
+          if (!updated) {
+            return NextResponse.json({ error: 'Akun staf tidak ditemukan.' }, { status: 404 });
+          }
+          await recordAuditLog({
+            adminUserId: session.id,
+            entityType: 'admin_users',
+            entityId: staffId,
+            action: 'update',
+            diffSnapshot: { is_active: isActive },
+            ipHash,
+          });
+          return NextResponse.json({
+            message: isActive ? 'Akun staf diaktifkan kembali.' : 'Akun staf ditangguhkan.',
+          });
+        }
+
+        if (staffId && method === 'POST' && staffAction === 'reset-password') {
+          const body = await req.json().catch(() => ({}));
+          const newPassword = String(body?.new_password || '');
+          if (newPassword.length < 8) {
+            return NextResponse.json(
+              { error: 'Kata sandi baru minimal 8 karakter.' },
+              { status: 400 }
+            );
+          }
+          const passwordHash = await bcrypt.hash(newPassword, 12);
+          const [updated] = await db
+            .update(schema.adminUsers)
+            .set({
+              password_hash: passwordHash,
+              failed_login_attempts: 0,
+              locked_until: null,
+            })
+            .where(eq(schema.adminUsers.id, staffId))
+            .returning({ id: schema.adminUsers.id });
+          if (!updated) {
+            return NextResponse.json({ error: 'Akun staf tidak ditemukan.' }, { status: 404 });
+          }
+          await recordAuditLog({
+            adminUserId: session.id,
+            entityType: 'admin_users',
+            entityId: staffId,
+            action: 'update',
+            diffSnapshot: { password_reset: true },
+            ipHash,
+          });
+          return NextResponse.json({ message: 'Kata sandi staf berhasil diatur ulang.' });
+        }
+
+        if (staffId && method === 'PUT' && !staffAction) {
+          const body = await req.json().catch(() => ({}));
+          const patch: Partial<typeof schema.adminUsers.$inferInsert> = {};
+          if (body.full_name !== undefined) {
+            patch.full_name = String(body.full_name).trim() || null;
+          }
+          if (body.email !== undefined) {
+            patch.email = String(body.email).trim().toLowerCase() || null;
+          }
+          if (body.role !== undefined) {
+            const nextRole = String(body.role);
+            if (!VALID_ADMIN_ROLES.includes(nextRole as ValidAdminRole)) {
+              return NextResponse.json({ error: 'Peran staf tidak valid.' }, { status: 400 });
+            }
+            patch.role = nextRole as ValidAdminRole;
+          }
+          const [updated] = await db
+            .update(schema.adminUsers)
+            .set(patch)
+            .where(eq(schema.adminUsers.id, staffId))
+            .returning({ id: schema.adminUsers.id });
+          if (!updated) {
+            return NextResponse.json({ error: 'Akun staf tidak ditemukan.' }, { status: 404 });
+          }
+          await recordAuditLog({
+            adminUserId: session.id,
+            entityType: 'admin_users',
+            entityId: staffId,
+            action: 'update',
+            diffSnapshot: body,
+            ipHash,
+          });
+          return NextResponse.json({ message: 'Data akun staf berhasil diperbarui.' });
+        }
+
+        if (staffId && method === 'DELETE' && !staffAction) {
+          if (staffId === session.id) {
+            return NextResponse.json(
+              { error: 'Tidak dapat menghapus akun Anda sendiri.' },
+              { status: 400 }
+            );
+          }
+          const [deleted] = await db
+            .delete(schema.adminUsers)
+            .where(eq(schema.adminUsers.id, staffId))
+            .returning({ id: schema.adminUsers.id, username: schema.adminUsers.username });
+          if (!deleted) {
+            return NextResponse.json({ error: 'Akun staf tidak ditemukan.' }, { status: 404 });
+          }
+          await recordAuditLog({
+            adminUserId: session.id,
+            entityType: 'admin_users',
+            entityId: staffId,
+            action: 'delete',
+            diffSnapshot: { username: deleted.username },
+            ipHash,
+          });
+          return NextResponse.json({ message: 'Akun staf berhasil dihapus.' });
+        }
+
+        return NextResponse.json({ error: `Endpoint '/api/${routePath}' tidak ditemukan.` }, { status: 404 });
       }
     }
 
