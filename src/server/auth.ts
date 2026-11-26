@@ -65,16 +65,41 @@ export function hasAdminPermission(role: AdminRole, permission: AdminPermission)
 
 export async function getAdminSession(): Promise<AdminSessionPayload | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
+  let token = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
+  if (!token) {
+    const h = await headers();
+    const auth = h.get('authorization');
+    if (auth?.startsWith('Bearer ')) token = auth.slice(7).trim();
+  }
   if (!token) return null;
   return verifyAdminToken(token);
 }
 
 export async function getCitizenSession(): Promise<CitizenSessionPayload | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(CITIZEN_COOKIE_NAME)?.value;
+  let token = cookieStore.get(CITIZEN_COOKIE_NAME)?.value;
+  if (!token) {
+    const h = await headers();
+    const auth = h.get('authorization');
+    if (auth?.startsWith('Bearer ')) token = auth.slice(7).trim();
+  }
   if (!token) return null;
-  return verifyCitizenToken(token);
+
+  const citizen = await verifyCitizenToken(token);
+  if (citizen) return citizen;
+
+  const admin = await verifyAdminToken(token);
+  if (admin) {
+    return {
+      id: admin.id,
+      username: admin.username,
+      displayName: `${admin.username} (Staf LKI)`,
+      email: `${admin.username}@lki.local`,
+      avatarSeed: 'garuda',
+      isEmailVerified: true,
+    };
+  }
+  return null;
 }
 
 export function cookieOptions(maxAgeSeconds: number) {

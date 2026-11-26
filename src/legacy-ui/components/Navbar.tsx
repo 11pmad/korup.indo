@@ -1,0 +1,525 @@
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { 
+  Home,
+  MapPin, 
+  Trophy, 
+  BarChart3, 
+  Search, 
+  Volume2, 
+  VolumeX, 
+  Flag,
+  Menu,
+  X,
+  BookOpen,
+  Sparkles,
+  User,
+  UserCheck,
+  LogOut,
+  UserCog,
+  CreditCard,
+  Database,
+  MapPin as MapPinIcon
+} from 'lucide-react';
+import { sound } from '../utils/audio';
+import { CitizenAuthModal, CitizenUser } from './CitizenAuthModal';
+import { CitizenProfileModal } from './CitizenProfileModal';
+import { OpenDataModal } from './OpenDataModal';
+
+interface NavbarProps {
+  activeTab: 'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin';
+  setActiveTab: (tab: 'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin') => void;
+  onOpenReport: () => void;
+}
+
+export const Navbar: React.FC<NavbarProps> = ({
+  activeTab,
+  setActiveTab,
+  onOpenReport
+}) => {
+  const [soundOn, setSoundOn] = useState(sound.isEnabled);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [citizenUser, setCitizenUser] = useState<CitizenUser | null>(null);
+  const [citizenModalOpen, setCitizenModalOpen] = useState(false);
+  const [citizenProfileModalOpen, setCitizenProfileModalOpen] = useState(false);
+  const [citizenDropdownOpen, setCitizenDropdownOpen] = useState(false);
+  const [openDataModalOpen, setOpenDataModalOpen] = useState(false);
+
+  useEffect(() => {
+    loadCitizen();
+    const handler = () => loadCitizen();
+    window.addEventListener('lki_citizen_auth_change', handler);
+    return () => window.removeEventListener('lki_citizen_auth_change', handler);
+  }, []);
+
+  const loadCitizen = () => {
+    try {
+      const stored = localStorage.getItem('lki_citizen_user');
+      const token = localStorage.getItem('lki_citizen_token');
+      if (stored && token) {
+        const u = JSON.parse(stored);
+        if (u.isEmailVerified === false || (!u.email && u.authProvider !== 'google')) {
+          localStorage.removeItem('lki_citizen_token');
+          localStorage.removeItem('lki_citizen_user');
+          setCitizenUser(null);
+        } else {
+          setCitizenUser(u);
+        }
+      } else {
+        setCitizenUser(null);
+      }
+    } catch {
+      setCitizenUser(null);
+    }
+  };
+
+  const handleLogoutCitizen = () => {
+    localStorage.removeItem('lki_citizen_token');
+    localStorage.removeItem('lki_citizen_user');
+    window.dispatchEvent(new Event('lki_citizen_auth_change'));
+    setCitizenDropdownOpen(false);
+  };
+
+  const toggleSound = () => {
+    sound.isEnabled = !sound.isEnabled;
+    setSoundOn(sound.isEnabled);
+    if (sound.isEnabled) {
+      sound.playPop();
+    }
+  };
+
+  const handleNavClick = (tab: 'beranda' | 'peta' | 'klasemen' | 'statistik' | 'cari' | 'admin') => {
+    sound.playPop();
+    setActiveTab(tab);
+    setMobileMenuOpen(false);
+  };
+
+  const navItems: Array<{
+    id: 'beranda' | 'klasemen' | 'peta' | 'statistik' | 'cari';
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    activeBg: string;
+    activeText: string;
+    activeBorder: string;
+    hoverTilt: string;
+    activeTilt: string;
+  }> = [
+    {
+      id: 'beranda',
+      label: 'Beranda',
+      icon: Home,
+      activeBg: 'bg-[#FDE047]',
+      activeText: 'text-[#854D0E]',
+      activeBorder: 'border-[#EAB308]',
+      hoverTilt: 'hover:-rotate-1',
+      activeTilt: '-rotate-1'
+    },
+    {
+      id: 'klasemen',
+      label: 'Klasemen Liga',
+      icon: Trophy,
+      activeBg: 'bg-[#FB923C]',
+      activeText: 'text-white',
+      activeBorder: 'border-[#EA580C]',
+      hoverTilt: 'hover:rotate-1',
+      activeTilt: 'rotate-1'
+    },
+    {
+      id: 'peta',
+      label: 'Peta Wilayah',
+      icon: MapPin,
+      activeBg: 'bg-[#38BDF8]',
+      activeText: 'text-white',
+      activeBorder: 'border-[#0284C7]',
+      hoverTilt: 'hover:-rotate-1',
+      activeTilt: '-rotate-1'
+    },
+    {
+      id: 'statistik',
+      label: 'Statistik',
+      icon: BarChart3,
+      activeBg: 'bg-[#4ADE80]',
+      activeText: 'text-[#064E3B]',
+      activeBorder: 'border-[#16A34A]',
+      hoverTilt: 'hover:rotate-1',
+      activeTilt: 'rotate-1'
+    },
+    {
+      id: 'cari',
+      label: 'Cari Kasus',
+      icon: Search,
+      activeBg: 'bg-[#C084FC]',
+      activeText: 'text-white',
+      activeBorder: 'border-[#9333EA]',
+      hoverTilt: 'hover:-rotate-1',
+      activeTilt: '-rotate-1'
+    }
+  ];
+
+  return (
+    <header className="sticky top-0 z-40 bg-[#FFFDF8]/95 backdrop-blur-md border-b-2 border-[#E7DFCC] shadow-sm relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pr-28 sm:pr-36 md:pr-40 lg:pr-40 xl:pr-44">
+        <div className="flex items-center justify-between h-20 gap-3 xl:gap-6">
+          
+          {/* Kolom 1: Logo & Brand (Kiri) */}
+          <div 
+            className="flex items-center gap-3 cursor-pointer group shrink-0"
+            onClick={() => handleNavClick('beranda')}
+          >
+            <div className="relative shrink-0">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#FDE047] border-2 border-[#EAB308] shadow-md flex items-center justify-center rotate-[-4deg] group-hover:rotate-0 transition-transform">
+                <BookOpen className="w-6 h-6 sm:w-7 sm:h-7 text-[#854D0E]" />
+              </div>
+              <span className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-[#DC2626] text-white text-[10px] font-bold rounded-full rotate-6 shadow-sm">
+                LKI 🇮🇩
+              </span>
+            </div>
+            
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-marker text-2xl sm:text-3xl text-[#1E293B] tracking-wide whitespace-nowrap">
+                  Liga Korupsi
+                </span>
+                <span className="px-2 py-0.5 bg-[#FEF08A] text-[#854D0E] font-hand font-bold text-xs rounded-md border border-[#EAB308] rotate-2 shrink-0">
+                  Indonesia
+                </span>
+              </div>
+              <p className="text-xs text-[#64748B] font-medium hidden sm:block truncate max-w-[240px] xl:max-w-none">
+                Portal Transparansi Perkara &amp; Putusan Hukum Terbuka
+              </p>
+            </div>
+          </div>
+
+          {/* Kolom 2: Navigasi Menu Utama (Tengah - Distribusi Seimbang & Efek Tilt Tematik) */}
+          <nav className="hidden lg:flex items-center bg-[#F5EEDC]/90 border border-[#E2D6BD] p-1.5 rounded-2xl shadow-2xs">
+            <div className="grid grid-cols-5 gap-1.5 min-w-[530px] xl:min-w-[620px]">
+              {navItems.map(item => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    id={`nav-${item.id}-btn`}
+                    onClick={() => handleNavClick(item.id)}
+                    className={`
+                      px-2.5 xl:px-3 py-2 rounded-xl text-xs xl:text-sm font-bold flex items-center justify-center gap-1.5 xl:gap-2 
+                      transition-all duration-150 cursor-pointer whitespace-nowrap transform select-none
+                      ${item.hoverTilt} hover:-translate-y-0.5 hover:shadow-xs
+                      active:scale-95 active:translate-y-0 active:rotate-0
+                      ${isActive
+                        ? `${item.activeBg} ${item.activeText} ${item.activeTilt} shadow-sm border ${item.activeBorder} scale-[1.02]`
+                        : 'text-[#475569] hover:bg-[#EBE2CC] hover:text-[#0F172A]'}
+                    `}
+                  >
+                    <Icon className="w-4 h-4 shrink-0 transition-transform group-hover:scale-110" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+
+          {/* Kolom 3: Right Action Icons (Kanan) */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            {/* Sound Toggle */}
+            <button
+              id="sound-toggle-btn"
+              onClick={toggleSound}
+              title={soundOn ? 'Matikan Efek Suara' : 'Nyalakan Efek Suara'}
+              className="p-2 rounded-xl bg-[#F6F0DF] border border-[#E3D7BD] text-[#78716C] hover:text-[#1C1917] hover:bg-[#ECE3CD] transition-all duration-150 cursor-pointer transform hover:rotate-6 hover:-translate-y-0.5 active:scale-90 active:rotate-0"
+            >
+              {soundOn ? <Volume2 className="w-4 h-4 text-[#EA580C]" /> : <VolumeX className="w-4 h-4" />}
+            </button>
+
+            {/* Lapor Kasus Baru */}
+            <button
+              id="report-new-case-btn"
+              onClick={() => {
+                sound.playPop();
+                onOpenReport();
+              }}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] hover:bg-[#FDE68A] text-xs font-bold transition-all duration-150 shadow-2xs cursor-pointer whitespace-nowrap transform hover:-rotate-1 hover:-translate-y-0.5 hover:shadow-xs active:scale-95 active:rotate-0"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+              <span>Lapor Kasus Baru</span>
+            </button>
+
+            {/* Katalog Dataset Terbuka */}
+            <button
+              id="open-data-btn"
+              onClick={() => {
+                sound.playPop();
+                setOpenDataModalOpen(true);
+              }}
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 hover:bg-emerald-100 text-xs font-bold transition-all duration-150 shadow-2xs cursor-pointer whitespace-nowrap transform hover:rotate-1 hover:-translate-y-0.5 hover:shadow-xs active:scale-95"
+              title="Katalog & Unduh Dataset Terbuka LKI (CSV & JSON)"
+            >
+              <Database className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Dataset Terbuka</span>
+            </button>
+
+            {/* Mobile Menu Toggle */}
+            <button
+              id="mobile-menu-toggle"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 rounded-xl bg-[#F6F0DF] text-[#44403C] hover:bg-[#ECE3CD] transition-all duration-150 cursor-pointer transform hover:rotate-3 active:scale-90"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Terpisah dari Kesatuan Navbar: Tombol Login / Suara Rakyat di Sudut Kanan Paling Atas Layar */}
+      <div className="absolute top-1/2 -translate-y-1/2 right-2 sm:right-4 lg:right-6 xl:right-8 z-50">
+        {citizenUser ? (
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setCitizenDropdownOpen(!citizenDropdownOpen)}
+              className="group flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 bg-white/95 hover:bg-white border-2 border-amber-400 hover:border-amber-500 rounded-2xl text-xs font-bold text-slate-800 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0"
+              title="Akun Suara Rakyat"
+            >
+              {citizenUser.photoUrl ? (
+                <img 
+                  src={citizenUser.photoUrl} 
+                  alt={citizenUser.displayName} 
+                  className="w-7 h-7 rounded-xl object-cover border-2 border-amber-400 shrink-0 shadow-2xs" 
+                />
+              ) : (
+                <div className="w-7 h-7 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0">
+                  <User className="w-4 h-4 text-amber-800" />
+                </div>
+              )}
+              <div className="text-left hidden xs:block sm:block">
+                <div className="font-black text-slate-900 text-xs leading-tight truncate max-w-[85px] sm:max-w-[120px]">
+                  {citizenUser.displayName}
+                </div>
+                <div className="text-[10px] text-amber-700 font-semibold leading-none truncate max-w-[85px] sm:max-w-[120px]">
+                  {citizenUser.originCity || citizenUser.originProvince || 'Suara Rakyat'}
+                </div>
+              </div>
+              <span className="hidden sm:inline-block px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-[#EA580C] text-white rounded-md text-[9px] font-mono font-black shrink-0 shadow-2xs">
+                WARGA
+              </span>
+            </button>
+
+            {citizenDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl p-2 shadow-xl z-50 space-y-1.5 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs">
+                  <div className="flex items-center gap-2.5">
+                    {citizenUser.photoUrl ? (
+                      <img src={citizenUser.photoUrl} alt="Avatar" className="w-8 h-8 rounded-full object-cover border border-slate-300 shrink-0" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0">
+                        <User className="w-4 h-4 text-amber-800" />
+                      </div>
+                    )}
+                    <div className="overflow-hidden">
+                      <p className="font-bold text-slate-900 truncate">{citizenUser.displayName}</p>
+                      <p className="text-[10px] text-slate-500 font-mono truncate">@{citizenUser.username}</p>
+                    </div>
+                  </div>
+
+                  {(citizenUser.originCity || citizenUser.originProvince) && (
+                    <div className="mt-2 pt-1.5 border-t border-slate-200/60 flex items-center gap-1 text-[10px] text-slate-600 font-medium">
+                      <MapPinIcon className="w-3 h-3 text-amber-600 shrink-0" />
+                      <span className="truncate">{[citizenUser.originCity, citizenUser.originProvince].filter(Boolean).join(', ')}</span>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playPop();
+                    setCitizenDropdownOpen(false);
+                    setCitizenProfileModalOpen(true);
+                  }}
+                  className="w-full px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-amber-50 hover:text-amber-900 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+                >
+                  <CreditCard className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Profil Warga (e-KTP)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleLogoutCitizen}
+                  className="w-full px-3 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Keluar Akun Warga</span>
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              sound.playPop();
+              setCitizenModalOpen(true);
+            }}
+            className="group flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-gradient-to-r from-amber-500 via-orange-500 to-[#EA580C] hover:from-amber-600 hover:to-[#C2410C] text-white rounded-2xl text-xs font-bold shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0"
+            title="Masuk / Daftar Suara Rakyat (Beri Aspirasi, Reaksi & Komentar)"
+          >
+            <span className="p-1 rounded-lg bg-white/20 text-white shrink-0">
+              <UserCheck className="w-3.5 h-3.5" />
+            </span>
+            <div className="flex flex-col text-left">
+              <span className="text-[9px] uppercase tracking-wider font-extrabold text-amber-100 leading-none">
+                LOGIN
+              </span>
+              <span className="text-xs font-black tracking-tight leading-tight whitespace-nowrap">
+                Suara Rakyat
+              </span>
+            </div>
+          </button>
+        )}
+      </div>
+
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden px-4 pt-2 pb-4 space-y-2 bg-[#FFFDF8] border-b border-[#E7DFCC]">
+          <button
+            onClick={() => handleNavClick('beranda')}
+            className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-3 ${
+              activeTab === 'beranda' ? 'bg-[#FDE047] text-[#854D0E]' : 'text-[#334155]'
+            }`}
+          >
+            <Home className="w-4 h-4" /> Beranda Utama
+          </button>
+          <button
+            onClick={() => handleNavClick('peta')}
+            className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-3 ${
+              activeTab === 'peta' ? 'bg-[#38BDF8] text-white' : 'text-[#334155]'
+            }`}
+          >
+            <MapPin className="w-4 h-4" /> Peta Interaktif
+          </button>
+          <button
+            onClick={() => handleNavClick('klasemen')}
+            className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-3 ${
+              activeTab === 'klasemen' ? 'bg-[#FB923C] text-white' : 'text-[#334155]'
+            }`}
+          >
+            <Trophy className="w-4 h-4" /> Klasemen Liga Korupsi
+          </button>
+          <button
+            onClick={() => handleNavClick('statistik')}
+            className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-3 ${
+              activeTab === 'statistik' ? 'bg-[#4ADE80] text-[#064E3B]' : 'text-[#334155]'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" /> Statistik &amp; Grafik
+          </button>
+          <button
+            onClick={() => handleNavClick('cari')}
+            className={`w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-3 ${
+              activeTab === 'cari' ? 'bg-[#C084FC] text-white' : 'text-[#334155]'
+            }`}
+          >
+            <Search className="w-4 h-4" /> Cari Kasus Pejabat
+          </button>
+          <button
+            onClick={() => {
+              setMobileMenuOpen(false);
+              onOpenReport();
+            }}
+            className="w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm text-[#92400E] bg-[#FEF3C7] flex items-center gap-3"
+          >
+            <Sparkles className="w-4 h-4 text-amber-600" /> Laporkan Kasus Baru
+          </button>
+          <button
+            onClick={() => {
+              setMobileMenuOpen(false);
+              sound.playPop();
+              setOpenDataModalOpen(true);
+            }}
+            className="w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 flex items-center gap-3"
+          >
+            <Database className="w-4 h-4 text-emerald-600" /> Dataset Terbuka (CSV &amp; JSON)
+          </button>
+
+          {/* Mobile Citizen Account */}
+          <div className="pt-2 border-t border-[#DFD3BA]">
+            {citizenUser ? (
+              <div className="flex flex-col gap-2 p-3 bg-white rounded-xl border border-slate-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    {citizenUser.photoUrl ? (
+                      <img src={citizenUser.photoUrl} alt="Avatar" className="w-7 h-7 rounded-full object-cover border border-slate-300 shrink-0" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0">
+                        <User className="w-4 h-4 text-amber-800" />
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-xs font-bold text-slate-800">{citizenUser.displayName}</div>
+                      <div className="text-[10px] text-slate-500 font-mono">
+                        {[citizenUser.originCity, citizenUser.originProvince].filter(Boolean).join(', ') || 'Warga LKI'}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleLogoutCitizen}
+                    className="px-2.5 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                  >
+                    Keluar
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playPop();
+                    setMobileMenuOpen(false);
+                    setCitizenProfileModalOpen(true);
+                  }}
+                  className="w-full py-1.5 px-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-[#92400E] rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <CreditCard className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Profil Warga (e-KTP)</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setCitizenModalOpen(true);
+                }}
+                className="w-full text-left px-4 py-2.5 rounded-xl font-bold text-sm text-[#78350F] bg-amber-50 border border-amber-200 flex items-center gap-3 cursor-pointer"
+              >
+                <UserCheck className="w-4 h-4 text-amber-700" /> Suara Warga / Masuk
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Otentikasi Warga */}
+      <CitizenAuthModal
+        isOpen={citizenModalOpen}
+        onClose={() => setCitizenModalOpen(false)}
+        onSuccess={loadCitizen}
+      />
+
+      {/* Modal Edit Profil Warga */}
+      {citizenUser && (
+        <CitizenProfileModal
+          isOpen={citizenProfileModalOpen}
+          onClose={() => setCitizenProfileModalOpen(false)}
+          user={citizenUser}
+          onProfileUpdated={(updated) => setCitizenUser(updated)}
+        />
+      )}
+
+      {/* Modal Pusat Katalog & Unduh Dataset Terbuka (Open Data) */}
+      <OpenDataModal
+        isOpen={openDataModalOpen}
+        onClose={() => setOpenDataModalOpen(false)}
+      />
+    </header>
+  );
+};

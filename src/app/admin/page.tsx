@@ -1,15 +1,11 @@
 import React from 'react';
-import { redirect } from 'next/navigation';
-import { getAdminSession } from '@/server/auth';
-import { AdminPortalClient } from '@/components/AdminPortalClient';
+import type { Metadata } from 'next';
+import { V1AppShell } from '@/components/V1AppShell';
 
-export const dynamic = 'force-dynamic';
+export const metadata: Metadata = {
+  title: 'Panel Kurasi & Moderasi Verifikator',
+};
 
-export default async function AdminPage() {
-  const session = await getAdminSession();
-  if (!session) {
-    redirect('/admin/login');
-  }
-
-  return <AdminPortalClient admin={session} />;
+export default function AdminPage() {
+  return <V1AppShell initialTab="admin" />;
 }

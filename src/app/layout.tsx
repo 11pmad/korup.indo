@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     template: '%s — Liga Korupsi Indonesia (LKI)',
   },
   description:
-    'Portal transparansi & edukasi publik data perkara tindak pidana korupsi Indonesia (1945–sekarang) berbasis putusan pengadilan, peta 38 provinsi, klasemen, dan perlindungan asas praduga tak bersalah.',
+    'Portal transparansi & edukasi data perkara korupsi Indonesia berbasis putusan pengadilan inkrah, klasemen liga interaktif, peta spasial 38 provinsi, analitik korporasi rekanan, dan asas praduga tak bersalah.',
   openGraph: {
     type: 'website',
     locale: 'id_ID',
@@ -44,9 +44,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       {
         '@type': 'Dataset',
         '@id': `${baseUrl}/#dataset`,
-        name: 'Basis Data Historis Perkara Korupsi Indonesia (1945–Sekarang)',
+        name: 'Basis Data Perkara Korupsi Indonesia Terverifikasi',
         description:
-          'Dataset terkurasi perkara tindak pidana korupsi Indonesia dengan pemisahan kerugian negara, suap, uang pengganti, dan rujukan dokumen resmi.',
+          'Agregasi data kerugian keuangan negara, profil pejabat terpidana/terdakwa, amar putusan berkekuatan hukum tetap (inkrah), dan pemetaan 38 provinsi.',
         license: 'https://creativecommons.org/licenses/by/4.0/',
         spatialCoverage: { '@type': 'Place', name: 'Indonesia' },
       },
@@ -55,7 +55,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="id">
-      <body className="min-h-screen antialiased selection:bg-amber-200 selection:text-stone-900">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Caveat:wght@600;700&family=Chewy&family=Comic+Neue:ital,wght@0,400;0,700;1,400&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="bg-[#FFFDF6] text-[#2D2A26] antialiased selection:bg-[#FDE047] selection:text-[#1E1B18]">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
