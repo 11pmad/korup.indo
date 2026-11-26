@@ -18,9 +18,10 @@ const cspDirectives = [
 ].join('; ');
 
 const nextConfig: NextConfig = {
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   outputFileTracingRoot: path.join(__dirname),
   outputFileTracingIncludes: {
-    '/api/**': ['./data/normalized/**/*'],
+    '/api/**': ['./data/normalized/**/*', './data/quality/**/*', './drizzle/**/*'],
     '/kasus/**': ['./data/normalized/**/*'],
     '/tokoh/**': ['./data/normalized/**/*'],
     '/sitemap.xml': ['./data/normalized/**/*'],
