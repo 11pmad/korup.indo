@@ -350,8 +350,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                         }}
                         className="w-full px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-amber-50 hover:text-amber-900 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
                       >
-                        <CreditCard className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Profil Warga (e-KTP)</span>
+                        <User className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Profil Warga</span>
                       </button>
 
                       <button
@@ -497,8 +497,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }}
                   className="w-full py-1.5 px-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-[#92400E] rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <CreditCard className="w-3.5 h-3.5 text-amber-700" />
-                  <span>Profil Warga (e-KTP)</span>
+                  <User className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Profil Warga</span>
                 </button>
               </div>
             ) : (
