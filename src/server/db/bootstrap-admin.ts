@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { db, pgClient, schema } from './index';
 import { env } from '@/env';
 
-async function bootstrapAdmin() {
+export async function bootstrapAdmin() {
   const username = (env.INITIAL_SUPERADMIN_USERNAME || 'superadmin').trim().toLowerCase();
   const password = env.INITIAL_SUPERADMIN_PASSWORD;
 
@@ -46,13 +46,15 @@ async function bootstrapAdmin() {
   }
 }
 
-bootstrapAdmin()
-  .then(async () => {
-    await pgClient.end();
-    process.exit(0);
-  })
-  .catch(async (err) => {
-    console.error('Bootstrap admin gagal:', err);
-    await pgClient.end();
-    process.exit(1);
-  });
+if (import.meta.main) {
+  bootstrapAdmin()
+    .then(async () => {
+      await pgClient.end();
+      process.exit(0);
+    })
+    .catch(async (err) => {
+      console.error('Bootstrap admin gagal:', err);
+      await pgClient.end();
+      process.exit(1);
+    });
+}

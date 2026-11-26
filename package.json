@@ -13,6 +13,7 @@
     "db:push": "drizzle-kit push",
     "db:seed": "bun run src/server/db/seed.ts",
     "db:bootstrap-admin": "bun run src/server/db/bootstrap-admin.ts",
+    "db:setup-prod": "bun run src/server/db/setup-prod.ts",
     "data:validate": "bun run data/scripts/validate.ts"
   },
   "dependencies": {

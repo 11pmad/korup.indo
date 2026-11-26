@@ -6,6 +6,11 @@ export default defineConfig({
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {
-    url: process.env.DIRECT_URL || process.env.DATABASE_URL || 'postgres://postgres@localhost:5432/lki_v2_db',
+    url:
+      process.env.PROD_DATABASE_URL ||
+      process.env.DIRECT_URL ||
+      process.env.DATABASE_URL ||
+      process.env.POSTGRES_URL ||
+      'postgres://postgres@localhost:5432/lki_v2_db',
   },
 });

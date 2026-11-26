@@ -1,11 +1,17 @@
 import { z } from 'zod';
 
-const rawDbUrl = process.env.DATABASE_URL?.trim() || '';
+const rawDbUrl = (
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.POSTGRES_PRISMA_URL ||
+  process.env.NEON_DATABASE_URL ||
+  ''
+).trim();
 const isVercel = Boolean(process.env.VERCEL);
 const pointsToLocalhost = /localhost|127\.0\.0\.1/.test(rawDbUrl);
 
 /**
- * False on Vercel when DATABASE_URL is missing or still points to localhost.
+ * False on Vercel when no cloud Postgres URL is set or it still points to localhost.
  * Public read endpoints automatically fall back to data/normalized/*.json when false.
  */
 export const isDatabaseConfigured = isVercel
@@ -21,7 +27,7 @@ const envSchema = z.object({
   DATABASE_URL: z
     .string()
     .optional()
-    .transform((v) => v?.trim() || defaultDbUrl),
+    .transform((v) => v?.trim() || rawDbUrl || defaultDbUrl),
   DIRECT_URL: z.string().optional(),
   NEXT_PUBLIC_APP_URL: z.string().default(
     process.env.NODE_ENV === 'production'
@@ -46,7 +52,10 @@ const envSchema = z.object({
   EMAIL_FROM: z.string().default('LKI Transparansi <noreply@localhost>'),
 });
 
-const parsed = envSchema.safeParse(process.env);
+const parsed = envSchema.safeParse({
+  ...process.env,
+  DATABASE_URL: rawDbUrl || undefined,
+});
 
 if (!parsed.success) {
   const details = parsed.error.issues

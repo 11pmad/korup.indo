@@ -179,6 +179,8 @@ async function fetchRawLegacyRows() {
       .leftJoin(schema.presidentialEras, eq(schema.cases.era_id, schema.presidentialEras.id))
       .leftJoin(schema.provinces, eq(schema.cases.primary_province_id, schema.provinces.id));
 
+    if (rows.length === 0) return getStaticLegacyRawRows();
+
     const [cpRows, partyRows, ccRows, csRows, verRows] = await Promise.all([
       db
         .select({

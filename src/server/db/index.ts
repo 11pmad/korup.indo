@@ -11,17 +11,25 @@ const globalForDb = globalThis as unknown as {
 };
 
 function createSafePgClient(url: string): ReturnType<typeof postgres> {
-  const opts = {
+  const isLocal = /localhost|127\.0\.0\.1/.test(url);
+  const hasSslMode = /[?&]sslmode=/i.test(url);
+  const opts: Parameters<typeof postgres>[1] = {
     max: isServerless ? 3 : 10,
     idle_timeout: 20,
     connect_timeout: 10,
     prepare: false, // Required for Supabase/Neon Transaction Poolers
+    ...(!isLocal && !hasSslMode ? { ssl: 'require' } : {}),
   };
   try {
     return postgres(url, opts);
   } catch (err) {
     console.warn('[LKI DB] DATABASE_URL tidak valid, beralih ke fallback pasif:', err);
-    return postgres(PASSIVE_FALLBACK_URL, opts);
+    return postgres(PASSIVE_FALLBACK_URL, {
+      max: isServerless ? 3 : 10,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      prepare: false,
+    });
   }
 }
 
