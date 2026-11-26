@@ -14,6 +14,7 @@ import {
   signAdminSession,
 } from '@/server/auth';
 import { db, schema } from '@/server/db';
+import { isDatabaseConfigured } from '@/env';
 
 const loginSchema = z.object({
   username: z.string().trim().min(1),
@@ -21,6 +22,13 @@ const loginSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  if (!isDatabaseConfigured) {
+    return apiError(
+      'SERVICE_UNAVAILABLE',
+      'Database produksi (DATABASE_URL) belum dikonfigurasi di Vercel.',
+      503
+    );
+  }
   const limited = await applyRateLimit(req, 'auth_strict', 10, 900);
   if (limited) return limited;
 

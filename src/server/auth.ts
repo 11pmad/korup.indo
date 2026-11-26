@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { cookies, headers } from 'next/headers';
 import { sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
-import { env } from '@/env';
+import { env, isDatabaseConfigured } from '@/env';
 import { db, schema } from '@/server/db';
 import {
   AdminRole,
@@ -128,6 +128,24 @@ export function hashIp(ip: string): string {
     .slice(0, 32);
 }
 
+const memoryRateLimits = new Map<string, { count: number; resetAt: number }>();
+
+function checkMemoryRateLimit(key: string, limit: number, windowSeconds: number) {
+  const nowMs = Date.now();
+  const existing = memoryRateLimits.get(key);
+  if (!existing || existing.resetAt <= nowMs) {
+    const resetAt = nowMs + windowSeconds * 1000;
+    memoryRateLimits.set(key, { count: 1, resetAt });
+    return { allowed: true, remaining: Math.max(0, limit - 1), retryAfterSeconds: windowSeconds };
+  }
+  existing.count += 1;
+  return {
+    allowed: existing.count <= limit,
+    remaining: Math.max(0, limit - existing.count),
+    retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - nowMs) / 1000)),
+  };
+}
+
 export async function checkRateLimit(
   tier: string,
   identifier: string,
@@ -135,36 +153,44 @@ export async function checkRateLimit(
   windowSeconds: number
 ): Promise<{ allowed: boolean; remaining: number; retryAfterSeconds: number }> {
   const key = `${tier}:${identifier}`;
+  if (!isDatabaseConfigured) {
+    return checkMemoryRateLimit(key, limit, windowSeconds);
+  }
+
   const now = new Date();
   const nowIso = now.toISOString();
   const nextReset = new Date(now.getTime() + windowSeconds * 1000);
   const nextResetIso = nextReset.toISOString();
 
-  const result = await db.execute(sql`
-    INSERT INTO rate_limit_buckets (key, count, reset_at)
-    VALUES (${key}, 1, ${nextResetIso}::timestamptz)
-    ON CONFLICT (key) DO UPDATE SET
-      count = CASE
-        WHEN rate_limit_buckets.reset_at <= ${nowIso}::timestamptz THEN 1
-        ELSE rate_limit_buckets.count + 1
-      END,
-      reset_at = CASE
-        WHEN rate_limit_buckets.reset_at <= ${nowIso}::timestamptz THEN ${nextResetIso}::timestamptz
-        ELSE rate_limit_buckets.reset_at
-      END
-    RETURNING count, reset_at;
-  `);
+  try {
+    const result = await db.execute(sql`
+      INSERT INTO rate_limit_buckets (key, count, reset_at)
+      VALUES (${key}, 1, ${nextResetIso}::timestamptz)
+      ON CONFLICT (key) DO UPDATE SET
+        count = CASE
+          WHEN rate_limit_buckets.reset_at <= ${nowIso}::timestamptz THEN 1
+          ELSE rate_limit_buckets.count + 1
+        END,
+        reset_at = CASE
+          WHEN rate_limit_buckets.reset_at <= ${nowIso}::timestamptz THEN ${nextResetIso}::timestamptz
+          ELSE rate_limit_buckets.reset_at
+        END
+      RETURNING count, reset_at;
+    `);
 
-  const row = result[0] as { count: number; reset_at: Date | string } | undefined;
-  const count = Number(row?.count ?? 1);
-  const resetAt = row?.reset_at ? new Date(row.reset_at) : nextReset;
-  const retryAfterSeconds = Math.max(1, Math.ceil((resetAt.getTime() - now.getTime()) / 1000));
+    const row = result[0] as { count: number; reset_at: Date | string } | undefined;
+    const count = Number(row?.count ?? 1);
+    const resetAt = row?.reset_at ? new Date(row.reset_at) : nextReset;
+    const retryAfterSeconds = Math.max(1, Math.ceil((resetAt.getTime() - now.getTime()) / 1000));
 
-  return {
-    allowed: count <= limit,
-    remaining: Math.max(0, limit - count),
-    retryAfterSeconds,
-  };
+    return {
+      allowed: count <= limit,
+      remaining: Math.max(0, limit - count),
+      retryAfterSeconds,
+    };
+  } catch {
+    return checkMemoryRateLimit(key, limit, windowSeconds);
+  }
 }
 
 export async function requireAdminApi(permission?: AdminPermission) {

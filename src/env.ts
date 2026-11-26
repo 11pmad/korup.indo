@@ -1,26 +1,42 @@
 import { z } from 'zod';
 
-const isProd = process.env.NODE_ENV === 'production';
+const rawDbUrl = process.env.DATABASE_URL?.trim() || '';
+const isVercel = Boolean(process.env.VERCEL);
+const pointsToLocalhost = /localhost|127\.0\.0\.1/.test(rawDbUrl);
+
+/**
+ * False on Vercel when DATABASE_URL is missing or still points to localhost.
+ * Public read endpoints automatically fall back to data/normalized/*.json when false.
+ */
+export const isDatabaseConfigured = isVercel
+  ? Boolean(rawDbUrl) && !pointsToLocalhost
+  : rawDbUrl
+    ? true
+    : process.env.NODE_ENV !== 'production';
+
+const defaultDbUrl = 'postgres://postgres@localhost:5432/lki_v2_db';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  DATABASE_URL: isProd
-    ? z.string().min(1, 'DATABASE_URL wajib diisi di produksi')
-    : z.string().default('postgres://postgres@localhost:5432/lki_v2_db'),
+  DATABASE_URL: z
+    .string()
+    .optional()
+    .transform((v) => v?.trim() || defaultDbUrl),
   DIRECT_URL: z.string().optional(),
-  NEXT_PUBLIC_APP_URL: z.string().default('http://localhost:3000'),
-  ADMIN_JWT_SECRET: isProd
-    ? z.string().min(32, 'ADMIN_JWT_SECRET minimal 32 karakter di produksi')
-    : z.string().min(16).default('dev-admin-secret-only-not-for-prod-use-32ch'),
-  CITIZEN_JWT_SECRET: isProd
-    ? z.string().min(32, 'CITIZEN_JWT_SECRET minimal 32 karakter di produksi')
-    : z.string().min(16).default('dev-citizen-secret-only-not-for-prod-32ch'),
-  CRON_SECRET: isProd
-    ? z.string().min(16, 'CRON_SECRET wajib diisi di produksi')
-    : z.string().default('dev-cron-secret-local'),
-  IP_HASH_SALT: isProd
-    ? z.string().min(16, 'IP_HASH_SALT wajib diisi di produksi')
-    : z.string().default('dev-ip-hash-salt-local'),
+  NEXT_PUBLIC_APP_URL: z.string().default(
+    process.env.NODE_ENV === 'production'
+      ? 'https://korup-indo.vercel.app'
+      : 'http://localhost:3000'
+  ),
+  ADMIN_JWT_SECRET: z.string().optional(),
+  CITIZEN_JWT_SECRET: z.string().optional(),
+  CRON_SECRET: z.string().optional(),
+  IP_HASH_SALT: z
+    .string()
+    .optional()
+    .transform(
+      (v) => v?.trim() || process.env.VERCEL_PROJECT_ID || 'lki-anon-ip-salt-v2'
+    ),
   INITIAL_SUPERADMIN_USERNAME: z.string().default('superadmin'),
   INITIAL_SUPERADMIN_PASSWORD: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),

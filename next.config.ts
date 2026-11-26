@@ -19,6 +19,12 @@ const cspDirectives = [
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname),
+  outputFileTracingIncludes: {
+    '/api/**': ['./data/normalized/**/*'],
+    '/kasus/**': ['./data/normalized/**/*'],
+    '/tokoh/**': ['./data/normalized/**/*'],
+    '/sitemap.xml': ['./data/normalized/**/*'],
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '**' },

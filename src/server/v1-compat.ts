@@ -5,7 +5,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { and, asc, desc, eq, ilike, inArray, lt, or, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { db, schema } from '@/server/db';
-import { env } from '@/env';
+import { env, isDatabaseConfigured } from '@/env';
+import {
+  getStaticDataset,
+  PUBLIC_ANNOUNCEMENT_DEFAULT,
+  PUBLIC_DONATION_DEFAULT,
+} from '@/server/static-dataset';
 import {
   ADMIN_COOKIE_NAME,
   applyRateLimit,
@@ -74,6 +79,162 @@ function effectiveLoss(c: {
   return toNum(c.display_recovery_amount as string);
 }
 
+function getStaticLegacyRawRows() {
+  const ds = getStaticDataset();
+  const personById = new Map(ds.persons.map((p) => [p.id, p]));
+  const partyById = new Map(ds.parties.map((p) => [p.id, p]));
+  const compById = new Map(ds.companies.map((c) => [c.id, c]));
+
+  return {
+    rows: ds.cases.map((c) => ({
+      id: c.id,
+      slug: c.slug,
+      title: c.case_title,
+      case_number: c.case_number,
+      era_id: c.era_id,
+      era_name: c.era_name,
+      province_id: c.primary_province_id,
+      province_name: c.province_name,
+      sector_category: c.sector_category,
+      sector_label: c.sector_label,
+      case_date: c.case_date,
+      final_decision_date: c.final_decision_date,
+      current_legal_status: c.current_legal_status,
+      chronology: c.summary,
+      charges_articles: c.charges_articles,
+      display_loss_amount: String(c.display_loss_amount),
+      display_bribe_amount: String(c.display_bribe_amount),
+      display_recovery_amount: String(c.display_recovery_amount),
+      created_at: c.created_at,
+    })),
+    cpRows: ds.casePersons.map((cp) => {
+      const p = personById.get(cp.person_id);
+      return {
+        case_id: cp.case_id,
+        person_id: cp.person_id,
+        full_name: p?.full_name ?? '',
+        occupation: p?.occupation ?? null,
+        photo_url: p?.photo_url ?? null,
+        role_in_case: cp.role_in_case,
+      };
+    }),
+    partyRows: ds.partyMemberships.map((pm) => {
+      const pt = partyById.get(pm.party_id);
+      return {
+        person_id: pm.person_id,
+        party_id: pm.party_id,
+        party_name: pt?.name ?? 'Non-Partai',
+        party_at_offense: pm.party_at_offense,
+      };
+    }),
+    ccRows: ds.caseCompanies.map((cc) => ({
+      case_id: cc.case_id,
+      company_name: compById.get(cc.company_id)?.name ?? '',
+    })),
+    csRows: ds.caseSources.map((cs) => ({
+      case_id: cs.case_id,
+      source_id: cs.source_id,
+      source_title: cs.source_title,
+      source_url: cs.source_url,
+      source_institution: cs.source_institution,
+      publication_date: cs.publication_date,
+    })),
+    verRows: ds.verdicts.map((v) => ({
+      case_id: v.case_id,
+      decision_number: v.decision_number,
+      prison_sentence_months: v.prison_sentence_months,
+      fine_amount: String(v.fine_amount),
+      restitution_amount: String(v.restitution_amount),
+      is_final: v.is_final,
+    })),
+  };
+}
+
+async function fetchRawLegacyRows() {
+  if (!isDatabaseConfigured) return getStaticLegacyRawRows();
+  try {
+    const rows = await db
+      .select({
+        id: schema.cases.id,
+        slug: schema.cases.slug,
+        title: schema.cases.case_title,
+        case_number: schema.cases.case_number,
+        era_id: schema.cases.era_id,
+        era_name: schema.presidentialEras.name,
+        province_id: schema.cases.primary_province_id,
+        province_name: schema.provinces.name,
+        sector_category: schema.cases.sector_category,
+        sector_label: schema.cases.sector_label,
+        case_date: schema.cases.case_date,
+        final_decision_date: schema.cases.final_decision_date,
+        current_legal_status: schema.cases.current_legal_status,
+        chronology: schema.cases.summary,
+        charges_articles: schema.cases.charges_articles,
+        display_loss_amount: schema.cases.display_loss_amount,
+        display_bribe_amount: schema.cases.display_bribe_amount,
+        display_recovery_amount: schema.cases.display_recovery_amount,
+        created_at: schema.cases.created_at,
+      })
+      .from(schema.cases)
+      .leftJoin(schema.presidentialEras, eq(schema.cases.era_id, schema.presidentialEras.id))
+      .leftJoin(schema.provinces, eq(schema.cases.primary_province_id, schema.provinces.id));
+
+    const [cpRows, partyRows, ccRows, csRows, verRows] = await Promise.all([
+      db
+        .select({
+          case_id: schema.casePersons.case_id,
+          person_id: schema.persons.id,
+          full_name: schema.persons.full_name,
+          occupation: schema.persons.occupation,
+          photo_url: schema.persons.photo_url,
+          role_in_case: schema.casePersons.role_in_case,
+        })
+        .from(schema.casePersons)
+        .innerJoin(schema.persons, eq(schema.casePersons.person_id, schema.persons.id)),
+      db
+        .select({
+          person_id: schema.partyMemberships.person_id,
+          party_id: schema.parties.id,
+          party_name: schema.parties.name,
+          party_at_offense: schema.partyMemberships.party_at_offense,
+        })
+        .from(schema.partyMemberships)
+        .innerJoin(schema.parties, eq(schema.partyMemberships.party_id, schema.parties.id)),
+      db
+        .select({
+          case_id: schema.caseCompanies.case_id,
+          company_name: schema.companies.name,
+        })
+        .from(schema.caseCompanies)
+        .innerJoin(schema.companies, eq(schema.caseCompanies.company_id, schema.companies.id)),
+      db
+        .select({
+          case_id: schema.caseSources.case_id,
+          source_id: schema.sources.id,
+          source_title: schema.sources.source_title,
+          source_url: schema.sources.source_url,
+          source_institution: schema.sources.source_institution,
+          publication_date: schema.sources.publication_date,
+        })
+        .from(schema.caseSources)
+        .innerJoin(schema.sources, eq(schema.caseSources.source_id, schema.sources.id)),
+      db
+        .select({
+          case_id: schema.verdicts.case_id,
+          decision_number: schema.verdicts.decision_number,
+          prison_sentence_months: schema.verdicts.prison_sentence_months,
+          fine_amount: schema.verdicts.fine_amount,
+          restitution_amount: schema.verdicts.restitution_amount,
+          is_final: schema.verdicts.is_final,
+        })
+        .from(schema.verdicts),
+    ]);
+    return { rows, cpRows, partyRows, ccRows, csRows, verRows };
+  } catch {
+    return getStaticLegacyRawRows();
+  }
+}
+
 async function loadLegacyCases(filters?: {
   q?: string;
   province?: string;
@@ -85,82 +246,7 @@ async function loadLegacyCases(filters?: {
   page?: number;
   limit?: number;
 }) {
-  const rows = await db
-    .select({
-      id: schema.cases.id,
-      slug: schema.cases.slug,
-      title: schema.cases.case_title,
-      case_number: schema.cases.case_number,
-      era_id: schema.cases.era_id,
-      era_name: schema.presidentialEras.name,
-      province_id: schema.cases.primary_province_id,
-      province_name: schema.provinces.name,
-      sector_category: schema.cases.sector_category,
-      sector_label: schema.cases.sector_label,
-      case_date: schema.cases.case_date,
-      final_decision_date: schema.cases.final_decision_date,
-      current_legal_status: schema.cases.current_legal_status,
-      chronology: schema.cases.summary,
-      charges_articles: schema.cases.charges_articles,
-      display_loss_amount: schema.cases.display_loss_amount,
-      display_bribe_amount: schema.cases.display_bribe_amount,
-      display_recovery_amount: schema.cases.display_recovery_amount,
-      created_at: schema.cases.created_at,
-    })
-    .from(schema.cases)
-    .leftJoin(schema.presidentialEras, eq(schema.cases.era_id, schema.presidentialEras.id))
-    .leftJoin(schema.provinces, eq(schema.cases.primary_province_id, schema.provinces.id));
-
-  const [cpRows, partyRows, ccRows, csRows, verRows] = await Promise.all([
-    db
-      .select({
-        case_id: schema.casePersons.case_id,
-        person_id: schema.persons.id,
-        full_name: schema.persons.full_name,
-        occupation: schema.persons.occupation,
-        photo_url: schema.persons.photo_url,
-        role_in_case: schema.casePersons.role_in_case,
-      })
-      .from(schema.casePersons)
-      .innerJoin(schema.persons, eq(schema.casePersons.person_id, schema.persons.id)),
-    db
-      .select({
-        person_id: schema.partyMemberships.person_id,
-        party_id: schema.parties.id,
-        party_name: schema.parties.name,
-        party_at_offense: schema.partyMemberships.party_at_offense,
-      })
-      .from(schema.partyMemberships)
-      .innerJoin(schema.parties, eq(schema.partyMemberships.party_id, schema.parties.id)),
-    db
-      .select({
-        case_id: schema.caseCompanies.case_id,
-        company_name: schema.companies.name,
-      })
-      .from(schema.caseCompanies)
-      .innerJoin(schema.companies, eq(schema.caseCompanies.company_id, schema.companies.id)),
-    db
-      .select({
-        case_id: schema.caseSources.case_id,
-        source_id: schema.sources.id,
-        source_title: schema.sources.source_title,
-        source_url: schema.sources.source_url,
-        source_institution: schema.sources.source_institution,
-        publication_date: schema.sources.publication_date,
-      })
-      .from(schema.caseSources)
-      .innerJoin(schema.sources, eq(schema.caseSources.source_id, schema.sources.id)),
-    db
-      .select({
-        case_id: schema.verdicts.case_id,
-        decision_number: schema.verdicts.decision_number,
-        prison_sentence_months: schema.verdicts.prison_sentence_months,
-        fine_amount: schema.verdicts.fine_amount,
-        restitution_amount: schema.verdicts.restitution_amount,
-        is_final: schema.verdicts.is_final,
-      })
-      .from(schema.verdicts),
-  ]);
+  const { rows, cpRows, partyRows, ccRows, csRows, verRows } = await fetchRawLegacyRows();
 
   const partyByPerson = new Map<string, { party_id: string; party_name: string }>();
   for (const pr of partyRows) {
@@ -365,6 +451,40 @@ function sanitizeCsvCell(val: unknown): string {
   return `"${str.replace(/"/g, '""')}"`;
 }
 
+async function getProvincesFallback() {
+  if (!isDatabaseConfigured) return getStaticDataset().provinces;
+  try {
+    return await db.select().from(schema.provinces);
+  } catch {
+    return getStaticDataset().provinces;
+  }
+}
+
+async function getPartiesFallback() {
+  if (!isDatabaseConfigured) return getStaticDataset().parties;
+  try {
+    return await db.select().from(schema.parties);
+  } catch {
+    return getStaticDataset().parties;
+  }
+}
+
+async function getErasFallback() {
+  if (!isDatabaseConfigured) return getStaticDataset().eras;
+  try {
+    return await db.select().from(schema.presidentialEras).orderBy(asc(schema.presidentialEras.sort_order));
+  } catch {
+    return getStaticDataset().eras;
+  }
+}
+
+function dbUnavailableResponse() {
+  return NextResponse.json(
+    { error: 'Database PostgreSQL produksi (DATABASE_URL) belum dihubungkan pada environment Vercel.' },
+    { status: 503 }
+  );
+}
+
 export async function handleLegacyApi(req: NextRequest, segments: string[]): Promise<NextResponse> {
   const method = req.method.toUpperCase();
   const routePath = segments.join('/');
@@ -399,8 +519,10 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
 
     // 2. /api/regions/summary, /api/provinces, /api/provinces/summary, /api/provinces/:identifier
     if (method === 'GET' && (routePath === 'regions/summary' || routePath === 'provinces/summary')) {
-      const { allItems } = await loadLegacyCases({ limit: 100 });
-      const provs = await db.select().from(schema.provinces);
+      const [{ allItems }, provs] = await Promise.all([
+        loadLegacyCases({ limit: 100 }),
+        getProvincesFallback(),
+      ]);
       const agg = new Map<string, { count: number; loss: number }>();
       for (const c of allItems) {
         const cur = agg.get(c.province_id) ?? { count: 0, loss: 0 };
@@ -420,8 +542,10 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
     }
 
     if (method === 'GET' && routePath === 'provinces') {
-      const { allItems } = await loadLegacyCases({ era: sp.get('era') ?? undefined, limit: 100 });
-      const provs = await db.select().from(schema.provinces);
+      const [{ allItems }, provs] = await Promise.all([
+        loadLegacyCases({ era: sp.get('era') ?? undefined, limit: 100 }),
+        getProvincesFallback(),
+      ]);
       const agg = new Map<string, { count: number; loss: number }>();
       for (const c of allItems) {
         const cur = agg.get(c.province_id) ?? { count: 0, loss: 0 };
@@ -449,7 +573,8 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
     if (method === 'GET' && segments[0] === 'provinces' && segments.length >= 2) {
       const identifier = decodeURIComponent(segments[1]);
       const provId = resolveProvinceId(identifier);
-      const [prov] = await db.select().from(schema.provinces).where(eq(schema.provinces.id, provId)).limit(1);
+      const provs = await getProvincesFallback();
+      const prov = provs.find((p) => p.id === provId);
       if (!prov) return NextResponse.json({ error: `Provinsi '${identifier}' tidak ditemukan.` }, { status: 404 });
       const { allItems } = await loadLegacyCases({ limit: 100 });
       const casesList = allItems.filter((c) => c.province_id === prov.id).sort((a, b) => b.loss_amount - a.loss_amount);
@@ -498,8 +623,10 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
     }
 
     if (method === 'GET' && routePath === 'parties') {
-      const partiesList = await db.select().from(schema.parties);
-      const { allItems } = await loadLegacyCases({ limit: 100 });
+      const [partiesList, { allItems }] = await Promise.all([
+        getPartiesFallback(),
+        loadLegacyCases({ limit: 100 }),
+      ]);
       const agg = new Map<string, { cases: number; loss: number }>();
       for (const c of allItems) {
         const cur = agg.get(c.party_id) ?? { cases: 0, loss: 0 };
@@ -519,7 +646,7 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
     }
 
     if (method === 'GET' && routePath === 'eras') {
-      const eras = await db.select().from(schema.presidentialEras).orderBy(asc(schema.presidentialEras.sort_order));
+      const eras = await getErasFallback();
       return NextResponse.json(eras);
     }
 
@@ -624,7 +751,16 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
         'Partai Keadilan Sejahtera (PKS)': '#D97706',
         'Non-Partai': '#78716C',
       };
-      const companiesRows = await db.select().from(schema.companies).limit(5);
+      let companiesRows: Array<{ name: string; business_sector: string | null }> = [];
+      if (isDatabaseConfigured) {
+        try {
+          companiesRows = await db.select({ name: schema.companies.name, business_sector: schema.companies.business_sector }).from(schema.companies).limit(5);
+        } catch {
+          companiesRows = getStaticDataset().companies.slice(0, 5);
+        }
+      } else {
+        companiesRows = getStaticDataset().companies.slice(0, 5);
+      }
       return NextResponse.json({
         total_kasus_nasional: allItems.length,
         total_kasus: allItems.length,
@@ -657,32 +793,23 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
 
     // 5. /api/settings/announcement & /api/settings/donation
     if (method === 'GET' && routePath === 'settings/announcement') {
-      const [row] = await db.select().from(schema.siteSettings).where(eq(schema.siteSettings.key, 'announcement')).limit(1);
-      return NextResponse.json(
-        row?.value ?? {
-          title: '⚖️ PEMBERITAHUAN ASAS HUKUM & SUMBER RESMI:',
-          badge: 'Wajib Dibaca',
-          main_text:
-            'Data bersumber dari putusan pengadilan & pemberitaan media yang tercantum. Setiap orang berhak atas asas praduga tak bersalah hingga ada putusan berkekuatan hukum tetap.',
-          sub_text:
-            'Setiap data diverifikasi dengan tautan resmi direktori putusan Mahkamah Agung RI, KPK.go.id, atau media nasional kredibel.',
-          is_active: true,
-        }
-      );
+      if (!isDatabaseConfigured) return NextResponse.json(PUBLIC_ANNOUNCEMENT_DEFAULT);
+      try {
+        const [row] = await db.select().from(schema.siteSettings).where(eq(schema.siteSettings.key, 'announcement')).limit(1);
+        return NextResponse.json(row?.value ?? PUBLIC_ANNOUNCEMENT_DEFAULT);
+      } catch {
+        return NextResponse.json(PUBLIC_ANNOUNCEMENT_DEFAULT);
+      }
     }
 
     if (method === 'GET' && routePath === 'settings/donation') {
-      const [row] = await db.select().from(schema.siteSettings).where(eq(schema.siteSettings.key, 'donation')).limit(1);
-      return NextResponse.json(
-        row?.value ?? {
-          title: '☕ Dukung Independensi & Operasional LKI',
-          description: 'Bantu operasional server, infrastruktur pangkalan data, dan verifikasi berkas direktori putusan peradilan.',
-          qris_image_url: '',
-          account_name: 'Pengelola Liga Korupsi Indonesia',
-          bank_info: 'Dukungan dapat discan melalui aplikasi Mobile Banking & E-Wallet.',
-          is_active: true,
-        }
-      );
+      if (!isDatabaseConfigured) return NextResponse.json(PUBLIC_DONATION_DEFAULT);
+      try {
+        const [row] = await db.select().from(schema.siteSettings).where(eq(schema.siteSettings.key, 'donation')).limit(1);
+        return NextResponse.json(row?.value ?? PUBLIC_DONATION_DEFAULT);
+      } catch {
+        return NextResponse.json(PUBLIC_DONATION_DEFAULT);
+      }
     }
 
     // 6. /api/export & /api/export/catalog
@@ -704,7 +831,7 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
           status: c.status_hukum,
         }));
       } else if (type === 'provinces') {
-        const provs = await db.select().from(schema.provinces);
+        const provs = await getProvincesFallback();
         rows = provs.map((p) => ({
           id: p.id,
           provinsi: p.name,
@@ -713,7 +840,7 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
           total_kerugian_idr: toNum(p.cached_total_loss),
         }));
       } else if (type === 'parties') {
-        const partiesList = await db.select().from(schema.parties);
+        const partiesList = await getPartiesFallback();
         rows = partiesList.map((p) => ({ id: p.id, partai: p.name, singkatan: p.abbreviation }));
       } else {
         rows = allItems.map((c) => ({
@@ -750,25 +877,39 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
     if (segments[0] === 'reactions' && segments[1] === 'case' && segments[2]) {
       const caseId = decodeURIComponent(segments[2]);
       if (method === 'GET') {
-        const [rows, citizen] = await Promise.all([
-          db.select({ reaction_type: schema.caseReactions.reaction_type }).from(schema.caseReactions).where(eq(schema.caseReactions.case_id, caseId)),
-          getCitizenSession(),
-        ]);
-        let userReaction: string | null = null;
-        if (citizen) {
-          const [uRow] = await db
-            .select({ reaction_type: schema.caseReactions.reaction_type })
-            .from(schema.caseReactions)
-            .where(and(eq(schema.caseReactions.case_id, caseId), eq(schema.caseReactions.user_id, citizen.id)))
-            .limit(1);
-          userReaction = uRow?.reaction_type ?? null;
+        if (!isDatabaseConfigured) {
+          return NextResponse.json({
+            status: 'success',
+            data: { ...computeSentiment([]), userReaction: null, definitions: REACTION_DEFINITIONS },
+          });
         }
-        return NextResponse.json({
-          status: 'success',
-          data: { ...computeSentiment(rows), userReaction, definitions: REACTION_DEFINITIONS },
-        });
+        try {
+          const [rows, citizen] = await Promise.all([
+            db.select({ reaction_type: schema.caseReactions.reaction_type }).from(schema.caseReactions).where(eq(schema.caseReactions.case_id, caseId)),
+            getCitizenSession(),
+          ]);
+          let userReaction: string | null = null;
+          if (citizen) {
+            const [uRow] = await db
+              .select({ reaction_type: schema.caseReactions.reaction_type })
+              .from(schema.caseReactions)
+              .where(and(eq(schema.caseReactions.case_id, caseId), eq(schema.caseReactions.user_id, citizen.id)))
+              .limit(1);
+            userReaction = uRow?.reaction_type ?? null;
+          }
+          return NextResponse.json({
+            status: 'success',
+            data: { ...computeSentiment(rows), userReaction, definitions: REACTION_DEFINITIONS },
+          });
+        } catch {
+          return NextResponse.json({
+            status: 'success',
+            data: { ...computeSentiment([]), userReaction: null, definitions: REACTION_DEFINITIONS },
+          });
+        }
       }
       if (method === 'POST') {
+        if (!isDatabaseConfigured) return dbUnavailableResponse();
         const citizen = await getCitizenSession();
         if (!citizen) return NextResponse.json({ error: 'Silakan masuk sebagai warga terlebih dahulu.' }, { status: 401 });
         const body = await req.json().catch(() => ({}));
@@ -813,64 +954,72 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
     if (segments[0] === 'comments' && segments[1] === 'case' && segments[2]) {
       const caseId = decodeURIComponent(segments[2]);
       if (method === 'GET') {
+        if (!isDatabaseConfigured) {
+          return NextResponse.json({ status: 'success', total: 0, data: [] });
+        }
         const sort = sp.get('sort') || 'newest';
         const filter = sp.get('filter') || 'all';
-        const [rows, citizen] = await Promise.all([
-          db
-            .select({
-              id: schema.caseComments.id,
-              case_id: schema.caseComments.case_id,
-              content: schema.caseComments.content,
-              reaction_type: schema.caseComments.reaction_type,
-              upvotes_count: schema.caseComments.upvotes_count,
-              created_at: schema.caseComments.created_at,
-              user: {
-                id: schema.citizenUsers.id,
-                username: schema.citizenUsers.username,
-                display_name: schema.citizenUsers.display_name,
-                photo_url: schema.citizenUsers.photo_url,
-                origin_province: schema.citizenUsers.origin_province,
-                origin_city: schema.citizenUsers.origin_city,
-                avatar_seed: schema.citizenUsers.avatar_seed,
-              },
-            })
-            .from(schema.caseComments)
-            .innerJoin(schema.citizenUsers, eq(schema.caseComments.user_id, schema.citizenUsers.id))
-            .where(and(eq(schema.caseComments.case_id, caseId), eq(schema.caseComments.is_hidden, false)))
-            .orderBy(sort === 'popular' ? desc(schema.caseComments.upvotes_count) : desc(schema.caseComments.created_at)),
-          getCitizenSession(),
-        ]);
+        try {
+          const [rows, citizen] = await Promise.all([
+            db
+              .select({
+                id: schema.caseComments.id,
+                case_id: schema.caseComments.case_id,
+                content: schema.caseComments.content,
+                reaction_type: schema.caseComments.reaction_type,
+                upvotes_count: schema.caseComments.upvotes_count,
+                created_at: schema.caseComments.created_at,
+                user: {
+                  id: schema.citizenUsers.id,
+                  username: schema.citizenUsers.username,
+                  display_name: schema.citizenUsers.display_name,
+                  photo_url: schema.citizenUsers.photo_url,
+                  origin_province: schema.citizenUsers.origin_province,
+                  origin_city: schema.citizenUsers.origin_city,
+                  avatar_seed: schema.citizenUsers.avatar_seed,
+                },
+              })
+              .from(schema.caseComments)
+              .innerJoin(schema.citizenUsers, eq(schema.caseComments.user_id, schema.citizenUsers.id))
+              .where(and(eq(schema.caseComments.case_id, caseId), eq(schema.caseComments.is_hidden, false)))
+              .orderBy(sort === 'popular' ? desc(schema.caseComments.upvotes_count) : desc(schema.caseComments.created_at)),
+            getCitizenSession(),
+          ]);
 
-        let filtered = rows;
-        if (filter === 'pemakluman') {
-          filtered = rows.filter((c) => c.reaction_type && ['didukung', 'khilaf_administrasi', 'dimaklumi'].includes(c.reaction_type));
-        } else if (filter === 'kecaman') {
-          filtered = rows.filter((c) => c.reaction_type && ['geram', 'rampok', 'memalukan'].includes(c.reaction_type));
-        } else if (filter === 'skeptis') {
-          filtered = rows.filter((c) => c.reaction_type && ['tebang_pilih', 'kawal_sidang'].includes(c.reaction_type));
-        }
+          let filtered = rows;
+          if (filter === 'pemakluman') {
+            filtered = rows.filter((c) => c.reaction_type && ['didukung', 'khilaf_administrasi', 'dimaklumi'].includes(c.reaction_type));
+          } else if (filter === 'kecaman') {
+            filtered = rows.filter((c) => c.reaction_type && ['geram', 'rampok', 'memalukan'].includes(c.reaction_type));
+          } else if (filter === 'skeptis') {
+            filtered = rows.filter((c) => c.reaction_type && ['tebang_pilih', 'kawal_sidang'].includes(c.reaction_type));
+          }
 
-        let upvotedSet = new Set<string>();
-        if (citizen && filtered.length > 0) {
-          const ups = await db
-            .select({ comment_id: schema.commentUpvotes.comment_id })
-            .from(schema.commentUpvotes)
-            .where(and(eq(schema.commentUpvotes.user_id, citizen.id), inArray(schema.commentUpvotes.comment_id, filtered.map((f) => f.id))));
-          upvotedSet = new Set(ups.map((u) => u.comment_id));
+          let upvotedSet = new Set<string>();
+          if (citizen && filtered.length > 0) {
+            const ups = await db
+              .select({ comment_id: schema.commentUpvotes.comment_id })
+              .from(schema.commentUpvotes)
+              .where(and(eq(schema.commentUpvotes.user_id, citizen.id), inArray(schema.commentUpvotes.comment_id, filtered.map((f) => f.id))));
+            upvotedSet = new Set(ups.map((u) => u.comment_id));
+          }
+          return NextResponse.json({
+            status: 'success',
+            total: filtered.length,
+            data: filtered.map((c) => ({
+              ...c,
+              user: { ...c.user, role: 'citizen' },
+              reaction_info: c.reaction_type ? (REACTION_DEFINITIONS as any)[c.reaction_type] ?? null : null,
+              is_upvoted: upvotedSet.has(c.id),
+            })),
+          });
+        } catch {
+          return NextResponse.json({ status: 'success', total: 0, data: [] });
         }
-        return NextResponse.json({
-          status: 'success',
-          total: filtered.length,
-          data: filtered.map((c) => ({
-            ...c,
-            user: { ...c.user, role: 'citizen' },
-            reaction_info: c.reaction_type ? (REACTION_DEFINITIONS as any)[c.reaction_type] ?? null : null,
-            is_upvoted: upvotedSet.has(c.id),
-          })),
-        });
       }
 
       if (method === 'POST') {
+        if (!isDatabaseConfigured) return dbUnavailableResponse();
         const citizen = await getCitizenSession();
         if (!citizen) return NextResponse.json({ error: 'Silakan masuk sebagai warga terlebih dahulu.' }, { status: 401 });
         const body = await req.json().catch(() => ({}));
@@ -891,6 +1040,7 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
     }
 
     if (method === 'POST' && segments[0] === 'comments' && segments[2] === 'upvote') {
+      if (!isDatabaseConfigured) return dbUnavailableResponse();
       const citizen = await getCitizenSession();
       if (!citizen) return NextResponse.json({ error: 'Silakan masuk sebagai warga terlebih dahulu.' }, { status: 401 });
       const commentId = decodeURIComponent(segments[1]);
@@ -914,6 +1064,7 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
 
     // 9. Public Reports (/api/reports & /api/reports/status/:ticketId)
     if (method === 'POST' && routePath === 'reports') {
+      if (!isDatabaseConfigured) return dbUnavailableResponse();
       const limited = await applyRateLimit(req, 'write_citizen', 15, 900);
       if (limited) return limited;
       const body = await req.json().catch(() => ({}));
@@ -944,6 +1095,7 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
     }
 
     if (method === 'GET' && segments[0] === 'reports' && segments[1] === 'status' && segments[2]) {
+      if (!isDatabaseConfigured) return dbUnavailableResponse();
       const ticketId = decodeURIComponent(segments[2]).trim().toUpperCase();
       const [row] = await db
         .select({
@@ -973,6 +1125,9 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
     // 10. Citizen Auth (/api/auth/citizen/*)
     if (segments[0] === 'auth' && segments[1] === 'citizen') {
       const action = segments[2];
+      if (!isDatabaseConfigured && action !== 'me') {
+        return dbUnavailableResponse();
+      }
       if (method === 'POST' && action === 'register') {
         const body = await req.json().catch(() => ({}));
         const username = String(body.username || '').trim().toLowerCase();
@@ -1201,6 +1356,7 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
 
     // 11. Monitoring track (public pageview beacon)
     if (method === 'POST' && routePath === 'admin/monitoring/track') {
+      if (!isDatabaseConfigured) return NextResponse.json({ ok: true });
       const body = await req.json().catch(() => ({}));
       const ip = await getClientIp();
       await db
@@ -1221,6 +1377,7 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
 
     // 12. Admin Login (/api/admin/login)
     if (method === 'POST' && routePath === 'admin/login') {
+      if (!isDatabaseConfigured) return dbUnavailableResponse();
       const limited = await applyRateLimit(req, 'auth_strict', 10, 900);
       if (limited) return limited;
       const body = await req.json().catch(() => ({}));
@@ -1261,6 +1418,7 @@ export async function handleLegacyApi(req: NextRequest, segments: string[]): Pro
       if (error || !session) {
         return NextResponse.json({ error: 'Sesi admin diperlukan.' }, { status: 401 });
       }
+      if (!isDatabaseConfigured) return dbUnavailableResponse();
       const ipHash = hashIp(await getClientIp());
 
       if (method === 'GET' && routePath === 'admin/cases') {

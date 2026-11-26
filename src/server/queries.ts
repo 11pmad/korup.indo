@@ -1,6 +1,21 @@
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { isDatabaseConfigured } from '@/env';
 import { db, schema } from '@/server/db';
 import { isInkrahStatus, toNum } from '@/lib/formatters';
+import {
+  getStaticDataset,
+  PUBLIC_ANNOUNCEMENT_DEFAULT,
+  PUBLIC_DONATION_DEFAULT,
+} from '@/server/static-dataset';
+
+async function withDbFallback<T>(dbFn: () => Promise<T>, staticFn: () => T): Promise<T> {
+  if (!isDatabaseConfigured) return staticFn();
+  try {
+    return await dbFn();
+  } catch {
+    return staticFn();
+  }
+}
 
 export interface CaseFilterParams {
   q?: string;
@@ -15,6 +30,74 @@ export interface CaseFilterParams {
 }
 
 export async function queryCases(params: CaseFilterParams = {}) {
+  const staticQueryCases = () => {
+    const ds = getStaticDataset();
+    const page = Math.max(1, params.page ?? 1);
+    const limit = Math.min(100, Math.max(1, params.limit ?? 20));
+    const offset = (page - 1) * limit;
+
+    const personById = new Map(ds.persons.map((p) => [p.id, p]));
+    const companyById = new Map(ds.companies.map((c) => [c.id, c]));
+
+    let filtered = ds.cases.filter((c) => {
+      if (params.province && params.province !== 'all' && c.primary_province_id !== params.province) return false;
+      if (params.era && params.era !== 'all' && c.era_id !== params.era) return false;
+      if (params.status && params.status !== 'all' && c.current_legal_status !== params.status) return false;
+      if (params.sector && params.sector !== 'all' && c.sector_category !== params.sector) return false;
+      if (params.q && params.q.trim()) {
+        const term = params.q.trim().toLowerCase();
+        const inCase =
+          c.case_title.toLowerCase().includes(term) ||
+          c.summary.toLowerCase().includes(term) ||
+          (c.case_number || '').toLowerCase().includes(term);
+        const inPersons = ds.casePersons.some(
+          (cp) => cp.case_id === c.id && personById.get(cp.person_id)?.full_name.toLowerCase().includes(term)
+        );
+        const inCompanies = ds.caseCompanies.some(
+          (cc) => cc.case_id === c.id && companyById.get(cc.company_id)?.name.toLowerCase().includes(term)
+        );
+        if (!inCase && !inPersons && !inCompanies) return false;
+      }
+      return true;
+    });
+
+    const ascDir = params.order === 'asc' ? 1 : -1;
+    filtered = filtered.slice().sort((a, b) => {
+      let cmp = 0;
+      if (params.sort === 'date') cmp = (a.case_date || '').localeCompare(b.case_date || '');
+      else if (params.sort === 'title') cmp = a.case_title.localeCompare(b.case_title, 'id');
+      else cmp = a.display_loss_amount - b.display_loss_amount;
+      if (cmp !== 0) return cmp * ascDir;
+      return (b.case_date || '').localeCompare(a.case_date || '');
+    });
+
+    const total = filtered.length;
+    const paged = filtered.slice(offset, offset + limit);
+
+    return {
+      items: paged.map((c) => ({
+        ...c,
+        persons: ds.casePersons
+          .filter((cp) => cp.case_id === c.id)
+          .map((cp) => {
+            const per = personById.get(cp.person_id);
+            return {
+              id: per?.id ?? cp.person_id,
+              slug: per?.slug ?? cp.person_id,
+              full_name: per?.full_name ?? '',
+              role_in_case: cp.role_in_case,
+              legal_status: cp.legal_status,
+            };
+          }),
+      })),
+      total,
+      page,
+      limit,
+      total_pages: Math.max(1, Math.ceil(total / limit)),
+    };
+  };
+
+  return withDbFallback(async () => {
   const page = Math.max(1, params.page ?? 1);
   const limit = Math.min(100, Math.max(1, params.limit ?? 20));
   const offset = (page - 1) * limit;
@@ -142,9 +225,11 @@ export async function queryCases(params: CaseFilterParams = {}) {
     limit,
     total_pages: Math.max(1, Math.ceil((countRow?.total ?? 0) / limit)),
   };
+  }, staticQueryCases);
 }
 
 export async function queryCaseDetailBySlugOrId(slugOrId: string) {
+  return withDbFallback(async () => {
   const [caseRow] = await db
     .select({
       id: schema.cases.id,
@@ -322,6 +407,97 @@ export async function queryCaseDetailBySlugOrId(slugOrId: string) {
     sources: sourceRows,
     reactions: reactionRows,
   };
+  }, () => {
+    const ds = getStaticDataset();
+    const caseRow = ds.cases.find((c) => c.slug === slugOrId || c.id === slugOrId);
+    if (!caseRow) return null;
+    const personById = new Map(ds.persons.map((p) => [p.id, p]));
+    const companyById = new Map(ds.companies.map((c) => [c.id, c]));
+
+    return {
+      ...caseRow,
+      verification_status: caseRow.verification_status as any,
+      confidence_level: caseRow.confidence_level,
+      needs_manual_review: caseRow.needs_manual_review,
+      verification_note: caseRow.verification_note,
+      display_loss_amount: caseRow.display_loss_amount,
+      display_loss_basis: caseRow.display_loss_basis,
+      display_bribe_amount: caseRow.display_bribe_amount,
+      display_recovery_amount: caseRow.display_recovery_amount,
+      updated_at: caseRow.updated_at,
+      persons: ds.casePersons
+        .filter((cp) => cp.case_id === caseRow.id)
+        .map((cp) => {
+          const p = personById.get(cp.person_id);
+          return {
+            id: p?.id ?? cp.person_id,
+            slug: p?.slug ?? cp.person_id,
+            full_name: p?.full_name ?? '',
+            occupation: p?.occupation ?? null,
+            photo_url: p?.photo_url ?? null,
+            role_in_case: cp.role_in_case,
+            legal_status: cp.legal_status,
+            offense_role: cp.offense_role,
+          };
+        }),
+      financial_records: ds.financialRecords
+        .filter((f) => f.case_id === caseRow.id)
+        .map((f) => ({
+          id: f.id,
+          financial_type: f.financial_type as any,
+          amount: f.amount,
+          currency: f.currency,
+          financial_year: f.financial_year,
+          financial_description: f.financial_description ?? '',
+          fact_classification: (f.fact_classification ?? 'UNVERIFIED') as any,
+          source_page: f.source_page,
+          source_title: f.source_title,
+          source_url: f.source_url,
+        })),
+      verdicts: ds.verdicts
+        .filter((v) => v.case_id === caseRow.id)
+        .sort((a, b) => (a.decision_date || '').localeCompare(b.decision_date || ''))
+        .map((v) => ({
+          ...v,
+          court_level: v.court_level as any,
+          person_name: personById.get(v.person_id)?.full_name ?? '',
+        })),
+      timeline_events: ds.timelineEvents
+        .filter((t) => t.case_id === caseRow.id)
+        .sort((a, b) => (a.event_date || '').localeCompare(b.event_date || '')),
+      companies: ds.caseCompanies
+        .filter((cc) => cc.case_id === caseRow.id)
+        .map((cc) => {
+          const comp = companyById.get(cc.company_id);
+          return {
+            id: comp?.id ?? cc.company_id,
+            slug: comp?.slug ?? cc.company_id,
+            name: comp?.name ?? '',
+            company_type: comp?.company_type ?? '',
+            industry: comp?.industry ?? '',
+            beneficial_owner: comp?.beneficial_owner ?? null,
+            company_role_in_case: cc.company_role_in_case ?? '',
+            transaction_value: cc.transaction_value,
+            contract_value: cc.contract_value,
+            company_case_status: cc.company_case_status ?? '',
+          };
+        }),
+      sources: ds.caseSources
+        .filter((cs) => cs.case_id === caseRow.id)
+        .map((s) => ({
+          id: s.id,
+          source_title: s.source_title,
+          source_url: s.source_url,
+          source_type: s.source_type as any,
+          source_institution: s.source_institution,
+          publication_date: s.publication_date,
+          source_page: s.source_page,
+          source_excerpt: s.source_excerpt ?? '',
+          source_reliability: s.source_reliability,
+        })),
+      reactions: [] as Array<{ reaction_type: any; count: number }>,
+    };
+  });
 }
 
 export async function queryOfficialsLeaderboard(params: {
@@ -334,45 +510,139 @@ export async function queryOfficialsLeaderboard(params: {
   page?: number;
   limit?: number;
 } = {}) {
+  const staticQueryOfficials = () => {
+    const ds = getStaticDataset();
+    const caseById = new Map(ds.cases.map((c) => [c.id, c]));
+    const personById = new Map(ds.persons.map((p) => [p.id, p]));
+    const allCases = ds.casePersons
+      .map((cp) => {
+        const c = caseById.get(cp.case_id);
+        const p = personById.get(cp.person_id);
+        if (!c || !p) return null;
+        return {
+          case_id: c.id,
+          case_slug: c.slug,
+          case_title: c.case_title,
+          era_id: c.era_id,
+          province_id: c.primary_province_id,
+          province_name: c.province_name,
+          current_legal_status: c.current_legal_status,
+          display_loss_amount: String(c.display_loss_amount),
+          display_bribe_amount: String(c.display_bribe_amount),
+          case_date: c.case_date,
+          person_id: p.id,
+          person_slug: p.slug,
+          full_name: p.full_name,
+          occupation: p.occupation,
+          photo_url: p.photo_url,
+          role_in_case: cp.role_in_case,
+          person_legal_status: cp.legal_status,
+        };
+      })
+      .filter((x): x is NonNullable<typeof x> => Boolean(x));
+
+    const partyById = new Map(ds.parties.map((pt) => [pt.id, pt]));
+    const partyRows = ds.partyMemberships
+      .map((pm) => {
+        const pt = partyById.get(pm.party_id);
+        if (!pt) return null;
+        return {
+          person_id: pm.person_id,
+          party_id: pt.id,
+          party_name: pt.name,
+          party_abbr: pt.abbreviation,
+          party_color: pt.color_hex,
+          party_at_offense: pm.party_at_offense,
+        };
+      })
+      .filter((x): x is NonNullable<typeof x> => Boolean(x));
+
+    return buildOfficialsLeaderboardResult(allCases, partyRows, params);
+  };
+
+  return withDbFallback(async () => {
+    const allCases = await db
+      .select({
+        case_id: schema.cases.id,
+        case_slug: schema.cases.slug,
+        case_title: schema.cases.case_title,
+        era_id: schema.cases.era_id,
+        province_id: schema.cases.primary_province_id,
+        province_name: schema.provinces.name,
+        current_legal_status: schema.cases.current_legal_status,
+        display_loss_amount: schema.cases.display_loss_amount,
+        display_bribe_amount: schema.cases.display_bribe_amount,
+        case_date: schema.cases.case_date,
+        person_id: schema.persons.id,
+        person_slug: schema.persons.slug,
+        full_name: schema.persons.full_name,
+        occupation: schema.persons.occupation,
+        photo_url: schema.persons.photo_url,
+        role_in_case: schema.casePersons.role_in_case,
+        person_legal_status: schema.casePersons.legal_status,
+      })
+      .from(schema.casePersons)
+      .innerJoin(schema.cases, eq(schema.casePersons.case_id, schema.cases.id))
+      .innerJoin(schema.persons, eq(schema.casePersons.person_id, schema.persons.id))
+      .leftJoin(schema.provinces, eq(schema.cases.primary_province_id, schema.provinces.id));
+
+    const partyRows = await db
+      .select({
+        person_id: schema.partyMemberships.person_id,
+        party_id: schema.parties.id,
+        party_name: schema.parties.name,
+        party_abbr: schema.parties.abbreviation,
+        party_color: schema.parties.color_hex,
+        party_at_offense: schema.partyMemberships.party_at_offense,
+      })
+      .from(schema.partyMemberships)
+      .innerJoin(schema.parties, eq(schema.partyMemberships.party_id, schema.parties.id));
+
+    return buildOfficialsLeaderboardResult(allCases, partyRows, params);
+  }, staticQueryOfficials);
+}
+
+function buildOfficialsLeaderboardResult(
+  allCases: Array<{
+    case_id: string;
+    case_slug: string;
+    case_title: string;
+    era_id: string;
+    province_id: string;
+    province_name: string | null;
+    current_legal_status: string;
+    display_loss_amount: unknown;
+    display_bribe_amount: unknown;
+    case_date: string | null;
+    person_id: string;
+    person_slug: string;
+    full_name: string;
+    occupation: string | null;
+    photo_url: string | null;
+    role_in_case: string;
+    person_legal_status: string;
+  }>,
+  partyRows: Array<{
+    person_id: string;
+    party_id: string;
+    party_name: string;
+    party_abbr: string;
+    party_color: string;
+    party_at_offense: boolean;
+  }>,
+  params: {
+    era?: string;
+    province?: string;
+    party?: string;
+    status?: string;
+    q?: string;
+    sort?: 'loss' | 'cases' | 'name';
+    page?: number;
+    limit?: number;
+  }
+) {
   const page = Math.max(1, params.page ?? 1);
   const limit = Math.min(100, Math.max(1, params.limit ?? 20));
-
-  const allCases = await db
-    .select({
-      case_id: schema.cases.id,
-      case_slug: schema.cases.slug,
-      case_title: schema.cases.case_title,
-      era_id: schema.cases.era_id,
-      province_id: schema.cases.primary_province_id,
-      province_name: schema.provinces.name,
-      current_legal_status: schema.cases.current_legal_status,
-      display_loss_amount: schema.cases.display_loss_amount,
-      display_bribe_amount: schema.cases.display_bribe_amount,
-      case_date: schema.cases.case_date,
-      person_id: schema.persons.id,
-      person_slug: schema.persons.slug,
-      full_name: schema.persons.full_name,
-      occupation: schema.persons.occupation,
-      photo_url: schema.persons.photo_url,
-      role_in_case: schema.casePersons.role_in_case,
-      person_legal_status: schema.casePersons.legal_status,
-    })
-    .from(schema.casePersons)
-    .innerJoin(schema.cases, eq(schema.casePersons.case_id, schema.cases.id))
-    .innerJoin(schema.persons, eq(schema.casePersons.person_id, schema.persons.id))
-    .leftJoin(schema.provinces, eq(schema.cases.primary_province_id, schema.provinces.id));
-
-  const partyRows = await db
-    .select({
-      person_id: schema.partyMemberships.person_id,
-      party_id: schema.parties.id,
-      party_name: schema.parties.name,
-      party_abbr: schema.parties.abbreviation,
-      party_color: schema.parties.color_hex,
-      party_at_offense: schema.partyMemberships.party_at_offense,
-    })
-    .from(schema.partyMemberships)
-    .innerJoin(schema.parties, eq(schema.partyMemberships.party_id, schema.parties.id));
 
   const partyByPerson = new Map<string, { id: string; name: string; abbr: string; color: string }>();
   for (const pr of partyRows) {
@@ -427,8 +697,8 @@ export async function queryOfficialsLeaderboard(params: {
       }
     }
 
-    const loss = toNum(row.display_loss_amount);
-    const bribe = toNum(row.display_bribe_amount);
+    const loss = toNum(row.display_loss_amount as string);
+    const bribe = toNum(row.display_bribe_amount as string);
     const yr = row.case_date ? parseInt(row.case_date.slice(0, 4), 10) || 0 : 0;
 
     const existing = byPerson.get(row.person_id);
@@ -482,6 +752,7 @@ export async function queryOfficialsLeaderboard(params: {
 }
 
 export async function queryPersonDetailBySlugOrId(slugOrId: string) {
+  return withDbFallback(async () => {
   const [person] = await db
     .select()
     .from(schema.persons)
@@ -561,140 +832,313 @@ export async function queryPersonDetailBySlugOrId(slugOrId: string) {
       restitution_amount: toNum(v.restitution_amount),
     })),
   };
+  }, () => {
+    const ds = getStaticDataset();
+    const person = ds.persons.find((p) => p.slug === slugOrId || p.id === slugOrId);
+    if (!person) return null;
+    const partyById = new Map(ds.parties.map((pt) => [pt.id, pt]));
+    const caseById = new Map(ds.cases.map((c) => [c.id, c]));
+
+    return {
+      ...person,
+      created_at: new Date(),
+      updated_at: new Date(),
+      positions: ds.positions.filter((pos) => pos.person_id === person.id),
+      party_memberships: ds.partyMemberships
+        .filter((pm) => pm.person_id === person.id)
+        .map((pm) => {
+          const pt = partyById.get(pm.party_id);
+          return {
+            id: pm.id,
+            party_name: pt?.name ?? 'Non-Partai',
+            party_abbr: pt?.abbreviation ?? 'Non-Partai',
+            party_color: pt?.color_hex ?? '#64748B',
+            party_position: pm.party_position,
+            party_at_offense: pm.party_at_offense,
+            membership_start: pm.membership_start,
+            membership_end: pm.membership_end,
+          };
+        }),
+      cases: ds.casePersons
+        .filter((cp) => cp.person_id === person.id)
+        .map((cp) => {
+          const c = caseById.get(cp.case_id);
+          if (!c) return null;
+          return {
+            id: c.id,
+            slug: c.slug,
+            case_title: c.case_title,
+            case_date: c.case_date,
+            era_name: c.era_name,
+            province_name: c.province_name,
+            role_in_case: cp.role_in_case,
+            legal_status: cp.legal_status,
+            display_loss_amount: c.display_loss_amount,
+            display_loss_basis: c.display_loss_basis,
+            display_bribe_amount: c.display_bribe_amount,
+          };
+        })
+        .filter((x): x is NonNullable<typeof x> => Boolean(x)),
+      verdicts: ds.verdicts
+        .filter((v) => v.person_id === person.id)
+        .sort((a, b) => (a.decision_date || '').localeCompare(b.decision_date || '')),
+    };
+  });
 }
 
 export async function queryPartiesLeaderboard(eraFilter?: string) {
-  const rows = await db
-    .select({
-      party_id: schema.parties.id,
-      party_name: schema.parties.name,
-      abbreviation: schema.parties.abbreviation,
-      color_hex: schema.parties.color_hex,
-      case_id: schema.cases.id,
-      era_id: schema.cases.era_id,
-      display_loss_amount: schema.cases.display_loss_amount,
-      display_bribe_amount: schema.cases.display_bribe_amount,
-      person_id: schema.persons.id,
-    })
-    .from(schema.parties)
-    .leftJoin(
-      schema.partyMemberships,
-      and(
-        eq(schema.parties.id, schema.partyMemberships.party_id),
-        eq(schema.partyMemberships.party_at_offense, true)
-      )
-    )
-    .leftJoin(schema.persons, eq(schema.partyMemberships.person_id, schema.persons.id))
-    .leftJoin(schema.casePersons, eq(schema.persons.id, schema.casePersons.person_id))
-    .leftJoin(schema.cases, eq(schema.casePersons.case_id, schema.cases.id));
-
-  const map = new Map<
-    string,
-    {
-      id: string;
-      name: string;
+  const buildResult = (
+    rows: Array<{
+      party_id: string;
+      party_name: string;
       abbreviation: string;
       color_hex: string;
-      caseIds: Set<string>;
-      personIds: Set<string>;
-      total_loss: number;
-      total_bribe: number;
-    }
-  >();
-
-  for (const r of rows) {
-    if (!map.has(r.party_id)) {
-      map.set(r.party_id, {
-        id: r.party_id,
-        name: r.party_name,
-        abbreviation: r.abbreviation,
-        color_hex: r.color_hex,
-        caseIds: new Set(),
-        personIds: new Set(),
-        total_loss: 0,
-        total_bribe: 0,
-      });
-    }
-    const entry = map.get(r.party_id)!;
-    if (r.case_id && (!eraFilter || eraFilter === 'all' || r.era_id === eraFilter)) {
-      if (!entry.caseIds.has(r.case_id)) {
-        entry.caseIds.add(r.case_id);
-        entry.total_loss += toNum(r.display_loss_amount);
-        entry.total_bribe += toNum(r.display_bribe_amount);
+      case_id: string | null;
+      era_id: string | null;
+      display_loss_amount: unknown;
+      display_bribe_amount: unknown;
+      person_id: string | null;
+    }>
+  ) => {
+    const map = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        abbreviation: string;
+        color_hex: string;
+        caseIds: Set<string>;
+        personIds: Set<string>;
+        total_loss: number;
+        total_bribe: number;
       }
-      if (r.person_id) entry.personIds.add(r.person_id);
-    }
-  }
+    >();
 
-  return Array.from(map.values())
-    .map((p) => ({
-      id: p.id,
-      name: p.name,
-      abbreviation: p.abbreviation,
-      color_hex: p.color_hex,
-      total_cases: p.caseIds.size,
-      total_cadres: p.personIds.size,
-      total_loss: p.total_loss,
-      total_bribe: p.total_bribe,
-    }))
-    .sort((a, b) => b.total_loss - a.total_loss || b.total_cases - a.total_cases);
+    for (const r of rows) {
+      if (!map.has(r.party_id)) {
+        map.set(r.party_id, {
+          id: r.party_id,
+          name: r.party_name,
+          abbreviation: r.abbreviation,
+          color_hex: r.color_hex,
+          caseIds: new Set(),
+          personIds: new Set(),
+          total_loss: 0,
+          total_bribe: 0,
+        });
+      }
+      const entry = map.get(r.party_id)!;
+      if (r.case_id && (!eraFilter || eraFilter === 'all' || r.era_id === eraFilter)) {
+        if (!entry.caseIds.has(r.case_id)) {
+          entry.caseIds.add(r.case_id);
+          entry.total_loss += toNum(r.display_loss_amount as string);
+          entry.total_bribe += toNum(r.display_bribe_amount as string);
+        }
+        if (r.person_id) entry.personIds.add(r.person_id);
+      }
+    }
+
+    return Array.from(map.values())
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        abbreviation: p.abbreviation,
+        color_hex: p.color_hex,
+        total_cases: p.caseIds.size,
+        total_cadres: p.personIds.size,
+        total_loss: p.total_loss,
+        total_bribe: p.total_bribe,
+      }))
+      .sort((a, b) => b.total_loss - a.total_loss || b.total_cases - a.total_cases);
+  };
+
+  return withDbFallback(
+    async () => {
+      const rows = await db
+        .select({
+          party_id: schema.parties.id,
+          party_name: schema.parties.name,
+          abbreviation: schema.parties.abbreviation,
+          color_hex: schema.parties.color_hex,
+          case_id: schema.cases.id,
+          era_id: schema.cases.era_id,
+          display_loss_amount: schema.cases.display_loss_amount,
+          display_bribe_amount: schema.cases.display_bribe_amount,
+          person_id: schema.persons.id,
+        })
+        .from(schema.parties)
+        .leftJoin(
+          schema.partyMemberships,
+          and(
+            eq(schema.parties.id, schema.partyMemberships.party_id),
+            eq(schema.partyMemberships.party_at_offense, true)
+          )
+        )
+        .leftJoin(schema.persons, eq(schema.partyMemberships.person_id, schema.persons.id))
+        .leftJoin(schema.casePersons, eq(schema.persons.id, schema.casePersons.person_id))
+        .leftJoin(schema.cases, eq(schema.casePersons.case_id, schema.cases.id));
+      return buildResult(rows);
+    },
+    () => {
+      const ds = getStaticDataset();
+      const caseById = new Map(ds.cases.map((c) => [c.id, c]));
+      const rows: Parameters<typeof buildResult>[0] = [];
+      for (const party of ds.parties) {
+        const memberships = ds.partyMemberships.filter((pm) => pm.party_id === party.id && pm.party_at_offense);
+        if (memberships.length === 0) {
+          rows.push({
+            party_id: party.id,
+            party_name: party.name,
+            abbreviation: party.abbreviation,
+            color_hex: party.color_hex,
+            case_id: null,
+            era_id: null,
+            display_loss_amount: 0,
+            display_bribe_amount: 0,
+            person_id: null,
+          });
+          continue;
+        }
+        for (const pm of memberships) {
+          const cps = ds.casePersons.filter((cp) => cp.person_id === pm.person_id);
+          if (cps.length === 0) {
+            rows.push({
+              party_id: party.id,
+              party_name: party.name,
+              abbreviation: party.abbreviation,
+              color_hex: party.color_hex,
+              case_id: null,
+              era_id: null,
+              display_loss_amount: 0,
+              display_bribe_amount: 0,
+              person_id: pm.person_id,
+            });
+          } else {
+            for (const cp of cps) {
+              const c = caseById.get(cp.case_id);
+              rows.push({
+                party_id: party.id,
+                party_name: party.name,
+                abbreviation: party.abbreviation,
+                color_hex: party.color_hex,
+                case_id: c?.id ?? null,
+                era_id: c?.era_id ?? null,
+                display_loss_amount: c?.display_loss_amount ?? 0,
+                display_bribe_amount: c?.display_bribe_amount ?? 0,
+                person_id: pm.person_id,
+              });
+            }
+          }
+        }
+      }
+      return buildResult(rows);
+    }
+  );
 }
 
 export async function queryCompaniesLeaderboard() {
-  const rows = await db
-    .select({
-      id: schema.companies.id,
-      slug: schema.companies.slug,
-      name: schema.companies.name,
-      company_type: schema.companies.company_type,
-      industry: schema.companies.industry,
-      business_sector: schema.companies.business_sector,
-      company_location: schema.companies.company_location,
-      beneficial_owner: schema.companies.beneficial_owner,
-      company_status: schema.companies.company_status,
-      case_id: schema.cases.id,
-      case_slug: schema.cases.slug,
-      case_title: schema.cases.case_title,
-      role: schema.caseCompanies.company_role_in_case,
-      display_loss_amount: schema.cases.display_loss_amount,
-    })
-    .from(schema.companies)
-    .leftJoin(schema.caseCompanies, eq(schema.companies.id, schema.caseCompanies.company_id))
-    .leftJoin(schema.cases, eq(schema.caseCompanies.case_id, schema.cases.id));
-
-  const map = new Map<string, any>();
-  for (const r of rows) {
-    if (!map.has(r.id)) {
-      map.set(r.id, {
-        id: r.id,
-        slug: r.slug,
-        name: r.name,
-        company_type: r.company_type,
-        industry: r.industry,
-        business_sector: r.business_sector,
-        company_location: r.company_location,
-        beneficial_owner: r.beneficial_owner,
-        company_status: r.company_status,
-        total_cases: 0,
-        total_linked_loss: 0,
-        cases: [],
-      });
+  const buildResult = (
+    rows: Array<{
+      id: string;
+      slug: string;
+      name: string;
+      company_type: string;
+      industry: string | null;
+      business_sector: string | null;
+      company_location: string | null;
+      beneficial_owner: string | null;
+      company_status: string;
+      case_id: string | null;
+      case_slug: string | null;
+      case_title: string | null;
+      role: string | null;
+      display_loss_amount: unknown;
+    }>
+  ) => {
+    const map = new Map<string, any>();
+    for (const r of rows) {
+      if (!map.has(r.id)) {
+        map.set(r.id, {
+          id: r.id,
+          slug: r.slug,
+          name: r.name,
+          company_type: r.company_type,
+          industry: r.industry,
+          business_sector: r.business_sector,
+          company_location: r.company_location,
+          beneficial_owner: r.beneficial_owner,
+          company_status: r.company_status,
+          total_cases: 0,
+          total_linked_loss: 0,
+          cases: [],
+        });
+      }
+      const item = map.get(r.id);
+      if (r.case_id) {
+        item.total_cases += 1;
+        item.total_linked_loss += toNum(r.display_loss_amount as string);
+        item.cases.push({
+          id: r.case_id,
+          slug: r.case_slug,
+          case_title: r.case_title,
+          role: r.role,
+        });
+      }
     }
-    const item = map.get(r.id);
-    if (r.case_id) {
-      item.total_cases += 1;
-      item.total_linked_loss += toNum(r.display_loss_amount);
-      item.cases.push({
-        id: r.case_id,
-        slug: r.case_slug,
-        case_title: r.case_title,
-        role: r.role,
-      });
-    }
-  }
 
-  return Array.from(map.values()).sort(
-    (a, b) => b.total_linked_loss - a.total_linked_loss || b.total_cases - a.total_cases
+    return Array.from(map.values()).sort(
+      (a, b) => b.total_linked_loss - a.total_linked_loss || b.total_cases - a.total_cases
+    );
+  };
+
+  return withDbFallback(
+    async () => {
+      const rows = await db
+        .select({
+          id: schema.companies.id,
+          slug: schema.companies.slug,
+          name: schema.companies.name,
+          company_type: schema.companies.company_type,
+          industry: schema.companies.industry,
+          business_sector: schema.companies.business_sector,
+          company_location: schema.companies.company_location,
+          beneficial_owner: schema.companies.beneficial_owner,
+          company_status: schema.companies.company_status,
+          case_id: schema.cases.id,
+          case_slug: schema.cases.slug,
+          case_title: schema.cases.case_title,
+          role: schema.caseCompanies.company_role_in_case,
+          display_loss_amount: schema.cases.display_loss_amount,
+        })
+        .from(schema.companies)
+        .leftJoin(schema.caseCompanies, eq(schema.companies.id, schema.caseCompanies.company_id))
+        .leftJoin(schema.cases, eq(schema.caseCompanies.case_id, schema.cases.id));
+      return buildResult(rows);
+    },
+    () => {
+      const ds = getStaticDataset();
+      const caseById = new Map(ds.cases.map((c) => [c.id, c]));
+      const rows: Parameters<typeof buildResult>[0] = [];
+      for (const comp of ds.companies) {
+        const links = ds.caseCompanies.filter((cc) => cc.company_id === comp.id);
+        if (links.length === 0) {
+          rows.push({ ...comp, case_id: null, case_slug: null, case_title: null, role: null, display_loss_amount: 0 });
+        } else {
+          for (const cc of links) {
+            const c = caseById.get(cc.case_id);
+            rows.push({
+              ...comp,
+              case_id: c?.id ?? null,
+              case_slug: c?.slug ?? null,
+              case_title: c?.case_title ?? null,
+              role: cc.company_role_in_case,
+              display_loss_amount: c?.display_loss_amount ?? 0,
+            });
+          }
+        }
+      }
+      return buildResult(rows);
+    }
   );
 }
 
@@ -704,75 +1148,105 @@ export async function queryProvincesSummary(filters?: { era?: string; sector?: s
     (filters?.sector && filters.sector !== 'all') ||
     (filters?.status && filters.status !== 'all');
 
-  if (!hasFilter) {
-    const provs = await db.select().from(schema.provinces).orderBy(asc(schema.provinces.bps_code));
-    return provs.map((p) => ({
-      id: p.id,
-      name: p.name,
-      island_cluster: p.island_cluster,
-      bps_code: p.bps_code,
-      total_cases: p.cached_total_cases,
-      total_loss: toNum(p.cached_total_loss),
-    }));
-  }
+  return withDbFallback(
+    async () => {
+      if (!hasFilter) {
+        const provs = await db.select().from(schema.provinces).orderBy(asc(schema.provinces.bps_code));
+        return provs.map((p) => ({
+          id: p.id,
+          name: p.name,
+          island_cluster: p.island_cluster,
+          bps_code: p.bps_code,
+          total_cases: p.cached_total_cases,
+          total_loss: toNum(p.cached_total_loss),
+        }));
+      }
 
-  const provs = await db.select().from(schema.provinces).orderBy(asc(schema.provinces.bps_code));
-  const conds = [];
-  if (filters?.era && filters.era !== 'all') conds.push(eq(schema.cases.era_id, filters.era));
-  if (filters?.sector && filters.sector !== 'all') conds.push(eq(schema.cases.sector_category, filters.sector as any));
-  if (filters?.status && filters.status !== 'all') conds.push(eq(schema.cases.current_legal_status, filters.status as any));
+      const provs = await db.select().from(schema.provinces).orderBy(asc(schema.provinces.bps_code));
+      const conds = [];
+      if (filters?.era && filters.era !== 'all') conds.push(eq(schema.cases.era_id, filters.era));
+      if (filters?.sector && filters.sector !== 'all') conds.push(eq(schema.cases.sector_category, filters.sector as any));
+      if (filters?.status && filters.status !== 'all') conds.push(eq(schema.cases.current_legal_status, filters.status as any));
 
-  const agg = await db
-    .select({
-      province_id: schema.cases.primary_province_id,
-      total_cases: sql<number>`count(*)::int`,
-      total_loss: sql<string>`coalesce(sum(${schema.cases.display_loss_amount}), 0)`,
-    })
-    .from(schema.cases)
-    .where(conds.length ? and(...conds) : undefined)
-    .groupBy(schema.cases.primary_province_id);
+      const agg = await db
+        .select({
+          province_id: schema.cases.primary_province_id,
+          total_cases: sql<number>`count(*)::int`,
+          total_loss: sql<string>`coalesce(sum(${schema.cases.display_loss_amount}), 0)`,
+        })
+        .from(schema.cases)
+        .where(conds.length ? and(...conds) : undefined)
+        .groupBy(schema.cases.primary_province_id);
 
-  const aggMap = new Map(agg.map((a) => [a.province_id, a]));
-  return provs.map((p) => {
-    const found = aggMap.get(p.id);
-    return {
-      id: p.id,
-      name: p.name,
-      island_cluster: p.island_cluster,
-      bps_code: p.bps_code,
-      total_cases: found?.total_cases ?? 0,
-      total_loss: toNum(found?.total_loss),
-    };
-  });
+      const aggMap = new Map(agg.map((a) => [a.province_id, a]));
+      return provs.map((p) => {
+        const found = aggMap.get(p.id);
+        return {
+          id: p.id,
+          name: p.name,
+          island_cluster: p.island_cluster,
+          bps_code: p.bps_code,
+          total_cases: found?.total_cases ?? 0,
+          total_loss: toNum(found?.total_loss),
+        };
+      });
+    },
+    () => {
+      const ds = getStaticDataset();
+      const sortedProvs = ds.provinces.slice().sort((a, b) => a.bps_code.localeCompare(b.bps_code));
+      if (!hasFilter) {
+        return sortedProvs.map((p) => ({
+          id: p.id,
+          name: p.name,
+          island_cluster: p.island_cluster,
+          bps_code: p.bps_code,
+          total_cases: p.cached_total_cases,
+          total_loss: toNum(p.cached_total_loss),
+        }));
+      }
+      const aggMap = new Map<string, { total_cases: number; total_loss: number }>();
+      for (const c of ds.cases) {
+        if (filters?.era && filters.era !== 'all' && c.era_id !== filters.era) continue;
+        if (filters?.sector && filters.sector !== 'all' && c.sector_category !== filters.sector) continue;
+        if (filters?.status && filters.status !== 'all' && c.current_legal_status !== filters.status) continue;
+        const cur = aggMap.get(c.primary_province_id) ?? { total_cases: 0, total_loss: 0 };
+        cur.total_cases += 1;
+        cur.total_loss += c.display_loss_amount;
+        aggMap.set(c.primary_province_id, cur);
+      }
+      return sortedProvs.map((p) => ({
+        id: p.id,
+        name: p.name,
+        island_cluster: p.island_cluster,
+        bps_code: p.bps_code,
+        total_cases: aggMap.get(p.id)?.total_cases ?? 0,
+        total_loss: aggMap.get(p.id)?.total_loss ?? 0,
+      }));
+    }
+  );
 }
 
-export async function queryStatsOverview() {
-  const [allCases, erasRows, provRows] = await Promise.all([
-    db
-      .select({
-        id: schema.cases.id,
-        slug: schema.cases.slug,
-        case_title: schema.cases.case_title,
-        era_id: schema.cases.era_id,
-        era_name: schema.presidentialEras.name,
-        province_id: schema.cases.primary_province_id,
-        province_name: schema.provinces.name,
-        sector_category: schema.cases.sector_category,
-        sector_label: schema.cases.sector_label,
-        case_date: schema.cases.case_date,
-        current_legal_status: schema.cases.current_legal_status,
-        display_loss_amount: schema.cases.display_loss_amount,
-        display_loss_basis: schema.cases.display_loss_basis,
-        display_bribe_amount: schema.cases.display_bribe_amount,
-        display_recovery_amount: schema.cases.display_recovery_amount,
-      })
-      .from(schema.cases)
-      .leftJoin(schema.presidentialEras, eq(schema.cases.era_id, schema.presidentialEras.id))
-      .leftJoin(schema.provinces, eq(schema.cases.primary_province_id, schema.provinces.id)),
-    db.select().from(schema.presidentialEras).orderBy(asc(schema.presidentialEras.sort_order)),
-    db.select().from(schema.provinces),
-  ]);
-
+function computeStatsOverviewResult(
+  allCases: Array<{
+    id: string;
+    slug: string;
+    case_title: string;
+    era_id: string;
+    era_name: string | null;
+    province_id: string;
+    province_name: string | null;
+    sector_category: string;
+    sector_label: string;
+    case_date: string | null;
+    current_legal_status: string;
+    display_loss_amount: unknown;
+    display_loss_basis: string;
+    display_bribe_amount: unknown;
+    display_recovery_amount: unknown;
+  }>,
+  erasRows: Array<{ id: string; name: string; sort_order: number; cabinet_name: string | null }>,
+  provRows: Array<{ id: string; name: string; cached_total_cases: number; cached_total_loss: unknown }>
+) {
   let totalCourtOrAuditLoss = 0;
   let totalInkrahLoss = 0;
   let totalBribe = 0;
@@ -786,9 +1260,9 @@ export async function queryStatsOverview() {
   const sectorMap = new Map<string, { sector: string; label: string; cases: number; total_loss: number }>();
 
   for (const c of allCases) {
-    const loss = toNum(c.display_loss_amount);
-    const bribe = toNum(c.display_bribe_amount);
-    const rec = toNum(c.display_recovery_amount);
+    const loss = toNum(c.display_loss_amount as string);
+    const bribe = toNum(c.display_bribe_amount as string);
+    const rec = toNum(c.display_recovery_amount as string);
 
     totalCourtOrAuditLoss += loss;
     totalBribe += bribe;
@@ -827,10 +1301,9 @@ export async function queryStatsOverview() {
     sectorMap.set(c.sector_category, sEntry);
   }
 
-  // Strictly Inkrah-only Hall of Shame
   const hallOfShame = allCases
     .filter((c) => isInkrahStatus(c.current_legal_status))
-    .sort((a, b) => toNum(b.display_loss_amount) - toNum(a.display_loss_amount))
+    .sort((a, b) => toNum(b.display_loss_amount as string) - toNum(a.display_loss_amount as string))
     .slice(0, 10)
     .map((c) => ({
       id: c.id,
@@ -840,13 +1313,17 @@ export async function queryStatsOverview() {
       province_name: c.province_name,
       case_date: c.case_date,
       current_legal_status: c.current_legal_status,
-      display_loss_amount: toNum(c.display_loss_amount),
+      display_loss_amount: toNum(c.display_loss_amount as string),
       display_loss_basis: c.display_loss_basis,
     }));
 
   const topProvince = provRows
     .filter((p) => p.id !== 'nasional')
-    .sort((a, b) => b.cached_total_cases - a.cached_total_cases || toNum(b.cached_total_loss) - toNum(a.cached_total_loss))[0];
+    .sort(
+      (a, b) =>
+        b.cached_total_cases - a.cached_total_cases ||
+        toNum(b.cached_total_loss as string) - toNum(a.cached_total_loss as string)
+    )[0];
 
   const assetRecoveryRate =
     totalCourtOrAuditLoss > 0
@@ -868,7 +1345,7 @@ export async function queryStatsOverview() {
           id: topProvince.id,
           name: topProvince.name,
           total_cases: topProvince.cached_total_cases,
-          total_loss: toNum(topProvince.cached_total_loss),
+          total_loss: toNum(topProvince.cached_total_loss as string),
         }
       : null,
     hall_of_shame: hallOfShame,
@@ -885,26 +1362,60 @@ export async function queryStatsOverview() {
   };
 }
 
+export async function queryStatsOverview() {
+  return withDbFallback(
+    async () => {
+      const [allCases, erasRows, provRows] = await Promise.all([
+        db
+          .select({
+            id: schema.cases.id,
+            slug: schema.cases.slug,
+            case_title: schema.cases.case_title,
+            era_id: schema.cases.era_id,
+            era_name: schema.presidentialEras.name,
+            province_id: schema.cases.primary_province_id,
+            province_name: schema.provinces.name,
+            sector_category: schema.cases.sector_category,
+            sector_label: schema.cases.sector_label,
+            case_date: schema.cases.case_date,
+            current_legal_status: schema.cases.current_legal_status,
+            display_loss_amount: schema.cases.display_loss_amount,
+            display_loss_basis: schema.cases.display_loss_basis,
+            display_bribe_amount: schema.cases.display_bribe_amount,
+            display_recovery_amount: schema.cases.display_recovery_amount,
+          })
+          .from(schema.cases)
+          .leftJoin(schema.presidentialEras, eq(schema.cases.era_id, schema.presidentialEras.id))
+          .leftJoin(schema.provinces, eq(schema.cases.primary_province_id, schema.provinces.id)),
+        db.select().from(schema.presidentialEras).orderBy(asc(schema.presidentialEras.sort_order)),
+        db.select().from(schema.provinces),
+      ]);
+      return computeStatsOverviewResult(allCases, erasRows, provRows);
+    },
+    () => {
+      const ds = getStaticDataset();
+      return computeStatsOverviewResult(
+        ds.cases.map((c) => ({ ...c, province_id: c.primary_province_id })),
+        ds.eras,
+        ds.provinces
+      );
+    }
+  );
+}
+
 export async function queryPublicSettings() {
-  const rows = await db.select().from(schema.siteSettings);
-  const map = new Map(rows.map((r) => [r.key, r.value]));
-  return {
-    announcement: map.get('announcement') ?? {
-      title: 'Pemberitahuan Asas Hukum & Integritas Sumber Primer',
-      badge: 'Pasal 8 ayat (1) UU No. 48/2009',
-      main_text:
-        'Setiap orang yang disangka, dituntut, atau dihadapkan di depan pengadilan wajib dianggap tidak bersalah sebelum ada putusan pengadilan berkekuatan hukum tetap.',
-      sub_text:
-        'Angka kerugian negara, audit BPK/BPKP, suap, dan nilai proyek dipisahkan secara ketat (Anti Double-Counting).',
-      is_active: true,
+  return withDbFallback(
+    async () => {
+      const rows = await db.select().from(schema.siteSettings);
+      const map = new Map(rows.map((r) => [r.key, r.value]));
+      return {
+        announcement: map.get('announcement') ?? PUBLIC_ANNOUNCEMENT_DEFAULT,
+        donation: map.get('donation') ?? PUBLIC_DONATION_DEFAULT,
+      };
     },
-    donation: map.get('donation') ?? {
-      title: 'Dukung Independensi Arsip Transparansi LKI',
-      description: 'Bantu operasional server dan verifikasi berkas direktori putusan pengadilan.',
-      qris_image_url: '',
-      account_name: 'Pengelola Liga Korupsi Indonesia',
-      bank_info: '',
-      is_active: true,
-    },
-  };
+    () => ({
+      announcement: PUBLIC_ANNOUNCEMENT_DEFAULT,
+      donation: PUBLIC_DONATION_DEFAULT,
+    })
+  );
 }

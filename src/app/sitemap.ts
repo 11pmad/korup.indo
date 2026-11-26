@@ -1,5 +1,7 @@
 import type { MetadataRoute } from 'next';
+import { isDatabaseConfigured } from '@/env';
 import { db, schema } from '@/server/db';
+import { getStaticDataset } from '@/server/static-dataset';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,11 +16,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
   );
 
+  const fallbackSitemap = () => {
+    const ds = getStaticDataset();
+    return [
+      ...staticRoutes,
+      ...ds.cases.map((c) => ({
+        url: `${baseUrl}/kasus/${c.slug}`,
+        lastModified: c.updated_at,
+        changeFrequency: 'weekly' as const,
+        priority: 0.8,
+      })),
+      ...ds.persons.map((p) => ({
+        url: `${baseUrl}/tokoh/${p.slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'monthly' as const,
+        priority: 0.7,
+      })),
+    ];
+  };
+
+  if (!isDatabaseConfigured) {
+    return fallbackSitemap();
+  }
+
   try {
     const [caseRows, personRows] = await Promise.all([
       db.select({ slug: schema.cases.slug, updated_at: schema.cases.updated_at }).from(schema.cases),
       db.select({ slug: schema.persons.slug, updated_at: schema.persons.updated_at }).from(schema.persons),
     ]);
+
+    if (caseRows.length === 0) return fallbackSitemap();
 
     return [
       ...staticRoutes,
@@ -36,6 +63,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       })),
     ];
   } catch {
-    return staticRoutes;
+    return fallbackSitemap();
   }
 }

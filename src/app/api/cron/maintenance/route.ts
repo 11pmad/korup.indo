@@ -5,7 +5,7 @@ import { db, schema } from '@/server/db';
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
-  if (authHeader !== `Bearer ${env.CRON_SECRET}`) {
+  if (!env.CRON_SECRET || authHeader !== `Bearer ${env.CRON_SECRET}`) {
     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
   }
 
