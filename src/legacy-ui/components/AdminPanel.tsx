@@ -170,7 +170,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
                 <span>🔒 Akses Terbatas Staf Kurator</span>
               </div>
               <p className="text-[11px] text-slate-400">
-                Masuk menggunakan akun staf yang dibuat melalui <code>db:bootstrap-admin</code> atau panel Super Admin.
+                Masuk menggunakan kredensial staf kurator resmi yang terdaftar oleh administrator sistem.
               </p>
             </div>
 
