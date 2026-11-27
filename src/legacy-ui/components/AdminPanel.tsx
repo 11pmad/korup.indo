@@ -1,11 +1,18 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { AuditLog, UserReport } from '../types';
 import { sound } from '../utils/audio';
 import { parseApiJson } from '../utils/safeJson';
+import { invalidatePortalDataCache } from '../App';
 import { Eye, EyeOff, Lock, Unlock } from 'lucide-react';
 import { AdminLayout, AdminSubtab } from './admin/AdminLayout';
+import {
+  ADMIN_TAB_TITLES,
+  adminTabToPath,
+  pathnameToAdminTab,
+} from './admin/adminRoutes';
 import { AdminDashboardOverview } from './admin/AdminDashboardOverview';
 import { AdminCasesManager } from './admin/AdminCasesManager';
 import { AdminOfficialsManager } from './admin/AdminOfficialsManager';
@@ -20,7 +27,7 @@ import { AdminAiCurator } from './admin/AdminAiCurator';
 import { AdminUsersManager } from './admin/AdminUsersManager';
 
 interface AdminPanelProps {
-  onRefreshData: () => void;
+  onRefreshData?: () => void;
   onBackToHome?: () => void;
 }
 
@@ -33,6 +40,9 @@ interface CurrentAdminUser {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToHome }) => {
+  const pathname = usePathname();
+  const router = useRouter();
+
   // Simple auth gate with JWT
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return typeof window !== 'undefined' ? Boolean(sessionStorage.getItem('lki_admin_token')) : false;
@@ -54,8 +64,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Active view tab
-  const [activeTab, setActiveTab] = useState<AdminSubtab>('dashboard');
+  // Active view tab derived from URL pathname
+  const activeTab: AdminSubtab = pathnameToAdminTab(pathname) ?? 'dashboard';
+
+  const navigateToAdminTab = (tab: AdminSubtab) => {
+    const target = adminTabToPath(tab);
+    if (pathname !== target) {
+      router.push(target);
+    }
+  };
+
+  const handleRefreshData = onRefreshData ?? invalidatePortalDataCache;
+  const handleBackToHome =
+    onBackToHome ??
+    (() => {
+      sound.playPop();
+      router.push('/');
+    });
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.title = `${ADMIN_TAB_TITLES[activeTab]} — Panel Admin LKI`;
+    }
+  }, [activeTab]);
 
   // Audit Logs state
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -229,17 +260,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
               </button>
             </form>
 
-            {onBackToHome && (
-              <div className="pt-3 border-t border-slate-800/80 text-center">
-                <button
-                  type="button"
-                  onClick={onBackToHome}
-                  className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1.5"
-                >
-                  ← Kembali ke Portal Publik
-                </button>
-              </div>
-            )}
+            <div className="pt-3 border-t border-slate-800/80 text-center">
+              <button
+                type="button"
+                onClick={handleBackToHome}
+                className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1.5"
+              >
+                ← Kembali ke Portal Publik
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -249,9 +278,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
   return (
     <AdminLayout
       activeSubtab={activeTab}
-      setActiveSubtab={setActiveTab}
+      setActiveSubtab={navigateToAdminTab}
       onLogout={handleLogout}
-      onBackToPublic={onBackToHome || (() => {})}
+      onBackToPublic={handleBackToHome}
       pendingReportsCount={reports.filter(r => (r.status as string) === 'menunggu_review' || (r.status as string) === 'pending_review').length}
       adminUsername={currentUser?.username || authUsername || 'admin'}
       adminFullName={currentUser?.full_name}
@@ -263,8 +292,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
           authToken={authToken}
           auditLogs={auditLogs}
           reports={reports}
-          onNavigate={setActiveTab}
-          onRefresh={onRefreshData}
+          onNavigate={navigateToAdminTab}
+          onRefresh={handleRefreshData}
         />
       )}
 
@@ -272,8 +301,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
       {activeTab === 'cases' && (
         <AdminCasesManager
           authToken={authToken}
-          onOpenCreate={() => setActiveTab('manual')}
-          onRefreshGlobal={onRefreshData}
+          onOpenCreate={() => navigateToAdminTab('manual')}
+          onRefreshGlobal={handleRefreshData}
         />
       )}
 
@@ -281,7 +310,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
       {activeTab === 'officials' && (
         <AdminOfficialsManager
           authToken={authToken}
-          onRefreshGlobal={onRefreshData}
+          onRefreshGlobal={handleRefreshData}
         />
       )}
 
@@ -289,7 +318,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
       {activeTab === 'announcement' && (
         <AdminAnnouncementManager
           authToken={authToken}
-          onRefreshGlobal={onRefreshData}
+          onRefreshGlobal={handleRefreshData}
         />
       )}
 
@@ -297,7 +326,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
       {activeTab === 'donation' && (
         <AdminDonationManager
           authToken={authToken}
-          onRefreshGlobal={onRefreshData}
+          onRefreshGlobal={handleRefreshData}
         />
       )}
 
@@ -305,7 +334,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
       {activeTab === 'ai' && (
         <AdminAiCurator
           authToken={authToken}
-          onRefreshGlobal={onRefreshData}
+          onRefreshGlobal={handleRefreshData}
           onRefreshAuditLogs={fetchAuditLogs}
         />
       )}
@@ -314,7 +343,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
       {activeTab === 'manual' && (
         <AdminManualCaseManager
           authToken={authToken}
-          onRefreshGlobal={onRefreshData}
+          onRefreshGlobal={handleRefreshData}
           onRefreshAuditLogs={fetchAuditLogs}
         />
       )}
@@ -326,7 +355,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
           auditLogs={auditLogs}
           loadingLogs={loadingLogs}
           onRefreshLogs={fetchAuditLogs}
-          onRefreshGlobal={onRefreshData}
+          onRefreshGlobal={handleRefreshData}
         />
       )}
 
@@ -336,7 +365,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
           authToken={authToken}
           onRefreshGlobal={() => {
             fetchReports();
-            onRefreshData();
+            handleRefreshData();
           }}
         />
       )}
@@ -345,7 +374,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onRefreshData, onBackToH
       {activeTab === 'comments' && (
         <AdminCommentsManager
           authToken={authToken}
-          onRefreshGlobal={onRefreshData}
+          onRefreshGlobal={handleRefreshData}
         />
       )}
 

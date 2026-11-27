@@ -37,13 +37,18 @@ interface PortalDataSnapshot {
 let portalDataCache: PortalDataSnapshot | null = null;
 let portalDataPromise: Promise<PortalDataSnapshot> | null = null;
 
+export function invalidatePortalDataCache() {
+  portalDataCache = null;
+  portalDataPromise = null;
+}
+
 function tabToHref(tab: PortalTab): string {
   return tab === 'beranda' ? '/' : `/${tab}`;
 }
 
 function pathnameToTab(pathname: string | null, fallback: PortalTab = 'beranda'): PortalTab {
   if (!pathname) return fallback;
-  if (pathname === '/admin') return 'admin';
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) return 'admin';
   if (pathname === '/peta') return 'peta';
   if (pathname === '/klasemen' || pathname.startsWith('/tokoh')) return 'klasemen';
   if (pathname === '/statistik') return 'statistik';

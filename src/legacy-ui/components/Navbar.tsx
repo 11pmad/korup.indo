@@ -53,7 +53,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           ? 'statistik'
           : pathname === '/cari' || pathname?.startsWith('/kasus')
             ? 'cari'
-            : pathname === '/admin'
+            : pathname === '/admin' || pathname?.startsWith('/admin/')
               ? 'admin'
               : pathname === '/'
                 ? 'beranda'
